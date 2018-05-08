@@ -138,7 +138,8 @@ class MWDocGen extends Maintenance {
 
 		$tmpFile = tempnam( wfTempDir(), 'MWDocGen-' );
 		if ( file_put_contents( $tmpFile, $conf ) === false ) {
-			$this->fatalError( "Could not write doxygen configuration to file $tmpFile\n" );
+			$this->error( "Could not write doxygen configuration to file $tmpFile\n",
+				/** exit code: */ 1 );
 		}
 
 		$command = $this->doxygen . ' ' . $tmpFile;
@@ -160,10 +161,11 @@ TEXT
 		);
 
 		if ( $exitcode !== 0 ) {
-			$this->fatalError( "Something went wrong (exit: $exitcode)\n", $exitcode );
+			$this->error( "Something went wrong (exit: $exitcode)\n",
+				$exitcode );
 		}
 	}
 }
 
-$maintClass = MWDocGen::class;
+$maintClass = 'MWDocGen';
 require_once RUN_MAINTENANCE_IF_MAIN;

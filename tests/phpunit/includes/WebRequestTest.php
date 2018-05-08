@@ -26,7 +26,7 @@ class WebRequestTest extends MediaWikiTestCase {
 	public function testDetectServer( $expected, $input, $description ) {
 		$this->setMwGlobals( 'wgAssumeProxiesUseDefaultProtocolPorts', true );
 
-		$this->setServerVars( $input );
+		$_SERVER = $input;
 		$result = WebRequest::detectServer();
 		$this->assertEquals( $expected, $result, $description );
 	}
@@ -126,7 +126,7 @@ class WebRequestTest extends MediaWikiTestCase {
 	protected function mockWebRequest( $data = [] ) {
 		// Cannot use PHPUnit getMockBuilder() as it does not support
 		// overriding protected properties afterwards
-		$reflection = new ReflectionClass( WebRequest::class );
+		$reflection = new ReflectionClass( 'WebRequest' );
 		$req = $reflection->newInstanceWithoutConstructor();
 
 		$prop = $reflection->getProperty( 'data' );
@@ -363,7 +363,7 @@ class WebRequestTest extends MediaWikiTestCase {
 	 * @covers WebRequest::getIP
 	 */
 	public function testGetIP( $expected, $input, $squid, $xffList, $private, $description ) {
-		$this->setServerVars( $input );
+		$_SERVER = $input;
 		$this->setMwGlobals( [
 			'wgUsePrivateIPs' => $private,
 			'wgHooks' => [
@@ -608,19 +608,8 @@ class WebRequestTest extends MediaWikiTestCase {
 	 * @covers WebRequest::getAcceptLang
 	 */
 	public function testAcceptLang( $acceptLanguageHeader, $expectedLanguages, $description ) {
-		$this->setServerVars( [ 'HTTP_ACCEPT_LANGUAGE' => $acceptLanguageHeader ] );
+		$_SERVER = [ 'HTTP_ACCEPT_LANGUAGE' => $acceptLanguageHeader ];
 		$request = new WebRequest();
 		$this->assertSame( $request->getAcceptLang(), $expectedLanguages, $description );
-	}
-
-	protected function setServerVars( $vars ) {
-		// Don't remove vars which should be available in all SAPI.
-		if ( !isset( $vars['REQUEST_TIME_FLOAT'] ) ) {
-			$vars['REQUEST_TIME_FLOAT'] = $_SERVER['REQUEST_TIME_FLOAT'];
-		}
-		if ( !isset( $vars['REQUEST_TIME'] ) ) {
-			$vars['REQUEST_TIME'] = $_SERVER['REQUEST_TIME'];
-		}
-		$_SERVER = $vars;
 	}
 }

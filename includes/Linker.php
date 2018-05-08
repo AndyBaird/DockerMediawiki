@@ -892,13 +892,9 @@ class Linker {
 	 */
 	public static function userLink( $userId, $userName, $altUserName = false ) {
 		$classes = 'mw-userlink';
-		$page = null;
 		if ( $userId == 0 ) {
-			$page = ExternalUserNames::getUserLinkTitle( $userName );
-
-			if ( ExternalUserNames::isExternal( $userName ) ) {
-				$classes .= ' mw-extuserlink';
-			} elseif ( $altUserName === false ) {
+			$page = SpecialPage::getTitleFor( 'Contributions', $userName );
+			if ( $altUserName === false ) {
 				$altUserName = IP::prettifyIP( $userName );
 			}
 			$classes .= ' mw-anonuserlink'; // Separate link class for anons (T45179)
@@ -907,12 +903,11 @@ class Linker {
 		}
 
 		// Wrap the output with <bdi> tags for directionality isolation
-		$linkText =
-			'<bdi>' . htmlspecialchars( $altUserName !== false ? $altUserName : $userName ) . '</bdi>';
-
-		return $page
-			? self::link( $page, $linkText, [ 'class' => $classes ] )
-			: Html::rawElement( 'span', [ 'class' => $classes ], $linkText );
+		return self::link(
+			$page,
+			'<bdi>' . htmlspecialchars( $altUserName !== false ? $altUserName : $userName ) . '</bdi>',
+			[ 'class' => $classes ]
+		);
 	}
 
 	/**
@@ -935,11 +930,6 @@ class Linker {
 		$talkable = !( $wgDisableAnonTalk && 0 == $userId );
 		$blockable = !( $flags & self::TOOL_LINKS_NOBLOCK );
 		$addEmailLink = $flags & self::TOOL_LINKS_EMAIL && $userId;
-
-		if ( $userId == 0 && ExternalUserNames::isExternal( $userText ) ) {
-			// No tools for an external user
-			return '';
-		}
 
 		$items = [];
 		if ( $talkable ) {
@@ -1011,7 +1001,7 @@ class Linker {
 
 	/**
 	 * @since 1.16.3
-	 * @param int $userId
+	 * @param int $userId Userid
 	 * @param string $userText User name in database.
 	 * @return string HTML fragment with block link
 	 */
@@ -1025,7 +1015,7 @@ class Linker {
 	}
 
 	/**
-	 * @param int $userId
+	 * @param int $userId Userid
 	 * @param string $userText User name in database.
 	 * @return string HTML fragment with e-mail user link
 	 */
@@ -1180,12 +1170,12 @@ class Linker {
 						$section = str_replace( '[[', '', $section );
 						$section = str_replace( ']]', '', $section );
 
-						$section = substr( Parser::guessSectionNameFromStrippedText( $section ), 1 );
+						$section = Sanitizer::normalizeSectionNameWhitespace( $section ); # T24784
 						if ( $local ) {
-							$sectionTitle = Title::makeTitleSafe( NS_MAIN, '', $section );
+							$sectionTitle = Title::newFromText( '#' . $section );
 						} else {
 							$sectionTitle = Title::makeTitleSafe( $title->getNamespace(),
-								$title->getDBkey(), $section );
+								$title->getDBkey(), Sanitizer::decodeCharReferences( $section ) );
 						}
 						if ( $sectionTitle ) {
 							$link = Linker::makeCommentLink( $sectionTitle, $wgLang->getArrow(), $wikiId, 'noclasses' );
@@ -1583,12 +1573,7 @@ class Linker {
 		$title = wfMessage( 'toc' )->inLanguage( $lang )->escaped();
 
 		return '<div id="toc" class="toc">'
-			. Html::openElement( 'div', [
-				'class' => 'toctitle',
-				'lang' => $lang->getHtmlCode(),
-				'dir' => $lang->getDir(),
-			] )
-			. '<h2>' . $title . "</h2></div>\n"
+			. '<div class="toctitle"><h2>' . $title . "</h2></div>\n"
 			. $toc
 			. "</ul>\n</div>\n";
 	}
@@ -1752,10 +1737,9 @@ class Linker {
 		$dbr = wfGetDB( DB_REPLICA );
 
 		// Up to the value of $wgShowRollbackEditCount revisions are counted
-		$revQuery = Revision::getQueryInfo();
 		$res = $dbr->select(
-			$revQuery['tables'],
-			[ 'rev_user_text' => $revQuery['fields']['rev_user_text'], 'rev_deleted' ],
+			'revision',
+			[ 'rev_user_text', 'rev_deleted' ],
 			// $rev->getPage() returns null sometimes
 			[ 'rev_page' => $rev->getTitle()->getArticleID() ],
 			__METHOD__,
@@ -1763,8 +1747,7 @@ class Linker {
 				'USE INDEX' => [ 'revision' => 'page_timestamp' ],
 				'ORDER BY' => 'rev_timestamp DESC',
 				'LIMIT' => $wgShowRollbackEditCount + 1
-			],
-			$revQuery['joins']
+			]
 		);
 
 		$editCount = 0;
@@ -1958,9 +1941,8 @@ class Linker {
 	 *
 	 * @since 1.16.3 $msgParams added in 1.27
 	 * @param string $name Id of the element, minus prefixes.
-	 * @param string|array|null $options Null, string or array with some of the following options:
-	 *   - 'withaccess' to add an access-key hint
-	 *   - 'nonexisting' to add an accessibility hint that page does not exist
+	 * @param string|null $options Null or the string 'withaccess' to add an access-
+	 *   key hint
 	 * @param array $msgParams Parameters to pass to the message
 	 *
 	 * @return string Contents of the title attribute (which you must HTML-
@@ -1980,12 +1962,7 @@ class Linker {
 			}
 		}
 
-		$options = (array)$options;
-
-		if ( in_array( 'nonexisting', $options ) ) {
-			$tooltip = wfMessage( 'red-link-title', $tooltip ?: '' )->text();
-		}
-		if ( in_array( 'withaccess', $options ) ) {
+		if ( $options == 'withaccess' ) {
 			$accesskey = self::accesskey( $name );
 			if ( $accesskey !== false ) {
 				// Should be build the same as in jquery.accessKeyLabel.js
@@ -2120,28 +2097,20 @@ class Linker {
 		return Xml::tags( 'span', [ 'class' => 'mw-revdelundel-link' ], $htmlParentheses );
 	}
 
+	/* Deprecated methods */
+
 	/**
 	 * Returns the attributes for the tooltip and access key.
 	 *
 	 * @since 1.16.3. $msgParams introduced in 1.27
 	 * @param string $name
 	 * @param array $msgParams Params for constructing the message
-	 * @param string|array|null $options Options to be passed to titleAttrib.
-	 *
-	 * @see Linker::titleAttrib for what options could be passed to $options.
 	 *
 	 * @return array
 	 */
-	public static function tooltipAndAccesskeyAttribs(
-		$name,
-		array $msgParams = [],
-		$options = null
-	) {
-		$options = (array)$options;
-		$options[] = 'withaccess';
-
+	public static function tooltipAndAccesskeyAttribs( $name, array $msgParams = [] ) {
 		$attribs = [
-			'title' => self::titleAttrib( $name, $options, $msgParams ),
+			'title' => self::titleAttrib( $name, 'withaccess', $msgParams ),
 			'accesskey' => self::accesskey( $name )
 		];
 		if ( $attribs['title'] === false ) {

@@ -409,7 +409,7 @@ $.Widget.prototype = {
 			if ( selector ) {
 				delegateElement.delegate( selector, eventName, handlerProxy );
 			} else {
-				element.on( eventName, handlerProxy );
+				element.bind( eventName, handlerProxy );
 			}
 		});
 	},

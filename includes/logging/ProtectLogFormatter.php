@@ -21,6 +21,7 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2.0 or later
  * @since 1.26
  */
+use MediaWiki\MediaWikiServices;
 
 /**
  * This class formats protect log entries.
@@ -77,7 +78,7 @@ class ProtectLogFormatter extends LogFormatter {
 	}
 
 	public function getActionLinks() {
-		$linkRenderer = $this->getLinkRenderer();
+		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 		$subtype = $this->entry->getSubtype();
 		if ( $this->entry->isDeleted( LogPage::DELETED_ACTION ) // Action is hidden
 			|| $subtype === 'move_prot' // the move log entry has the right action link

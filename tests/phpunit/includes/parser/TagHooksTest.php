@@ -5,7 +5,6 @@
  * @group Parser
  *
  * @covers Parser
- * @covers BlockLevelPass
  * @covers StripState
  *
  * @covers Preprocessor_DOM
@@ -29,7 +28,7 @@
  * @covers PPNode_Hash_Array
  * @covers PPNode_Hash_Attr
  */
-class TagHooksTest extends MediaWikiTestCase {
+class TagHookTest extends MediaWikiTestCase {
 	public static function provideValidNames() {
 		return [
 			[ 'foo' ],
@@ -47,6 +46,7 @@ class TagHooksTest extends MediaWikiTestCase {
 	private function getParserOptions() {
 		global $wgContLang;
 		$popt = ParserOptions::newFromUserAndLang( new User, $wgContLang );
+		$popt->setWrapOutputClass( false );
 		return $popt;
 	}
 
@@ -63,7 +63,7 @@ class TagHooksTest extends MediaWikiTestCase {
 			Title::newFromText( 'Test' ),
 			$this->getParserOptions()
 		);
-		$this->assertEquals( "<p>FooOneBaz\n</p>", $parserOutput->getText( [ 'unwrap' => true ] ) );
+		$this->assertEquals( "<p>FooOneBaz\n</p>", $parserOutput->getText() );
 
 		$parser->mPreprocessor = null; # Break the Parser <-> Preprocessor cycle
 	}
@@ -98,7 +98,7 @@ class TagHooksTest extends MediaWikiTestCase {
 			Title::newFromText( 'Test' ),
 			$this->getParserOptions()
 		);
-		$this->assertEquals( "<p>FooOneBaz\n</p>", $parserOutput->getText( [ 'unwrap' => true ] ) );
+		$this->assertEquals( "<p>FooOneBaz\n</p>", $parserOutput->getText() );
 
 		$parser->mPreprocessor = null; # Break the Parser <-> Preprocessor cycle
 	}

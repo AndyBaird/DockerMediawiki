@@ -199,6 +199,15 @@ HTML;
 		echo $html;
 	}
 
+	/**
+	 * Return an array of subpages that this special page will accept.
+	 *
+	 * @return string[] subpages
+	 */
+	public function getSubpagesForPrefixSearch() {
+		return self::$frameworks;
+	}
+
 	protected function getGroupName() {
 		return 'other';
 	}

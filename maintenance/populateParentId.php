@@ -46,7 +46,6 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 	}
 
 	protected function doDBUpdates() {
-		$batchSize = $this->getBatchSize();
 		$db = $this->getDB( DB_MASTER );
 		if ( !$db->tableExists( 'revision' ) ) {
 			$this->error( "revision table does not exist" );
@@ -54,8 +53,8 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 			return false;
 		}
 		$this->output( "Populating rev_parent_id column\n" );
-		$start = $db->selectField( 'revision', 'MIN(rev_id)', '', __FUNCTION__ );
-		$end = $db->selectField( 'revision', 'MAX(rev_id)', '', __FUNCTION__ );
+		$start = $db->selectField( 'revision', 'MIN(rev_id)', false, __FUNCTION__ );
+		$end = $db->selectField( 'revision', 'MAX(rev_id)', false, __FUNCTION__ );
 		if ( is_null( $start ) || is_null( $end ) ) {
 			$this->output( "...revision table seems to be empty, nothing to do.\n" );
 
@@ -63,7 +62,7 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 		}
 		# Do remaining chunk
 		$blockStart = intval( $start );
-		$blockEnd = intval( $start ) + $batchSize - 1;
+		$blockEnd = intval( $start ) + $this->mBatchSize - 1;
 		$count = 0;
 		$changed = 0;
 		while ( $blockStart <= $end ) {
@@ -117,8 +116,8 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 					__METHOD__ );
 				$count++;
 			}
-			$blockStart += $batchSize;
-			$blockEnd += $batchSize;
+			$blockStart += $this->mBatchSize;
+			$blockEnd += $this->mBatchSize;
 			wfWaitForSlaves();
 		}
 		$this->output( "rev_parent_id population complete ... {$count} rows [{$changed} changed]\n" );
@@ -127,5 +126,5 @@ class PopulateParentId extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = PopulateParentId::class;
+$maintClass = "PopulateParentId";
 require_once RUN_MAINTENANCE_IF_MAIN;

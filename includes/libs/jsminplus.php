@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile -- File external to MediaWiki. Ignore coding conventions checks.
+// @codingStandardsIgnoreFile File external to MediaWiki. Ignore coding conventions checks.
 /**
  * JSMinPlus version 1.4
  *

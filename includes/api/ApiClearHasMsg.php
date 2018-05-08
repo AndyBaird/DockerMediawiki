@@ -1,6 +1,8 @@
 <?php
 
 /**
+ * Created on August 26, 2014
+ *
  * Copyright © 2014 Petr Bena (benapetr@gmail.com)
  *
  * This program is free software; you can redistribute it and/or modify

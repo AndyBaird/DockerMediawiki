@@ -251,14 +251,13 @@ class ImagePage extends Article {
 	protected function makeMetadataTable( $metadata ) {
 		$r = "<div class=\"mw-imagepage-section-metadata\">";
 		$r .= $this->getContext()->msg( 'metadata-help' )->plain();
-		// Intial state is collapsed
-		// see filepage.css and mediawiki.action.view.metadata module.
-		$r .= "<table id=\"mw_metadata\" class=\"mw_metadata collapsed\">\n";
+		$r .= "<table id=\"mw_metadata\" class=\"mw_metadata\">\n";
 		foreach ( $metadata as $type => $stuff ) {
 			foreach ( $stuff as $v ) {
 				$class = str_replace( ' ', '_', $v['id'] );
 				if ( $type == 'collapsed' ) {
-					$class .= ' mw-metadata-collapsible';
+					// Handled by mediawiki.action.view.metadata module.
+					$class .= ' collapsable';
 				}
 				$r .= Html::rawElement( 'tr',
 					[ 'class' => $class ],
@@ -286,22 +285,6 @@ class ImagePage extends Article {
 		return parent::getContentObject();
 	}
 
-	private function getLanguageForRendering( WebRequest $request, File $file ) {
-		$handler = $this->displayImg->getHandler();
-		if ( !$handler ) {
-			return null;
-		}
-
-		$requestLanguage = $request->getVal( 'lang' );
-		if ( !is_null( $requestLanguage ) ) {
-			if ( $handler->validateParam( 'lang', $requestLanguage ) ) {
-				return $requestLanguage;
-			}
-		}
-
-		return $handler->getDefaultRenderLanguage( $this->displayImg );
-	}
-
 	protected function openShowImage() {
 		global $wgEnableUploads, $wgSend404Code, $wgSVGMaxSize;
 
@@ -326,9 +309,14 @@ class ImagePage extends Article {
 				$params = [ 'page' => $page ];
 			}
 
-			$renderLang = $this->getLanguageForRendering( $request, $this->displayImg );
+			$renderLang = $request->getVal( 'lang' );
 			if ( !is_null( $renderLang ) ) {
-				$params['lang'] = $renderLang;
+				$handler = $this->displayImg->getHandler();
+				if ( $handler && $handler->validateParam( 'lang', $renderLang ) ) {
+					$params['lang'] = $renderLang;
+				} else {
+					$renderLang = null;
+				}
 			}
 
 			$width_orig = $this->displayImg->getWidth( $page );
@@ -539,13 +527,13 @@ class ImagePage extends Article {
 				// The dirmark, however, must not be immediately adjacent
 				// to the filename, because it can get copied with it.
 				// See T27277.
-				// phpcs:disable Generic.Files.LineLength
+				// @codingStandardsIgnoreStart Ignore long line
 				$out->addWikiText( <<<EOT
 <div class="fullMedia"><span class="dangerousLink">{$medialink}</span> $dirmark<span class="fileInfo">$longDesc</span></div>
 <div class="mediaWarning">$warning</div>
 EOT
 				);
-				// phpcs:enable
+				// @codingStandardsIgnoreEnd
 			} else {
 				$out->addWikiText( <<<EOT
 <div class="fullMedia">{$medialink} {$dirmark}<span class="fileInfo">$longDesc</span>
@@ -556,7 +544,12 @@ EOT
 
 			$renderLangOptions = $this->displayImg->getAvailableLanguages();
 			if ( count( $renderLangOptions ) >= 1 ) {
-				$out->addHTML( $this->doRenderLangOpt( $renderLangOptions, $renderLang ) );
+				$currentLanguage = $renderLang;
+				$defaultLang = $this->displayImg->getDefaultRenderLanguage();
+				if ( is_null( $currentLanguage ) ) {
+					$currentLanguage = $defaultLang;
+				}
+				$out->addHTML( $this->doRenderLangOpt( $renderLangOptions, $currentLanguage, $defaultLang ) );
 			}
 
 			// Add cannot animate thumbnail warning
@@ -590,7 +583,7 @@ EOT
 				# Show deletion log to be consistent with normal articles
 				LogEventsList::showLogExtract(
 					$out,
-					[ 'delete', 'move', 'protect' ],
+					[ 'delete', 'move' ],
 					$this->getTitle()->getPrefixedText(),
 					'',
 					[ 'lim' => 10,
@@ -632,7 +625,7 @@ EOT
 	 * @param string $sizeLinkBigImagePreview HTML for the current size
 	 * @return string HTML output
 	 */
-	protected function getThumbPrevText( $params, $sizeLinkBigImagePreview ) {
+	private function getThumbPrevText( $params, $sizeLinkBigImagePreview ) {
 		if ( $sizeLinkBigImagePreview ) {
 			// Show a different message of preview is different format from original.
 			$previewTypeDiffers = false;
@@ -670,7 +663,7 @@ EOT
 	 * @param int $height
 	 * @return string
 	 */
-	protected function makeSizeLink( $params, $width, $height ) {
+	private function makeSizeLink( $params, $width, $height ) {
 		$params['width'] = $width;
 		$params['height'] = $height;
 		$thumbnail = $this->displayImg->transform( $params );
@@ -970,7 +963,7 @@ EOT
 				$fromSrc = $this->getContext()->msg(
 					'shared-repo-from',
 					$file->getRepo()->getDisplayName()
-				)->escaped();
+				)->text();
 			}
 			$out->addHTML( "<li>{$link} {$fromSrc}</li>\n" );
 		}
@@ -1054,30 +1047,59 @@ EOT
 	 * Output a drop-down box for language options for the file
 	 *
 	 * @param array $langChoices Array of string language codes
-	 * @param string $renderLang Language code for the language we want the file to rendered in.
+	 * @param string $curLang Language code file is being viewed in.
+	 * @param string $defaultLang Language code that image is rendered in by default
 	 * @return string HTML to insert underneath image.
 	 */
-	protected function doRenderLangOpt( array $langChoices, $renderLang ) {
+	protected function doRenderLangOpt( array $langChoices, $curLang, $defaultLang ) {
 		global $wgScript;
+		sort( $langChoices );
+		$curLang = wfBCP47( $curLang );
+		$defaultLang = wfBCP47( $defaultLang );
 		$opts = '';
+		$haveCurrentLang = false;
+		$haveDefaultLang = false;
 
-		$matchedRenderLang = $this->displayImg->getMatchedLanguage( $renderLang );
-
+		// We make a list of all the language choices in the file.
+		// Additionally if the default language to render this file
+		// is not included as being in this file (for example, in svgs
+		// usually the fallback content is the english content) also
+		// include a choice for that. Last of all, if we're viewing
+		// the file in a language not on the list, add it as a choice.
 		foreach ( $langChoices as $lang ) {
-			$opts .= $this->createXmlOptionStringForLanguage(
-				$lang,
-				$matchedRenderLang === $lang
-			);
+			$code = wfBCP47( $lang );
+			$name = Language::fetchLanguageName( $code, $this->getContext()->getLanguage()->getCode() );
+			if ( $name !== '' ) {
+				$display = $this->getContext()->msg( 'img-lang-opt', $code, $name )->text();
+			} else {
+				$display = $code;
+			}
+			$opts .= "\n" . Xml::option( $display, $code, $curLang === $code );
+			if ( $curLang === $code ) {
+				$haveCurrentLang = true;
+			}
+			if ( $defaultLang === $code ) {
+				$haveDefaultLang = true;
+			}
 		}
-
-		// Allow for the default case in an svg <switch> that is displayed if no
-		// systemLanguage attribute matches
-		$opts .= "\n" .
-			Xml::option(
-				$this->getContext()->msg( 'img-lang-default' )->text(),
-				'und',
-				is_null( $matchedRenderLang )
-			);
+		if ( !$haveDefaultLang ) {
+			// Its hard to know if the content is really in the default language, or
+			// if its just unmarked content that could be in any language.
+			$opts = Xml::option(
+					$this->getContext()->msg( 'img-lang-default' )->text(),
+				$defaultLang,
+				$defaultLang === $curLang
+			) . $opts;
+		}
+		if ( !$haveCurrentLang && $defaultLang !== $curLang ) {
+			$name = Language::fetchLanguageName( $curLang, $this->getContext()->getLanguage()->getCode() );
+			if ( $name !== '' ) {
+				$display = $this->getContext()->msg( 'img-lang-opt', $curLang, $name )->text();
+			} else {
+				$display = $curLang;
+			}
+			$opts = Xml::option( $display, $curLang, true ) . $opts;
+		}
 
 		$select = Html::rawElement(
 			'select',
@@ -1095,27 +1117,6 @@ EOT
 			Html::rawElement( 'form', [ 'action' => $wgScript ], $formContents )
 		);
 		return $langSelectLine;
-	}
-
-	/**
-	 * @param $lang string
-	 * @param $selected bool
-	 * @return string
-	 */
-	private function createXmlOptionStringForLanguage( $lang, $selected ) {
-		$code = LanguageCode::bcp47( $lang );
-		$name = Language::fetchLanguageName( $code, $this->getContext()->getLanguage()->getCode() );
-		if ( $name !== '' ) {
-			$display = $this->getContext()->msg( 'img-lang-opt', $code, $name )->text();
-		} else {
-			$display = $code;
-		}
-		return "\n" .
-			Xml::option(
-				$display,
-				$lang,
-				$selected
-			);
 	}
 
 	/**

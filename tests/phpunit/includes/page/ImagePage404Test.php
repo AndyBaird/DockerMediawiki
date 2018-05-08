@@ -28,7 +28,6 @@ class ImagePage404Test extends MediaWikiMediaTestCase {
 	}
 
 	/**
-	 * @covers ImagePage::getThumbSizes
 	 * @dataProvider providerGetThumbSizes
 	 * @param string $filename
 	 * @param int $expectedNumberThumbs How many thumbnails to show

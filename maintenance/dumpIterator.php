@@ -48,7 +48,7 @@ abstract class DumpIterator extends Maintenance {
 
 	public function execute() {
 		if ( !( $this->hasOption( 'file' ) ^ $this->hasOption( 'dump' ) ) ) {
-			$this->fatalError( "You must provide a file or dump" );
+			$this->error( "You must provide a file or dump", true );
 		}
 
 		$this->checkOptions();
@@ -70,16 +70,13 @@ abstract class DumpIterator extends Maintenance {
 		if ( $this->getOption( 'dump' ) == '-' ) {
 			$source = new ImportStreamSource( $this->getStdin() );
 		} else {
-			$this->fatalError( "Sorry, I don't support dump filenames yet. "
-				. "Use - and provide it on stdin on the meantime." );
+			$this->error( "Sorry, I don't support dump filenames yet. "
+				. "Use - and provide it on stdin on the meantime.", true );
 		}
 		$importer = new WikiImporter( $source, $this->getConfig() );
 
 		$importer->setRevisionCallback(
 			[ $this, 'handleRevision' ] );
-		$importer->setNoticeCallback( function ( $msg, $params ) {
-			echo wfMessage( $msg, $params )->text() . "\n";
-		} );
 
 		$this->from = $this->getOption( 'from', null );
 		$this->count = 0;
@@ -105,7 +102,7 @@ abstract class DumpIterator extends Maintenance {
 		if ( $this->getDbType() == Maintenance::DB_NONE ) {
 			global $wgUseDatabaseMessages, $wgLocalisationCacheConf, $wgHooks;
 			$wgUseDatabaseMessages = false;
-			$wgLocalisationCacheConf['storeClass'] = LCStoreNull::class;
+			$wgLocalisationCacheConf['storeClass'] = 'LCStoreNull';
 			$wgHooks['InterwikiLoadPrefix'][] = 'DumpIterator::disableInterwikis';
 		}
 	}
@@ -185,5 +182,5 @@ class SearchDump extends DumpIterator {
 	}
 }
 
-$maintClass = SearchDump::class;
+$maintClass = "SearchDump";
 require_once RUN_MAINTENANCE_IF_MAIN;

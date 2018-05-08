@@ -48,5 +48,5 @@ class DumpMessages extends Maintenance {
 	}
 }
 
-$maintClass = DumpMessages::class;
+$maintClass = "DumpMessages";
 require_once RUN_MAINTENANCE_IF_MAIN;

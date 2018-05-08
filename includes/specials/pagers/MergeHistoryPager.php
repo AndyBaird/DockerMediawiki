@@ -85,12 +85,13 @@ class MergeHistoryPager extends ReverseChronologicalPager {
 		$conds['rev_page'] = $this->articleID;
 		$conds[] = "rev_timestamp < " . $this->mDb->addQuotes( $this->maxTimestamp );
 
-		$revQuery = Revision::getQueryInfo( [ 'page', 'user' ] );
 		return [
-			'tables' => $revQuery['tables'],
-			'fields' => $revQuery['fields'],
+			'tables' => [ 'revision', 'page', 'user' ],
+			'fields' => array_merge( Revision::selectFields(), Revision::selectUserFields() ),
 			'conds' => $conds,
-			'join_conds' => $revQuery['joins']
+			'join_conds' => [
+				'page' => Revision::pageJoinCond(),
+				'user' => Revision::userJoinCond() ]
 		];
 	}
 

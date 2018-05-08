@@ -27,7 +27,7 @@
 
 namespace Wikimedia\Rdbms;
 
-use Wikimedia;
+use MediaWiki;
 use Exception;
 use stdClass;
 
@@ -35,28 +35,19 @@ use stdClass;
  * @ingroup Database
  */
 class DatabaseMssql extends Database {
-	/** @var int */
-	protected $serverPort;
-	/** @var bool */
-	protected $useWindowsAuth = false;
-	/** @var int|null */
-	protected $lastInsertId = null;
-	/** @var int|null */
-	protected $lastAffectedRowCount = null;
-	/** @var int */
-	protected $subqueryId = 0;
-	/** @var bool */
-	protected $scrollableCursor = true;
-	/** @var bool */
-	protected $prepareStatements = true;
-	/** @var stdClass[][]|null */
-	protected $binaryColumnCache = null;
-	/** @var stdClass[][]|null */
-	protected $bitColumnCache = null;
-	/** @var bool */
-	protected $ignoreDupKeyErrors = false;
-	/** @var string[] */
-	protected $ignoreErrors = [];
+	protected $mPort;
+	protected $mUseWindowsAuth = false;
+
+	protected $mInsertId = null;
+	protected $mLastResult = null;
+	protected $mAffectedRows = null;
+	protected $mSubqueryId = 0;
+	protected $mScrollableCursor = true;
+	protected $mPrepareStatements = true;
+	protected $mBinaryColumnCache = null;
+	protected $mBitColumnCache = null;
+	protected $mIgnoreDupKeyErrors = false;
+	protected $mIgnoreErrors = [];
 
 	public function implicitGroupby() {
 		return false;
@@ -71,8 +62,8 @@ class DatabaseMssql extends Database {
 	}
 
 	public function __construct( array $params ) {
-		$this->serverPort = $params['port'];
-		$this->useWindowsAuth = $params['UseWindowsAuth'];
+		$this->mPort = $params['port'];
+		$this->mUseWindowsAuth = $params['UseWindowsAuth'];
 
 		parent::__construct( $params );
 	}
@@ -102,10 +93,10 @@ class DatabaseMssql extends Database {
 		}
 
 		$this->close();
-		$this->server = $server;
-		$this->user = $user;
-		$this->password = $password;
-		$this->dbName = $dbName;
+		$this->mServer = $server;
+		$this->mUser = $user;
+		$this->mPassword = $password;
+		$this->mDBname = $dbName;
 
 		$connectionInfo = [];
 
@@ -115,22 +106,22 @@ class DatabaseMssql extends Database {
 
 		// Decide which auth scenerio to use
 		// if we are using Windows auth, then don't add credentials to $connectionInfo
-		if ( !$this->useWindowsAuth ) {
+		if ( !$this->mUseWindowsAuth ) {
 			$connectionInfo['UID'] = $user;
 			$connectionInfo['PWD'] = $password;
 		}
 
-		Wikimedia\suppressWarnings();
-		$this->conn = sqlsrv_connect( $server, $connectionInfo );
-		Wikimedia\restoreWarnings();
+		MediaWiki\suppressWarnings();
+		$this->mConn = sqlsrv_connect( $server, $connectionInfo );
+		MediaWiki\restoreWarnings();
 
-		if ( $this->conn === false ) {
+		if ( $this->mConn === false ) {
 			throw new DBConnectionError( $this, $this->lastError() );
 		}
 
-		$this->opened = true;
+		$this->mOpened = true;
 
-		return $this->conn;
+		return $this->mConn;
 	}
 
 	/**
@@ -139,7 +130,7 @@ class DatabaseMssql extends Database {
 	 * @return bool
 	 */
 	protected function closeConnection() {
-		return sqlsrv_close( $this->conn );
+		return sqlsrv_close( $this->mConn );
 	}
 
 	/**
@@ -187,25 +178,25 @@ class DatabaseMssql extends Database {
 		// needed if we want to be able to seek around the result set), however CLIENT_BUFFERED
 		// has a bug in the sqlsrv driver where wchar_t types (such as nvarchar) that are empty
 		// strings make php throw a fatal error "Severe error translating Unicode"
-		if ( $this->scrollableCursor ) {
+		if ( $this->mScrollableCursor ) {
 			$scrollArr = [ 'Scrollable' => SQLSRV_CURSOR_STATIC ];
 		} else {
 			$scrollArr = [];
 		}
 
-		if ( $this->prepareStatements ) {
+		if ( $this->mPrepareStatements ) {
 			// we do prepare + execute so we can get its field metadata for later usage if desired
-			$stmt = sqlsrv_prepare( $this->conn, $sql, [], $scrollArr );
+			$stmt = sqlsrv_prepare( $this->mConn, $sql, [], $scrollArr );
 			$success = sqlsrv_execute( $stmt );
 		} else {
-			$stmt = sqlsrv_query( $this->conn, $sql, [], $scrollArr );
+			$stmt = sqlsrv_query( $this->mConn, $sql, [], $scrollArr );
 			$success = (bool)$stmt;
 		}
 
 		// Make a copy to ensure what we add below does not get reflected in future queries
-		$ignoreErrors = $this->ignoreErrors;
+		$ignoreErrors = $this->mIgnoreErrors;
 
-		if ( $this->ignoreDupKeyErrors ) {
+		if ( $this->mIgnoreDupKeyErrors ) {
 			// ignore duplicate key errors
 			// this emulates INSERT IGNORE in MySQL
 			$ignoreErrors[] = '2601'; // duplicate key error caused by unique index
@@ -229,7 +220,7 @@ class DatabaseMssql extends Database {
 			}
 		}
 		// remember number of rows affected
-		$this->lastAffectedRowCount = sqlsrv_rows_affected( $stmt );
+		$this->mAffectedRows = sqlsrv_rows_affected( $stmt );
 
 		return $stmt;
 	}
@@ -309,7 +300,7 @@ class DatabaseMssql extends Database {
 	 * @return int|null
 	 */
 	public function insertId() {
-		return $this->lastInsertId;
+		return $this->mInsertId;
 	}
 
 	/**
@@ -359,33 +350,11 @@ class DatabaseMssql extends Database {
 		}
 	}
 
-	protected function wasKnownStatementRollbackError() {
-		$errors = sqlsrv_errors( SQLSRV_ERR_ALL );
-		if ( !$errors ) {
-			return false;
-		}
-		// The transaction vs statement rollback behavior depends on XACT_ABORT, so make sure
-		// that the "statement has been terminated" error (3621) is specifically present.
-		// https://docs.microsoft.com/en-us/sql/t-sql/statements/set-xact-abort-transact-sql
-		$statementOnly = false;
-		$codeWhitelist = [ '2601', '2627', '547' ];
-		foreach ( $errors as $error ) {
-			if ( $error['code'] == '3621' ) {
-				$statementOnly = true;
-			} elseif ( !in_array( $error['code'], $codeWhitelist ) ) {
-				$statementOnly = false;
-				break;
-			}
-		}
-
-		return $statementOnly;
-	}
-
 	/**
 	 * @return int
 	 */
-	protected function fetchAffectedRowCount() {
-		return $this->lastAffectedRowCount;
+	public function affectedRows() {
+		return $this->mAffectedRows;
 	}
 
 	/**
@@ -412,8 +381,8 @@ class DatabaseMssql extends Database {
 		$sql = $this->selectSQLText( $table, $vars, $conds, $fname, $options, $join_conds );
 		if ( isset( $options['EXPLAIN'] ) ) {
 			try {
-				$this->scrollableCursor = false;
-				$this->prepareStatements = false;
+				$this->mScrollableCursor = false;
+				$this->mPrepareStatements = false;
 				$this->query( "SET SHOWPLAN_ALL ON" );
 				$ret = $this->query( $sql, $fname );
 				$this->query( "SET SHOWPLAN_ALL OFF" );
@@ -433,13 +402,13 @@ class DatabaseMssql extends Database {
 				} else {
 					// someone actually wanted the query plan instead of an est row count
 					// let them know of the error
-					$this->scrollableCursor = true;
-					$this->prepareStatements = true;
+					$this->mScrollableCursor = true;
+					$this->mPrepareStatements = true;
 					throw $dqe;
 				}
 			}
-			$this->scrollableCursor = true;
-			$this->prepareStatements = true;
+			$this->mScrollableCursor = true;
+			$this->mPrepareStatements = true;
 			return $ret;
 		}
 		return $this->query( $sql, $fname );
@@ -471,14 +440,8 @@ class DatabaseMssql extends Database {
 		if ( strpos( $sql, 'MAX(' ) !== false || strpos( $sql, 'MIN(' ) !== false ) {
 			$bitColumns = [];
 			if ( is_array( $table ) ) {
-				$tables = $table;
-				while ( $tables ) {
-					$t = array_pop( $tables );
-					if ( is_array( $t ) ) {
-						$tables = array_merge( $tables, $t );
-					} else {
-						$bitColumns += $this->getBitColumns( $this->tableName( $t ) );
-					}
+				foreach ( $table as $t ) {
+					$bitColumns += $this->getBitColumns( $this->tableName( $t ) );
 				}
 			} else {
 				$bitColumns = $this->getBitColumns( $this->tableName( $table ) );
@@ -499,25 +462,25 @@ class DatabaseMssql extends Database {
 	public function deleteJoin( $delTable, $joinTable, $delVar, $joinVar, $conds,
 		$fname = __METHOD__
 	) {
-		$this->scrollableCursor = false;
+		$this->mScrollableCursor = false;
 		try {
 			parent::deleteJoin( $delTable, $joinTable, $delVar, $joinVar, $conds, $fname );
 		} catch ( Exception $e ) {
-			$this->scrollableCursor = true;
+			$this->mScrollableCursor = true;
 			throw $e;
 		}
-		$this->scrollableCursor = true;
+		$this->mScrollableCursor = true;
 	}
 
 	public function delete( $table, $conds, $fname = __METHOD__ ) {
-		$this->scrollableCursor = false;
+		$this->mScrollableCursor = false;
 		try {
 			parent::delete( $table, $conds, $fname );
 		} catch ( Exception $e ) {
-			$this->scrollableCursor = true;
+			$this->mScrollableCursor = true;
 			throw $e;
 		}
-		$this->scrollableCursor = true;
+		$this->mScrollableCursor = true;
 	}
 
 	/**
@@ -527,26 +490,19 @@ class DatabaseMssql extends Database {
 	 * Returns -1 if count cannot be found
 	 * Takes same arguments as Database::select()
 	 * @param string $table
-	 * @param string $var
+	 * @param string $vars
 	 * @param string $conds
 	 * @param string $fname
 	 * @param array $options
-	 * @param array $join_conds
 	 * @return int
 	 */
-	public function estimateRowCount( $table, $var = '*', $conds = '',
-		$fname = __METHOD__, $options = [], $join_conds = []
+	public function estimateRowCount( $table, $vars = '*', $conds = '',
+		$fname = __METHOD__, $options = []
 	) {
-		$conds = $this->normalizeConditions( $conds, $fname );
-		$column = $this->extractSingleFieldFromList( $var );
-		if ( is_string( $column ) && !in_array( $column, [ '*', '1' ] ) ) {
-			$conds[] = "$column IS NOT NULL";
-		}
-
 		// http://msdn2.microsoft.com/en-us/library/aa259203.aspx
 		$options['EXPLAIN'] = true;
 		$options['FOR COUNT'] = true;
-		$res = $this->select( $table, $var, $conds, $fname, $options, $join_conds );
+		$res = $this->select( $table, $vars, $conds, $fname, $options );
 
 		$rows = -1;
 		if ( $res ) {
@@ -598,7 +554,7 @@ class DatabaseMssql extends Database {
 			}
 		}
 
-		return $result ?: false;
+		return empty( $result ) ? false : $result;
 	}
 
 	/**
@@ -655,7 +611,7 @@ class DatabaseMssql extends Database {
 		// remove IGNORE from options list and set ignore flag to true
 		if ( in_array( 'IGNORE', $options ) ) {
 			$options = array_diff( $options, [ 'IGNORE' ] );
-			$this->ignoreDupKeyErrors = true;
+			$this->mIgnoreDupKeyErrors = true;
 		}
 
 		$ret = null;
@@ -719,32 +675,32 @@ class DatabaseMssql extends Database {
 			$sql .= ')' . $sqlPost;
 
 			// Run the query
-			$this->scrollableCursor = false;
+			$this->mScrollableCursor = false;
 			try {
 				$ret = $this->query( $sql );
 			} catch ( Exception $e ) {
-				$this->scrollableCursor = true;
-				$this->ignoreDupKeyErrors = false;
+				$this->mScrollableCursor = true;
+				$this->mIgnoreDupKeyErrors = false;
 				throw $e;
 			}
-			$this->scrollableCursor = true;
+			$this->mScrollableCursor = true;
 
 			if ( $ret instanceof ResultWrapper && !is_null( $identity ) ) {
 				// Then we want to get the identity column value we were assigned and save it off
 				$row = $ret->fetchObject();
 				if ( is_object( $row ) ) {
-					$this->lastInsertId = $row->$identity;
+					$this->mInsertId = $row->$identity;
 					// It seems that mAffectedRows is -1 sometimes when OUTPUT INSERTED.identity is
 					// used if we got an identity back, we know for sure a row was affected, so
 					// adjust that here
-					if ( $this->lastAffectedRowCount == -1 ) {
-						$this->lastAffectedRowCount = 1;
+					if ( $this->mAffectedRows == -1 ) {
+						$this->mAffectedRows = 1;
 					}
 				}
 			}
 		}
 
-		$this->ignoreDupKeyErrors = false;
+		$this->mIgnoreDupKeyErrors = false;
 
 		return $ret;
 	}
@@ -762,13 +718,13 @@ class DatabaseMssql extends Database {
 	 * @param array $insertOptions
 	 * @param array $selectOptions
 	 * @param array $selectJoinConds
-	 * @return bool
+	 * @return null|ResultWrapper
 	 * @throws Exception
 	 */
 	public function nativeInsertSelect( $destTable, $srcTable, $varMap, $conds, $fname = __METHOD__,
 		$insertOptions = [], $selectOptions = [], $selectJoinConds = []
 	) {
-		$this->scrollableCursor = false;
+		$this->mScrollableCursor = false;
 		try {
 			$ret = parent::nativeInsertSelect(
 				$destTable,
@@ -781,10 +737,10 @@ class DatabaseMssql extends Database {
 				$selectJoinConds
 			);
 		} catch ( Exception $e ) {
-			$this->scrollableCursor = true;
+			$this->mScrollableCursor = true;
 			throw $e;
 		}
-		$this->scrollableCursor = true;
+		$this->mScrollableCursor = true;
 
 		return $ret;
 	}
@@ -825,14 +781,14 @@ class DatabaseMssql extends Database {
 			$sql .= " WHERE " . $this->makeList( $conds, LIST_AND, $binaryColumns );
 		}
 
-		$this->scrollableCursor = false;
+		$this->mScrollableCursor = false;
 		try {
 			$this->query( $sql );
 		} catch ( Exception $e ) {
-			$this->scrollableCursor = true;
+			$this->mScrollableCursor = true;
 			throw $e;
 		}
-		$this->scrollableCursor = true;
+		$this->mScrollableCursor = true;
 		return true;
 	}
 
@@ -925,9 +881,9 @@ class DatabaseMssql extends Database {
 			$postOrder = '';
 			$first = $offset + 1;
 			$last = $offset + $limit;
-			$sub1 = 'sub_' . $this->subqueryId;
-			$sub2 = 'sub_' . ( $this->subqueryId + 1 );
-			$this->subqueryId += 2;
+			$sub1 = 'sub_' . $this->mSubqueryId;
+			$sub2 = 'sub_' . ( $this->mSubqueryId + 1 );
+			$this->mSubqueryId += 2;
 			if ( !$s1 ) {
 				// wat
 				throw new DBUnexpectedError( $this, "Attempting to LIMIT a non-SELECT query\n" );
@@ -991,7 +947,7 @@ class DatabaseMssql extends Database {
 	 * @return string Version information from the database
 	 */
 	public function getServerVersion() {
-		$server_info = sqlsrv_server_info( $this->conn );
+		$server_info = sqlsrv_server_info( $this->mConn );
 		$version = 'Error';
 		if ( isset( $server_info['SQLServerVersion'] ) ) {
 			$version = $server_info['SQLServerVersion'];
@@ -1015,7 +971,7 @@ class DatabaseMssql extends Database {
 		}
 
 		if ( $schema === false ) {
-			$schema = $this->schema;
+			$schema = $this->mSchema;
 		}
 
 		$res = $this->query( "SELECT 1 FROM INFORMATION_SCHEMA.TABLES
@@ -1075,26 +1031,13 @@ class DatabaseMssql extends Database {
 		return false;
 	}
 
-	protected function doSavepoint( $identifier, $fname ) {
-		$this->query( 'SAVE TRANSACTION ' . $this->addIdentifierQuotes( $identifier ), $fname );
-	}
-
-	protected function doReleaseSavepoint( $identifier, $fname ) {
-		// Not supported. Also not really needed, a new doSavepoint() for the
-		// same identifier will overwrite the old.
-	}
-
-	protected function doRollbackToSavepoint( $identifier, $fname ) {
-		$this->query( 'ROLLBACK TRANSACTION ' . $this->addIdentifierQuotes( $identifier ), $fname );
-	}
-
 	/**
 	 * Begin a transaction, committing any previously open transaction
 	 * @param string $fname
 	 */
 	protected function doBegin( $fname = __METHOD__ ) {
-		sqlsrv_begin_transaction( $this->conn );
-		$this->trxLevel = 1;
+		sqlsrv_begin_transaction( $this->mConn );
+		$this->mTrxLevel = 1;
 	}
 
 	/**
@@ -1102,8 +1045,8 @@ class DatabaseMssql extends Database {
 	 * @param string $fname
 	 */
 	protected function doCommit( $fname = __METHOD__ ) {
-		sqlsrv_commit( $this->conn );
-		$this->trxLevel = 0;
+		sqlsrv_commit( $this->mConn );
+		$this->mTrxLevel = 0;
 	}
 
 	/**
@@ -1112,8 +1055,8 @@ class DatabaseMssql extends Database {
 	 * @param string $fname
 	 */
 	protected function doRollback( $fname = __METHOD__ ) {
-		sqlsrv_rollback( $this->conn );
-		$this->trxLevel = 0;
+		sqlsrv_rollback( $this->mConn );
+		$this->mTrxLevel = 0;
 	}
 
 	/**
@@ -1182,7 +1125,7 @@ class DatabaseMssql extends Database {
 	 */
 	public function selectDB( $db ) {
 		try {
-			$this->dbName = $db;
+			$this->mDBname = $db;
 			$this->query( "USE $db" );
 			return true;
 		} catch ( Exception $e ) {
@@ -1255,8 +1198,8 @@ class DatabaseMssql extends Database {
 	public function buildGroupConcatField( $delim, $table, $field, $conds = '',
 		$join_conds = []
 	) {
-		$gcsq = 'gcsq_' . $this->subqueryId;
-		$this->subqueryId++;
+		$gcsq = 'gcsq_' . $this->mSubqueryId;
+		$this->mSubqueryId++;
 
 		$delimLen = strlen( $delim );
 		$fld = "{$field} + {$this->addQuotes( $delim )}";
@@ -1265,19 +1208,6 @@ class DatabaseMssql extends Database {
 			. ") {$gcsq} ({$field}))";
 
 		return $sql;
-	}
-
-	public function buildSubstring( $input, $startPosition, $length = null ) {
-		$this->assertBuildSubstringParams( $startPosition, $length );
-		if ( $length === null ) {
-			/**
-			 * MSSQL doesn't allow an empty length parameter, so when we don't want to limit the
-			 * length returned use the default maximum size of text.
-			 * @see https://docs.microsoft.com/en-us/sql/t-sql/statements/set-textsize-transact-sql
-			 */
-			$length = 2147483647;
-		}
-		return 'SUBSTRING(' . implode( ',', [ $input, $startPosition, $length ] ) . ')';
 	}
 
 	/**
@@ -1290,12 +1220,12 @@ class DatabaseMssql extends Database {
 		$tableRawArr = explode( '.', preg_replace( '#\[([^\]]*)\]#', '$1', $table ) );
 		$tableRaw = array_pop( $tableRawArr );
 
-		if ( $this->binaryColumnCache === null ) {
+		if ( $this->mBinaryColumnCache === null ) {
 			$this->populateColumnCaches();
 		}
 
-		return isset( $this->binaryColumnCache[$tableRaw] )
-			? $this->binaryColumnCache[$tableRaw]
+		return isset( $this->mBinaryColumnCache[$tableRaw] )
+			? $this->mBinaryColumnCache[$tableRaw]
 			: [];
 	}
 
@@ -1307,30 +1237,30 @@ class DatabaseMssql extends Database {
 		$tableRawArr = explode( '.', preg_replace( '#\[([^\]]*)\]#', '$1', $table ) );
 		$tableRaw = array_pop( $tableRawArr );
 
-		if ( $this->bitColumnCache === null ) {
+		if ( $this->mBitColumnCache === null ) {
 			$this->populateColumnCaches();
 		}
 
-		return isset( $this->bitColumnCache[$tableRaw] )
-			? $this->bitColumnCache[$tableRaw]
+		return isset( $this->mBitColumnCache[$tableRaw] )
+			? $this->mBitColumnCache[$tableRaw]
 			: [];
 	}
 
 	private function populateColumnCaches() {
 		$res = $this->select( 'INFORMATION_SCHEMA.COLUMNS', '*',
 			[
-				'TABLE_CATALOG' => $this->dbName,
-				'TABLE_SCHEMA' => $this->schema,
+				'TABLE_CATALOG' => $this->mDBname,
+				'TABLE_SCHEMA' => $this->mSchema,
 				'DATA_TYPE' => [ 'varbinary', 'binary', 'image', 'bit' ]
 			] );
 
-		$this->binaryColumnCache = [];
-		$this->bitColumnCache = [];
+		$this->mBinaryColumnCache = [];
+		$this->mBitColumnCache = [];
 		foreach ( $res as $row ) {
 			if ( $row->DATA_TYPE == 'bit' ) {
-				$this->bitColumnCache[$row->TABLE_NAME][$row->COLUMN_NAME] = $row;
+				$this->mBitColumnCache[$row->TABLE_NAME][$row->COLUMN_NAME] = $row;
 			} else {
-				$this->binaryColumnCache[$row->TABLE_NAME][$row->COLUMN_NAME] = $row;
+				$this->mBinaryColumnCache[$row->TABLE_NAME][$row->COLUMN_NAME] = $row;
 			}
 		}
 	}
@@ -1394,9 +1324,9 @@ class DatabaseMssql extends Database {
 	 * @return bool|null
 	 */
 	public function prepareStatements( $value = null ) {
-		$old = $this->prepareStatements;
+		$old = $this->mPrepareStatements;
 		if ( $value !== null ) {
-			$this->prepareStatements = $value;
+			$this->mPrepareStatements = $value;
 		}
 
 		return $old;
@@ -1409,9 +1339,9 @@ class DatabaseMssql extends Database {
 	 * @return bool|null
 	 */
 	public function scrollableCursor( $value = null ) {
-		$old = $this->scrollableCursor;
+		$old = $this->mScrollableCursor;
 		if ( $value !== null ) {
-			$this->scrollableCursor = $value;
+			$this->mScrollableCursor = $value;
 		}
 
 		return $old;

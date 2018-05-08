@@ -141,5 +141,5 @@ class TestFileOpPerformance extends Maintenance {
 	}
 }
 
-$maintClass = TestFileOpPerformance::class;
+$maintClass = "TestFileOpPerformance";
 require_once RUN_MAINTENANCE_IF_MAIN;

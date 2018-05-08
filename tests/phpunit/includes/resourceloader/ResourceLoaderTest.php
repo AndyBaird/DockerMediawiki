@@ -86,7 +86,7 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 	 */
 	public function testRegisterInvalidName() {
 		$resourceLoader = new EmptyResourceLoader();
-		$this->setExpectedException( MWException::class, "name 'test!invalid' is invalid" );
+		$this->setExpectedException( 'MWException', "name 'test!invalid' is invalid" );
 		$resourceLoader->register( 'test!invalid', new ResourceLoaderTestModule() );
 	}
 
@@ -95,7 +95,7 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 	 */
 	public function testRegisterInvalidType() {
 		$resourceLoader = new EmptyResourceLoader();
-		$this->setExpectedException( MWException::class, 'ResourceLoader module info type error' );
+		$this->setExpectedException( 'MWException', 'ResourceLoader module info type error' );
 		$resourceLoader->register( 'test', new stdClass() );
 	}
 
@@ -261,7 +261,7 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 				'jquery.foo,bar|jquery.ui.baz,quux',
 			],
 			[
-				'Regression fixed in r87497 (7fee86c38e) with dotless names',
+				'Regression fixed in r88706 with dotless names',
 				[ 'foo', 'bar', 'baz' ],
 				'foo,bar,baz',
 			],
@@ -336,9 +336,7 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 	 */
 	public function testAddSourceDupe() {
 		$rl = new ResourceLoader;
-		$this->setExpectedException(
-			MWException::class, 'ResourceLoader duplicate source addition error'
-		);
+		$this->setExpectedException( 'MWException', 'ResourceLoader duplicate source addition error' );
 		$rl->addSource( 'foo', 'https://example.org/w/load.php' );
 		$rl->addSource( 'foo', 'https://example.com/w/load.php' );
 	}
@@ -348,7 +346,7 @@ class ResourceLoaderTest extends ResourceLoaderTestCase {
 	 */
 	public function testAddSourceInvalid() {
 		$rl = new ResourceLoader;
-		$this->setExpectedException( MWException::class, 'with no "loadScript" key' );
+		$this->setExpectedException( 'MWException', 'with no "loadScript" key' );
 		$rl->addSource( 'foo',  [ 'x' => 'https://example.org/w/load.php' ] );
 	}
 
@@ -448,7 +446,7 @@ mw.example();
 		ResourceLoader::clearCache();
 		$this->setMwGlobals( 'wgResourceLoaderDebug', true );
 
-		$rl = TestingAccessWrapper::newFromClass( ResourceLoader::class );
+		$rl = TestingAccessWrapper::newFromClass( 'ResourceLoader' );
 		$this->assertEquals(
 			$case['expected'],
 			$rl->makeLoaderImplementScript(
@@ -467,8 +465,8 @@ mw.example();
 	 * @covers ResourceLoader::makeLoaderImplementScript
 	 */
 	public function testMakeLoaderImplementScriptInvalid() {
-		$this->setExpectedException( MWException::class, 'Invalid scripts error' );
-		$rl = TestingAccessWrapper::newFromClass( ResourceLoader::class );
+		$this->setExpectedException( 'MWException', 'Invalid scripts error' );
+		$rl = TestingAccessWrapper::newFromClass( 'ResourceLoader' );
 		$rl->makeLoaderImplementScript(
 			'test', // name
 			123, // scripts
@@ -755,7 +753,7 @@ mw.example();
 			'foo' => self::getSimpleModuleMock( 'foo();' ),
 			'ferry' => self::getFailFerryMock(),
 			'bar' => self::getSimpleModuleMock( 'bar();' ),
-			'startup' => [ 'class' => ResourceLoaderStartUpModule::class ],
+			'startup' => [ 'class' => 'ResourceLoaderStartUpModule' ],
 		] );
 		$context = $this->getResourceLoaderContext(
 			[
@@ -870,42 +868,5 @@ mw.example();
 			$extraHeaders,
 			'Extra headers'
 		);
-	}
-
-	/**
-	 * @covers ResourceLoader::respond
-	 */
-	public function testRespond() {
-		$rl = $this->getMockBuilder( EmptyResourceLoader::class )
-			->setMethods( [
-				'tryRespondNotModified',
-				'sendResponseHeaders',
-				'measureResponseTime',
-			] )
-			->getMock();
-		$context = $this->getResourceLoaderContext( [ 'modules' => '' ], $rl );
-
-		$rl->expects( $this->once() )->method( 'measureResponseTime' );
-		$this->expectOutputRegex( '/no modules were requested/' );
-
-		$rl->respond( $context );
-	}
-
-	/**
-	 * @covers ResourceLoader::measureResponseTime
-	 */
-	public function testMeasureResponseTime() {
-		$stats = $this->getMockBuilder( NullStatsdDataFactory::class )
-			->setMethods( [ 'timing' ] )->getMock();
-		$this->setService( 'StatsdDataFactory', $stats );
-
-		$stats->expects( $this->once() )->method( 'timing' )
-			->with( 'resourceloader.responseTime', $this->anything() );
-
-		$timing = new Timing();
-		$timing->mark( 'requestShutdown' );
-		$rl = TestingAccessWrapper::newFromObject( new EmptyResourceLoader );
-		$rl->measureResponseTime( $timing );
-		DeferredUpdates::doUpdates();
 	}
 }

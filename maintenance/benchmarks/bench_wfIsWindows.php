@@ -64,5 +64,5 @@ class BenchWfIsWindows extends Benchmarker {
 	}
 }
 
-$maintClass = BenchWfIsWindows::class;
+$maintClass = 'BenchWfIsWindows';
 require_once RUN_MAINTENANCE_IF_MAIN;

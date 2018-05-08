@@ -53,8 +53,8 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 
 		$this->setMwGlobals( [
 			'wgLogTypes' => [ 'phpunit' ],
-			'wgLogActionsHandlers' => [ 'phpunit/test' => LogFormatter::class,
-				'phpunit/param' => LogFormatter::class ],
+			'wgLogActionsHandlers' => [ 'phpunit/test' => 'LogFormatter',
+				'phpunit/param' => 'LogFormatter' ],
 			'wgUser' => User::newFromName( 'Testuser' ),
 		] );
 
@@ -91,11 +91,10 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 
 		$formatter->setShowUserToolLinks( false );
 		$paramsWithoutTools = $formatter->getMessageParametersForTesting();
+		unset( $formatter->parsedParameters );
 
-		$formatter2 = LogFormatter::newFromEntry( $entry );
-		$formatter2->setContext( $this->context );
-		$formatter2->setShowUserToolLinks( true );
-		$paramsWithTools = $formatter2->getMessageParametersForTesting();
+		$formatter->setShowUserToolLinks( true );
+		$paramsWithTools = $formatter->getMessageParametersForTesting();
 
 		$userLink = Linker::userLink(
 			$this->user->getId(),
@@ -308,10 +307,6 @@ class LogFormatterTest extends MediaWikiLangTestCase {
 			[ '4:title-link:key', 'project:foo', [
 				'key_ns' => NS_PROJECT,
 				'key_title' => Title::newFromText( 'project:foo' )->getFullText(),
-			] ],
-			[ '4:title-link:key', '<invalid>', [
-				'key_ns' => NS_SPECIAL,
-				'key_title' => SpecialPage::getTitleFor( 'Badtitle', '<invalid>' )->getFullText(),
 			] ],
 			[ '4:user:key', 'foo', [ 'key' => 'Foo' ] ],
 			[ '4:user-link:key', 'foo', [ 'key' => 'Foo' ] ],

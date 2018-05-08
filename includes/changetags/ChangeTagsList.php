@@ -43,10 +43,10 @@ abstract class ChangeTagsList extends RevisionListBase {
 	) {
 		switch ( $typeName ) {
 			case 'revision':
-				$className = ChangeTagsRevisionList::class;
+				$className = 'ChangeTagsRevisionList';
 				break;
 			case 'logentry':
-				$className = ChangeTagsLogList::class;
+				$className = 'ChangeTagsLogList';
 				break;
 			default:
 				throw new Exception( "Class $typeName requested, but does not exist" );

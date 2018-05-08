@@ -5,9 +5,7 @@
  * @file
  */
 
-/**
- * @covers LanguageKsh
- */
+/** Tests for MediaWiki languages/classes/LanguageKsh.php */
 class LanguageKshTest extends LanguageClassesTestCase {
 	/**
 	 * @dataProvider providePlural

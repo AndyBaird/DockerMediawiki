@@ -114,8 +114,8 @@ class RecompressTracked {
 			$GLOBALS['wgDebugLogPrefix'] = "RCT {$this->replicaId}: ";
 		}
 		$this->pageBlobClass = function_exists( 'xdiff_string_bdiff' ) ?
-			DiffHistoryBlob::class : ConcatenatedGzipHistoryBlob::class;
-		$this->orphanBlobClass = ConcatenatedGzipHistoryBlob::class;
+			'DiffHistoryBlob' : 'ConcatenatedGzipHistoryBlob';
+		$this->orphanBlobClass = 'ConcatenatedGzipHistoryBlob';
 	}
 
 	function debug( $msg ) {
@@ -236,9 +236,9 @@ class RecompressTracked {
 				[ 'file', 'php://stdout', 'w' ],
 				[ 'file', 'php://stderr', 'w' ]
 			];
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$proc = proc_open( "$cmd --replica-id $i", $spec, $pipes );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( !$proc ) {
 				$this->critical( "Error opening replica DB process: $cmd" );
 				exit( 1 );
@@ -643,8 +643,7 @@ class RecompressTracked {
 	 * @return Database
 	 */
 	function getExtDB( $cluster ) {
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$lb = $lbFactory->getExternalLB( $cluster );
+		$lb = wfGetLBFactory()->getExternalLB( $cluster );
 
 		return $lb->getConnection( DB_MASTER );
 	}

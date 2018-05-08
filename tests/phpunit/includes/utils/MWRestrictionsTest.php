@@ -1,7 +1,5 @@
 <?php
-class MWRestrictionsTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class MWRestrictionsTest extends PHPUnit_Framework_TestCase {
 
 	protected static $restrictionsForChecks;
 
@@ -21,7 +19,7 @@ class MWRestrictionsTest extends PHPUnit\Framework\TestCase {
 	 */
 	public function testNewDefault() {
 		$ret = MWRestrictions::newDefault();
-		$this->assertInstanceOf( MWRestrictions::class, $ret );
+		$this->assertInstanceOf( 'MWRestrictions', $ret );
 		$this->assertSame(
 			'{"IPAddresses":["0.0.0.0/0","::/0"]}',
 			$ret->toJson()
@@ -41,7 +39,7 @@ class MWRestrictionsTest extends PHPUnit\Framework\TestCase {
 	public function testArray( $data, $expect ) {
 		if ( $expect === true ) {
 			$ret = MWRestrictions::newFromArray( $data );
-			$this->assertInstanceOf( MWRestrictions::class, $ret );
+			$this->assertInstanceOf( 'MWRestrictions', $ret );
 			$this->assertSame( $data, $ret->toArray() );
 		} else {
 			try {
@@ -89,7 +87,7 @@ class MWRestrictionsTest extends PHPUnit\Framework\TestCase {
 	public function testJson( $json, $expect ) {
 		if ( is_array( $expect ) ) {
 			$ret = MWRestrictions::newFromJson( $json );
-			$this->assertInstanceOf( MWRestrictions::class, $ret );
+			$this->assertInstanceOf( 'MWRestrictions', $ret );
 			$this->assertSame( $expect, $ret->toArray() );
 
 			$this->assertSame( $json, $ret->toJson( false ) );
@@ -180,7 +178,7 @@ class MWRestrictionsTest extends PHPUnit\Framework\TestCase {
 	public function provideCheck() {
 		$ret = [];
 
-		$mockBuilder = $this->getMockBuilder( FauxRequest::class )
+		$mockBuilder = $this->getMockBuilder( 'FauxRequest' )
 			->setMethods( [ 'getIP' ] );
 
 		foreach ( self::provideCheckIP() as $checkIP ) {

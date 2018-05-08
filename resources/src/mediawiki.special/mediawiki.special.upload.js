@@ -6,10 +6,11 @@
  * @singleton
  */
 
+/* eslint-disable no-use-before-define */
 /* global Uint8Array */
 
 ( function ( mw, $ ) {
-	var uploadWarning, uploadTemplatePreview,
+	var uploadWarning, uploadLicense,
 		ajaxUploadDestCheck = mw.config.get( 'wgAjaxUploadDestCheck' ),
 		$license = $( '#wpLicense' );
 
@@ -60,7 +61,7 @@
 
 		timeout: function () {
 			var $spinnerDestCheck, title;
-			if ( !ajaxUploadDestCheck || this.nameToCheck.trim() === '' ) {
+			if ( !ajaxUploadDestCheck || this.nameToCheck === '' ) {
 				return;
 			}
 			$spinnerDestCheck = $.createSpinner().insertAfter( '#wpDestFile' );
@@ -70,11 +71,9 @@
 				formatversion: 2,
 				action: 'query',
 				// If title is empty, user input is invalid, the API call will produce details about why
-				titles: [ title ? title.getPrefixedText() : this.nameToCheck ],
+				titles: title ? title.getPrefixedText() : this.nameToCheck,
 				prop: 'imageinfo',
-				iiprop: 'uploadwarning',
-				errorformat: 'html',
-				errorlang: mw.config.get( 'wgUserLanguage' )
+				iiprop: 'uploadwarning'
 			} ).done( function ( result ) {
 				var
 					resultOut = '',
@@ -82,7 +81,7 @@
 				if ( page.imageinfo ) {
 					resultOut = page.imageinfo[ 0 ].html;
 				} else if ( page.invalidreason ) {
-					resultOut = page.invalidreason.html;
+					resultOut = mw.html.escape( page.invalidreason );
 				}
 				uploadWarning.processResult( resultOut, uploadWarning.nameToCheck );
 			} ).always( function () {
@@ -114,44 +113,43 @@
 		}
 	};
 
-	window.wgUploadTemplatePreviewObj = uploadTemplatePreview = {
+	uploadLicense = {
 
 		responseCache: { '': '' },
 
-		/**
-		 * @param {jQuery} $element The element whose .val() will be previewed
-		 * @param {jQuery} $previewContainer The container to display the preview in
-		 */
-		getPreview: function ( $element, $previewContainer ) {
-			var template = $element.val(),
-				$spinner;
-
-			if ( this.responseCache.hasOwnProperty( template ) ) {
-				this.showPreview( this.responseCache[ template ], $previewContainer );
+		fetchPreview: function ( license ) {
+			var $spinnerLicense;
+			if ( !mw.config.get( 'wgAjaxLicensePreview' ) ) {
+				return;
+			}
+			if ( this.responseCache.hasOwnProperty( license ) ) {
+				this.showPreview( this.responseCache[ license ] );
 				return;
 			}
 
-			$spinner = $.createSpinner().insertAfter( $element );
+			$spinnerLicense = $.createSpinner().insertAfter( '#wpLicense' );
 
-			( new mw.Api() ).parse( '{{' + template + '}}', {
+			( new mw.Api() ).get( {
+				formatversion: 2,
+				action: 'parse',
+				text: '{{' + license + '}}',
 				title: $( '#wpDestFile' ).val() || 'File:Sample.jpg',
 				prop: 'text',
-				pst: true,
-				uselang: mw.config.get( 'wgUserLanguage' )
+				pst: true
 			} ).done( function ( result ) {
-				uploadTemplatePreview.processResult( result, template, $previewContainer );
+				uploadLicense.processResult( result, license );
 			} ).always( function () {
-				$spinner.remove();
+				$spinnerLicense.remove();
 			} );
 		},
 
-		processResult: function ( result, template, $previewContainer ) {
-			this.responseCache[ template ] = result;
-			this.showPreview( this.responseCache[ template ], $previewContainer );
+		processResult: function ( result, license ) {
+			this.responseCache[ license ] = result.parse.text;
+			this.showPreview( this.responseCache[ license ] );
 		},
 
-		showPreview: function ( preview, $previewContainer ) {
-			$previewContainer.html( preview );
+		showPreview: function ( preview ) {
+			$( '#mw-license-preview' ).html( preview );
 		}
 
 	};
@@ -179,7 +177,7 @@
 			// License selector check
 			$license.change( function () {
 				// We might show a preview
-				uploadTemplatePreview.getPreview( $license, $( '#mw-license-preview' ) );
+				uploadLicense.fetchPreview( $license.val() );
 			} );
 
 			// License selector table row
@@ -192,7 +190,7 @@
 		}
 
 		// fillDestFile setup
-		mw.config.get( 'wgUploadSourceIds' ).forEach( function ( sourceId ) {
+		$.each( mw.config.get( 'wgUploadSourceIds' ), function ( index, sourceId ) {
 			$( '#' + sourceId ).change( function () {
 				var path, slash, backslash, fname;
 				if ( !mw.config.get( 'wgUploadAutoFill' ) ) {
@@ -220,14 +218,17 @@
 				if (
 					mw.config.get( 'wgCheckFileExtensions' ) &&
 					mw.config.get( 'wgStrictFileExtensions' ) &&
-					Array.isArray( mw.config.get( 'wgFileExtensions' ) ) &&
+					mw.config.get( 'wgFileExtensions' ) &&
 					$( this ).attr( 'id' ) !== 'wpUploadFileURL'
 				) {
 					if (
 						fname.lastIndexOf( '.' ) === -1 ||
-						mw.config.get( 'wgFileExtensions' ).map( function ( element ) {
-							return element.toLowerCase();
-						} ).indexOf( fname.slice( fname.lastIndexOf( '.' ) + 1 ).toLowerCase() ) === -1
+						$.inArray(
+							fname.slice( fname.lastIndexOf( '.' ) + 1 ).toLowerCase(),
+							$.map( mw.config.get( 'wgFileExtensions' ), function ( element ) {
+								return element.toLowerCase();
+							} )
+						) === -1
 					) {
 						// Not a valid extension
 						// Clear the upload and set mw-upload-permitted to error
@@ -289,7 +290,7 @@
 		function fileIsPreviewable( file ) {
 			var known = [ 'image/png', 'image/gif', 'image/jpeg', 'image/svg+xml' ],
 				tooHuge = 10 * 1024 * 1024;
-			return ( known.indexOf( file.type ) !== -1 ) && file.size > 0 && file.size < tooHuge;
+			return ( $.inArray( file.type, known ) !== -1 ) && file.size > 0 && file.size < tooHuge;
 		}
 
 		/**
@@ -307,73 +308,6 @@
 				sizeMsgs = sizeMsgs.slice( 1 );
 			}
 			return mw.msg( sizeMsgs[ 0 ], Math.round( s ) );
-		}
-
-		/**
-		 * Start loading a file into memory; when complete, pass it as a
-		 * data URL to the callback function. If the callbackBinary is set it will
-		 * first be read as binary and afterwards as data URL. Useful if you want
-		 * to do preprocessing on the binary data first.
-		 *
-		 * @param {File} file
-		 * @param {Function} callback
-		 * @param {Function} callbackBinary
-		 */
-		function fetchPreview( file, callback, callbackBinary ) {
-			var reader = new FileReader();
-			if ( callbackBinary && 'readAsBinaryString' in reader ) {
-				// To fetch JPEG metadata we need a binary string; start there.
-				// TODO
-				reader.onload = function () {
-					callbackBinary( reader.result );
-
-					// Now run back through the regular code path.
-					fetchPreview( file, callback );
-				};
-				reader.readAsBinaryString( file );
-			} else if ( callbackBinary && 'readAsArrayBuffer' in reader ) {
-				// readAsArrayBuffer replaces readAsBinaryString
-				// However, our JPEG metadata library wants a string.
-				// So, this is going to be an ugly conversion.
-				reader.onload = function () {
-					var i,
-						buffer = new Uint8Array( reader.result ),
-						string = '';
-					for ( i = 0; i < buffer.byteLength; i++ ) {
-						string += String.fromCharCode( buffer[ i ] );
-					}
-					callbackBinary( string );
-
-					// Now run back through the regular code path.
-					fetchPreview( file, callback );
-				};
-				reader.readAsArrayBuffer( file );
-			} else if ( 'URL' in window && 'createObjectURL' in window.URL ) {
-				// Supported in Firefox 4.0 and above <https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL>
-				// WebKit has it in a namespace for now but that's ok. ;)
-				//
-				// Lifetime of this URL is until document close, which is fine
-				// for Special:Upload -- if this code gets used on longer-running
-				// pages, add a revokeObjectURL() when it's no longer needed.
-				//
-				// Prefer this over readAsDataURL for Firefox 7 due to bug reading
-				// some SVG files from data URIs <https://bugzilla.mozilla.org/show_bug.cgi?id=694165>
-				callback( window.URL.createObjectURL( file ) );
-			} else {
-				// This ends up decoding the file to base-64 and back again, which
-				// feels horribly inefficient.
-				reader.onload = function () {
-					callback( reader.result );
-				};
-				reader.readAsDataURL( file );
-			}
-		}
-
-		/**
-		 * Clear the file upload preview area.
-		 */
-		function clearPreview() {
-			$( '#mw-upload-thumbnail' ).remove();
 		}
 
 		/**
@@ -413,7 +347,7 @@
 
 				if ( meta && meta.tiff && meta.tiff.Orientation ) {
 					rotation = ( 360 - ( function () {
-						// See BitmapHandler class in PHP
+						// See includes/media/Bitmap.php
 						switch ( meta.tiff.Orientation.value ) {
 							case 8:
 								return 90;
@@ -490,15 +424,81 @@
 				};
 				img.src = dataURL;
 			}, mw.config.get( 'wgFileCanRotate' ) ? function ( data ) {
-				var jpegmeta = mw.loader.require( 'mediawiki.libs.jpegmeta' );
 				try {
-					meta = jpegmeta( data, file.fileName );
+					meta = mw.libs.jpegmeta( data, file.fileName );
 					// eslint-disable-next-line no-underscore-dangle, camelcase
 					meta._binary_data = null;
 				} catch ( e ) {
 					meta = null;
 				}
 			} : null );
+		}
+
+		/**
+		 * Start loading a file into memory; when complete, pass it as a
+		 * data URL to the callback function. If the callbackBinary is set it will
+		 * first be read as binary and afterwards as data URL. Useful if you want
+		 * to do preprocessing on the binary data first.
+		 *
+		 * @param {File} file
+		 * @param {Function} callback
+		 * @param {Function} callbackBinary
+		 */
+		function fetchPreview( file, callback, callbackBinary ) {
+			var reader = new FileReader();
+			if ( callbackBinary && 'readAsBinaryString' in reader ) {
+				// To fetch JPEG metadata we need a binary string; start there.
+				// TODO
+				reader.onload = function () {
+					callbackBinary( reader.result );
+
+					// Now run back through the regular code path.
+					fetchPreview( file, callback );
+				};
+				reader.readAsBinaryString( file );
+			} else if ( callbackBinary && 'readAsArrayBuffer' in reader ) {
+				// readAsArrayBuffer replaces readAsBinaryString
+				// However, our JPEG metadata library wants a string.
+				// So, this is going to be an ugly conversion.
+				reader.onload = function () {
+					var i,
+						buffer = new Uint8Array( reader.result ),
+						string = '';
+					for ( i = 0; i < buffer.byteLength; i++ ) {
+						string += String.fromCharCode( buffer[ i ] );
+					}
+					callbackBinary( string );
+
+					// Now run back through the regular code path.
+					fetchPreview( file, callback );
+				};
+				reader.readAsArrayBuffer( file );
+			} else if ( 'URL' in window && 'createObjectURL' in window.URL ) {
+				// Supported in Firefox 4.0 and above <https://developer.mozilla.org/en/DOM/window.URL.createObjectURL>
+				// WebKit has it in a namespace for now but that's ok. ;)
+				//
+				// Lifetime of this URL is until document close, which is fine
+				// for Special:Upload -- if this code gets used on longer-running
+				// pages, add a revokeObjectURL() when it's no longer needed.
+				//
+				// Prefer this over readAsDataURL for Firefox 7 due to bug reading
+				// some SVG files from data URIs <https://bugzilla.mozilla.org/show_bug.cgi?id=694165>
+				callback( window.URL.createObjectURL( file ) );
+			} else {
+				// This ends up decoding the file to base-64 and back again, which
+				// feels horribly inefficient.
+				reader.onload = function () {
+					callback( reader.result );
+				};
+				reader.readAsDataURL( file );
+			}
+		}
+
+		/**
+		 * Clear the file upload preview area.
+		 */
+		function clearPreview() {
+			$( '#mw-upload-thumbnail' ).remove();
 		}
 
 		/**
@@ -611,44 +611,5 @@
 		$uploadForm.submit( function () {
 			allowCloseWindow.release();
 		} );
-	} );
-
-	// Add tabindex to mw-editTools
-	$( function () {
-		// Function to change tabindex for all links within mw-editTools
-		function setEditTabindex( $val ) {
-			$( '.mw-editTools' ).find( 'a' ).each( function () {
-				$( this ).attr( 'tabindex', $val );
-			} );
-		}
-
-		// Change tabindex to 0 if user pressed spaced or enter while focused
-		$( '.mw-editTools' ).on( 'keypress', function ( e ) {
-			// Don't continue if pressed key was not enter or spacebar
-			if ( e.which !== 13 && e.which !== 32 ) {
-				return;
-			}
-
-			// Change tabindex only when main div has focus
-			if ( $( this ).is( ':focus' ) ) {
-				$( this ).find( 'a' ).first().focus();
-				setEditTabindex( '0' );
-			}
-		} );
-
-		// Reset tabindex for elements when user focused out mw-editTools
-		$( '.mw-editTools' ).on( 'focusout', function ( e ) {
-			// Don't continue if relatedTarget is within mw-editTools
-			if ( e.relatedTarget !== null && $( e.relatedTarget ).closest( '.mw-editTools' ).length > 0 ) {
-				return;
-			}
-
-			// Reset tabindex back to -1
-			setEditTabindex( '-1' );
-		} );
-
-		// Set initial tabindex for mw-editTools to 0 and to -1 for all links
-		$( '.mw-editTools' ).attr( 'tabindex', '0' );
-		setEditTabindex( '-1' );
 	} );
 }( mediaWiki, jQuery ) );

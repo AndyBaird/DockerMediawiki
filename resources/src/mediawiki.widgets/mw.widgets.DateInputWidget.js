@@ -89,7 +89,7 @@
 	 *     calendar uses relative positioning.
 	 */
 	mw.widgets.DateInputWidget = function MWWDateInputWidget( config ) {
-		var placeholderDateFormat, mustBeAfter, mustBeBefore, $overlay;
+		var placeholderDateFormat, mustBeAfter, mustBeBefore;
 
 		// Config initialization
 		config = $.extend( {
@@ -189,11 +189,14 @@
 			.addClass( 'mw-widget-dateInputWidget' )
 			.append( this.$handle, this.textInput.$element, this.calendar.$element );
 
-		$overlay = config.$overlay === true ? OO.ui.getDefaultOverlay() : config.$overlay;
+		// config.overlay is the selector to be used for config.$overlay, specified from PHP
+		if ( config.overlay ) {
+			config.$overlay = $( config.overlay );
+		}
 
-		if ( $overlay ) {
+		if ( config.$overlay ) {
 			this.calendar.setFloatableContainer( this.$element );
-			$overlay.append( this.calendar.$element );
+			config.$overlay.append( this.calendar.$element );
 
 			// The text input and calendar are not in DOM order, so fix up focus transitions.
 			this.textInput.$input.on( 'keydown', function ( e ) {
@@ -462,8 +465,7 @@
 			format = llll.replace( lll.replace( ll, '' ), '' );
 
 			if ( this.longDisplayFormat ) {
-				// Replace MMM to MMMM and ddd to dddd but don't change MMMM and dddd
-				format = format.replace( /MMMM?/, 'MMMM' ).replace( /dddd?/, 'dddd' );
+				format = format.replace( 'MMM', 'MMMM' ).replace( 'ddd', 'dddd' );
 			}
 
 			return format;

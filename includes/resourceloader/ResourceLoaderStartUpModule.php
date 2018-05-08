@@ -1,5 +1,7 @@
 <?php
 /**
+ * Module for ResourceLoader initialization.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,19 +22,6 @@
  * @author Roan Kattouw
  */
 
-/**
- * Module for ResourceLoader initialization.
- *
- * See also <https://www.mediawiki.org/wiki/ResourceLoader/Features#Startup_Module>
- *
- * The startup module, as being called only from ResourceLoaderClientHtml, has
- * the ability to vary based extra query parameters, in addition to those
- * from ResourceLoaderContext:
- *
- * - target: Only register modules in the client allowed within this target.
- *   Default: "desktop".
- *   See also: OutputPage::setTarget(), ResourceLoaderModule::getTargets().
- */
 class ResourceLoaderStartUpModule extends ResourceLoaderModule {
 
 	// Cache for getConfigSettings() as it's called by multiple methods
@@ -77,7 +66,6 @@ class ResourceLoaderStartUpModule extends ResourceLoaderModule {
 		}
 
 		$illegalFileChars = $conf->get( 'IllegalFileChars' );
-		$oldCommentSchema = $conf->get( 'CommentTableSchemaMigrationStage' ) === MIGRATION_OLD;
 
 		// Build list of variables
 		$vars = [
@@ -88,6 +76,7 @@ class ResourceLoaderStartUpModule extends ResourceLoaderModule {
 			'wgUrlProtocols' => wfUrlProtocols(),
 			'wgArticlePath' => $conf->get( 'ArticlePath' ),
 			'wgScriptPath' => $conf->get( 'ScriptPath' ),
+			'wgScriptExtension' => '.php',
 			'wgScript' => wfScript(),
 			'wgSearchType' => $conf->get( 'SearchType' ),
 			'wgVariantArticlePath' => $conf->get( 'VariantArticlePath' ),
@@ -100,8 +89,8 @@ class ResourceLoaderStartUpModule extends ResourceLoaderModule {
 			'wgContentLanguage' => $wgContLang->getCode(),
 			'wgTranslateNumerals' => $conf->get( 'TranslateNumerals' ),
 			'wgVersion' => $conf->get( 'Version' ),
-			'wgEnableAPI' => true, // Deprecated since MW 1.32
-			'wgEnableWriteAPI' => true, // Deprecated since MW 1.32
+			'wgEnableAPI' => $conf->get( 'EnableAPI' ),
+			'wgEnableWriteAPI' => $conf->get( 'EnableWriteAPI' ),
 			'wgMainPageTitle' => $mainPage->getPrefixedText(),
 			'wgFormattedNamespaces' => $wgContLang->getFormattedNamespaces(),
 			'wgNamespaceIds' => $namespaceIds,
@@ -124,8 +113,6 @@ class ResourceLoaderStartUpModule extends ResourceLoaderModule {
 			'wgResourceLoaderStorageEnabled' => $conf->get( 'ResourceLoaderStorageEnabled' ),
 			'wgForeignUploadTargets' => $conf->get( 'ForeignUploadTargets' ),
 			'wgEnableUploads' => $conf->get( 'EnableUploads' ),
-			'wgCommentByteLimit' => $oldCommentSchema ? 255 : null,
-			'wgCommentCodePointLimit' => $oldCommentSchema ? null : CommentStore::COMMENT_CHARACTER_LIMIT,
 		];
 
 		Hooks::run( 'ResourceLoaderGetConfigVars', [ &$vars ] );
@@ -205,9 +192,7 @@ class ResourceLoaderStartUpModule extends ResourceLoaderModule {
 	 */
 	public function getModuleRegistrations( ResourceLoaderContext $context ) {
 		$resourceLoader = $context->getResourceLoader();
-		// Future developers: Use WebRequest::getRawVal() instead getVal().
-		// The getVal() method performs slow Language+UTF logic. (f303bb9360)
-		$target = $context->getRequest()->getRawVal( 'target', 'desktop' );
+		$target = $context->getRequest()->getVal( 'target', 'desktop' );
 		// Bypass target filter if this request is Special:JavaScriptTest.
 		// To prevent misuse in production, this is only allowed if testing is enabled server-side.
 		$byPassTargetFilter = $this->getConfig()->get( 'EnableJavaScriptTest' ) && $target === 'test';

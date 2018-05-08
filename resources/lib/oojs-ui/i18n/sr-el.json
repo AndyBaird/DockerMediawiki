@@ -1,8 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
-			"Milicevic01",
-			"Prevodim"
+			"Milicevic01"
 		]
 	},
 	"ooui-outline-control-move-down": "Premesti stavku na dole",
@@ -11,7 +10,6 @@
 	"ooui-toolbar-more": "Više",
 	"ooui-toolgroup-expand": "Više",
 	"ooui-toolgroup-collapse": "Manje",
-	"ooui-item-remove": "Ukloni",
 	"ooui-dialog-message-accept": "U redu",
 	"ooui-dialog-message-reject": "Otkaži",
 	"ooui-dialog-process-error": "Nešto je pošlo naopako",
@@ -19,7 +17,5 @@
 	"ooui-dialog-process-retry": "Pokušaj ponovo",
 	"ooui-dialog-process-continue": "Nastavi",
 	"ooui-selectfile-button-select": "Izaberi datoteku",
-	"ooui-selectfile-not-supported": "Odabir datoteke nije podržan",
-	"ooui-selectfile-placeholder": "Nije izabrana nijedna datoteka",
-	"ooui-selectfile-dragdrop-placeholder": "Prevuci datoteku ovde"
+	"ooui-selectfile-placeholder": "Nije izabrana nijedna datoteka"
 }

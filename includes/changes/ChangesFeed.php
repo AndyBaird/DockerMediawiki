@@ -82,11 +82,10 @@ class ChangesFeed {
 			return null;
 		}
 
-		$cache = ObjectCache::getMainWANInstance();
 		$optionsHash = md5( serialize( $opts->getAllValues() ) ) . $wgRenderHashAppend;
-		$timekey = $cache->makeKey(
+		$timekey = wfMemcKey(
 			$this->type, $this->format, $wgLang->getCode(), $optionsHash, 'timestamp' );
-		$key = $cache->makeKey( $this->type, $this->format, $wgLang->getCode(), $optionsHash );
+		$key = wfMemcKey( $this->type, $this->format, $wgLang->getCode(), $optionsHash );
 
 		FeedUtils::checkPurge( $timekey, $key );
 

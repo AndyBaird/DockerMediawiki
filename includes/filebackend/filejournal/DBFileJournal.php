@@ -124,9 +124,9 @@ class DBFileJournal extends FileJournal {
 
 	/**
 	 * @see FileJournal::doGetChangeEntries()
-	 * @param int|null $start
+	 * @param int $start
 	 * @param int $limit
-	 * @return array[]
+	 * @return array
 	 */
 	protected function doGetChangeEntries( $start, $limit ) {
 		$dbw = $this->getMasterDB();

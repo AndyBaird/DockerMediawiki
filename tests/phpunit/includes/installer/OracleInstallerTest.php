@@ -6,6 +6,7 @@
  * @group Database
  * @group Installer
  */
+
 class OracleInstallerTest extends MediaWikiTestCase {
 
 	/**

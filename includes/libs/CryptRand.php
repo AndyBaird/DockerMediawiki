@@ -94,9 +94,9 @@ class CryptRand {
 		$files[] = dirname( __DIR__ );
 
 		foreach ( $files as $file ) {
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$stat = stat( $file );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( $stat ) {
 				// stat() duplicates data into numeric and string keys so kill off all the numeric ones
 				foreach ( $stat as $k => $v ) {
@@ -259,40 +259,43 @@ class CryptRand {
 			}
 		}
 
-		if ( strlen( $buffer ) < $bytes && function_exists( 'mcrypt_create_iv' ) ) {
+		if ( strlen( $buffer ) < $bytes ) {
 			// If available make use of mcrypt_create_iv URANDOM source to generate randomness
 			// On unix-like systems this reads from /dev/urandom but does it without any buffering
 			// and bypasses openbasedir restrictions, so it's preferable to reading directly
 			// On Windows starting in PHP 5.3.0 Windows' native CryptGenRandom is used to generate
 			// entropy so this is also preferable to just trying to read urandom because it may work
 			// on Windows systems as well.
-			$rem = $bytes - strlen( $buffer );
-			$iv = mcrypt_create_iv( $rem, MCRYPT_DEV_URANDOM );
-			if ( $iv === false ) {
-				$this->logger->debug( "mcrypt_create_iv returned false." );
-			} else {
-				$buffer .= $iv;
-				$this->logger->debug( "mcrypt_create_iv generated " . strlen( $iv ) .
-					" bytes of randomness." );
+			if ( function_exists( 'mcrypt_create_iv' ) ) {
+				$rem = $bytes - strlen( $buffer );
+				$iv = mcrypt_create_iv( $rem, MCRYPT_DEV_URANDOM );
+				if ( $iv === false ) {
+					$this->logger->debug( "mcrypt_create_iv returned false." );
+				} else {
+					$buffer .= $iv;
+					$this->logger->debug( "mcrypt_create_iv generated " . strlen( $iv ) .
+						" bytes of randomness." );
+				}
 			}
 		}
 
-		if ( strlen( $buffer ) < $bytes && function_exists( 'openssl_random_pseudo_bytes' ) ) {
-			$rem = $bytes - strlen( $buffer );
-			$openssl_strong = false;
-			$openssl_bytes = openssl_random_pseudo_bytes( $rem, $openssl_strong );
-			if ( $openssl_bytes === false ) {
-				$this->logger->debug( "openssl_random_pseudo_bytes returned false." );
-			} else {
-				$buffer .= $openssl_bytes;
-				$this->logger->debug( "openssl_random_pseudo_bytes generated " .
-					strlen( $openssl_bytes ) . " bytes of " .
-					( $openssl_strong ? "strong" : "weak" ) . " randomness." );
-			}
-			if ( strlen( $buffer ) >= $bytes ) {
-				// openssl tells us if the random source was strong, if some of our data was generated
-				// using it use it's say on whether the randomness is strong
-				$this->strong = !!$openssl_strong;
+		if ( strlen( $buffer ) < $bytes ) {
+			if ( function_exists( 'openssl_random_pseudo_bytes' ) ) {
+				$rem = $bytes - strlen( $buffer );
+				$openssl_bytes = openssl_random_pseudo_bytes( $rem, $openssl_strong );
+				if ( $openssl_bytes === false ) {
+					$this->logger->debug( "openssl_random_pseudo_bytes returned false." );
+				} else {
+					$buffer .= $openssl_bytes;
+					$this->logger->debug( "openssl_random_pseudo_bytes generated " .
+						strlen( $openssl_bytes ) . " bytes of " .
+						( $openssl_strong ? "strong" : "weak" ) . " randomness." );
+				}
+				if ( strlen( $buffer ) >= $bytes ) {
+					// openssl tells us if the random source was strong, if some of our data was generated
+					// using it use it's say on whether the randomness is strong
+					$this->strong = !!$openssl_strong;
+				}
 			}
 		}
 
@@ -307,9 +310,9 @@ class CryptRand {
 			}
 			// /dev/urandom is generally considered the best possible commonly
 			// available random source, and is available on most *nix systems.
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$urandom = fopen( "/dev/urandom", "rb" );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 
 			// Attempt to read all our random data from urandom
 			// php's fread always does buffered reads based on the stream's chunk_size

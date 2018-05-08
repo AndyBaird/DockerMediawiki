@@ -153,9 +153,10 @@ class SearchFormWidget {
 			);
 		}
 
-		return "<div class='search-types'>" .
-			"<ul>" . implode( '', $items ) . "</ul>" .
-		"</div>";
+		return
+				"<div class='search-types'>" .
+					"<ul>" . implode( '', $items ) . "</ul>" .
+				"</div>";
 	}
 
 	/**
@@ -297,18 +298,19 @@ class SearchFormWidget {
 			);
 		}
 
-		return "<fieldset id='mw-searchoptions'>" .
-			"<legend>" . $this->specialSearch->msg( 'powersearch-legend' )->escaped() . '</legend>' .
-			"<h4>" . $this->specialSearch->msg( 'powersearch-ns' )->parse() . '</h4>' .
-			// populated by js if available
-			"<div id='mw-search-togglebox'></div>" .
-			$divider .
-			implode(
-				$divider,
-				$showSections
-			) .
-			$hidden .
-			$remember .
-		"</fieldset>";
+		return
+			"<fieldset id='mw-searchoptions'>" .
+				"<legend>" . $this->specialSearch->msg( 'powersearch-legend' )->escaped() . '</legend>' .
+				"<h4>" . $this->specialSearch->msg( 'powersearch-ns' )->parse() . '</h4>' .
+				// populated by js if available
+				"<div id='mw-search-togglebox'></div>" .
+				$divider .
+				implode(
+					$divider,
+					$showSections
+				) .
+				$hidden .
+				$remember .
+			"</fieldset>";
 	}
 }

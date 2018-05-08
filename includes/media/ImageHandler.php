@@ -201,9 +201,9 @@ abstract class ImageHandler extends MediaHandler {
 	}
 
 	function getImageSize( $image, $path ) {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$gis = getimagesize( $path );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		return $gis;
 	}

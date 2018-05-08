@@ -374,7 +374,8 @@
 					.then( function ( langClass ) {
 						var parser;
 						mw.config.set( 'wgUserLanguage', test.lang );
-						parser = new mw.jqueryMsg.Parser( { language: langClass } );
+						// eslint-disable-next-line new-cap
+						parser = new mw.jqueryMsg.parser( { language: langClass } );
 						assert.equal(
 							parser.parse( test.key, test.args ).html(),
 							test.result,
@@ -503,11 +504,11 @@
 			]
 		];
 
-		testCases.forEach( function ( testCase ) {
+		$.each( testCases, function () {
 			var
-				key = testCase[ 0 ],
-				input = testCase[ 1 ],
-				output = testCase[ 2 ];
+				key = this[ 0 ],
+				input = this[ 1 ],
+				output = this[ 2 ];
 			mw.messages.set( key, input );
 			assert.htmlEqual(
 				formatParse( key ),
@@ -591,11 +592,11 @@
 			]
 		];
 
-		testCases.forEach( function ( testCase ) {
+		$.each( testCases, function () {
 			var
-				key = testCase[ 0 ],
-				input = testCase[ 1 ],
-				output = testCase[ 2 ],
+				key = this[ 0 ],
+				input = this[ 1 ],
+				output = this[ 2 ],
 				paramHref = key.slice( 0, 8 ) === 'wikilink' ? 'Example' : 'http://example.com',
 				paramText = 'Text';
 			mw.messages.set( key, input );
@@ -897,14 +898,15 @@
 		var queue;
 		mw.messages.set( 'formatnum-msg', '{{formatnum:$1}}' );
 		mw.messages.set( 'formatnum-msg-int', '{{formatnum:$1|R}}' );
-		queue = formatnumTests.map( function ( test ) {
+		queue = $.map( formatnumTests, function ( test ) {
 			var done = assert.async();
 			return function ( next, abort ) {
 				getMwLanguage( test.lang )
 					.then( function ( langClass ) {
 						var parser;
 						mw.config.set( 'wgUserLanguage', test.lang );
-						parser = new mw.jqueryMsg.Parser( { language: langClass } );
+						// eslint-disable-next-line new-cap
+						parser = new mw.jqueryMsg.parser( { language: langClass } );
 						assert.equal(
 							parser.parse( test.integer ? 'formatnum-msg-int' : 'formatnum-msg',
 								[ test.number ] ).html(),

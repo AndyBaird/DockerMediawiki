@@ -18,7 +18,7 @@
  * @file
  */
 
-use Wikimedia\WrappedStringList;
+use WrappedString\WrappedStringList;
 
 /**
  * Bootstrap a ResourceLoader client on an HTML page.
@@ -33,8 +33,8 @@ class ResourceLoaderClientHtml {
 	/** @var ResourceLoader */
 	private $resourceLoader;
 
-	/** @var array */
-	private $options;
+	/** @var string|null */
+	private $target;
 
 	/** @var array */
 	private $config = [];
@@ -56,13 +56,12 @@ class ResourceLoaderClientHtml {
 
 	/**
 	 * @param ResourceLoaderContext $context
-	 * @param array $options [optional] Array of options
-	 *  - 'target': Custom parameter passed to StartupModule.
+	 * @param string|null $target [optional] Custom 'target' parameter for the startup module
 	 */
-	public function __construct( ResourceLoaderContext $context, array $options = [] ) {
+	public function __construct( ResourceLoaderContext $context, $target = null ) {
 		$this->context = $context;
 		$this->resourceLoader = $context->getResourceLoader();
-		$this->options = $options;
+		$this->target = $target;
 	}
 
 	/**
@@ -132,7 +131,9 @@ class ResourceLoaderClientHtml {
 				// moduleName => state
 			],
 			'general' => [],
-			'styles' => [],
+			'styles' => [
+				// moduleName
+			],
 			'scripts' => [],
 			// Embedding for private modules
 			'embed' => [
@@ -148,22 +149,8 @@ class ResourceLoaderClientHtml {
 				continue;
 			}
 
-			$group = $module->getGroup();
-			$context = $this->getContext( $group, ResourceLoaderModule::TYPE_COMBINED );
-			if ( $module->isKnownEmpty( $context ) ) {
-				// Avoid needless request or embed for empty module
-				$data['states'][$name] = 'ready';
-				continue;
-			}
-
-			if ( $group === 'user' || $module->shouldEmbedModule( $this->context ) ) {
-				// Call makeLoad() to decide how to load these, instead of
-				// loading via mw.loader.load().
-				// - For group=user: We need to provide a pre-generated load.php
-				//   url to the client that has the 'user' and 'version' parameters
-				//   filled in. Without this, the client would wrongly use the static
-				//   version hash, per T64602.
-				// - For shouldEmbed=true:  Embed via mw.loader.implement, per T36907.
+			if ( $module->shouldEmbedModule( $this->context ) ) {
+				// Embed via mw.loader.implement per T36907.
 				$data['embed']['general'][] = $name;
 				// Avoid duplicate request from mw.loader
 				$data['states'][$name] = 'loading';
@@ -188,17 +175,20 @@ class ResourceLoaderClientHtml {
 			}
 
 			// Stylesheet doesn't trigger mw.loader callback.
-			// Set "ready" state to allow script modules to depend on this module  (T87871).
-			// And to avoid duplicate requests at run-time from mw.loader.
+			// Set "ready" state to allow dependencies and avoid duplicate requests. (T87871)
 			$data['states'][$name] = 'ready';
 
 			$group = $module->getGroup();
 			$context = $this->getContext( $group, ResourceLoaderModule::TYPE_STYLES );
-			// Avoid needless request for empty module
-			if ( !$module->isKnownEmpty( $context ) ) {
+			if ( $module->isKnownEmpty( $context ) ) {
+				// Avoid needless request for empty module
+				$data['states'][$name] = 'ready';
+			} else {
 				if ( $module->shouldEmbedModule( $this->context ) ) {
 					// Embed via style element
 					$data['embed']['styles'][] = $name;
+					// Avoid duplicate request from mw.loader
+					$data['states'][$name] = 'ready';
 				} else {
 					// Load from load.php?only=styles via <link rel=stylesheet>
 					$data['styles'][] = $name;
@@ -317,10 +307,8 @@ class ResourceLoaderClientHtml {
 		}
 
 		// Async scripts. Once the startup is loaded, inline RLQ scripts will run.
-		// Pass-through a custom 'target' from OutputPage (T143066).
-		$startupQuery = isset( $this->options['target'] )
-			? [ 'target' => (string)$this->options['target'] ]
-			: [];
+		// Pass-through a custom target from OutputPage (T143066).
+		$startupQuery = $this->target ? [ 'target' => $this->target ] : [];
 		$chunks[] = $this->getLoad(
 			'startup',
 			ResourceLoaderModule::TYPE_SCRIPTS,
@@ -358,9 +346,7 @@ class ResourceLoaderClientHtml {
 		}
 		$context = new ResourceLoaderContext( $mainContext->getResourceLoader(), $req );
 		// Allow caller to setVersion() and setModules()
-		$ret = new DerivativeResourceLoaderContext( $context );
-		$ret->setContentOverrideCallback( $mainContext->getContentOverrideCallback() );
-		return $ret;
+		return new DerivativeResourceLoaderContext( $context );
 	}
 
 	/**

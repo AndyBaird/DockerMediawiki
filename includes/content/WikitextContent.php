@@ -87,7 +87,7 @@ class WikitextContent extends TextContent {
 		if ( $sectionId === 'new' ) {
 			# Inserting a new section
 			$subject = $sectionTitle ? wfMessage( 'newsectionheaderdefaultlevel' )
-					->plaintextParams( $sectionTitle )->inContentLanguage()->text() . "\n\n" : '';
+					->rawParams( $sectionTitle )->inContentLanguage()->text() . "\n\n" : '';
 			if ( Hooks::run( 'PlaceNewSection', [ $this, $oldtext, $subject, &$text ] ) ) {
 				$text = strlen( trim( $oldtext ) ) > 0
 					? "{$oldtext}\n\n{$subject}{$text}"
@@ -270,22 +270,28 @@ class WikitextContent extends TextContent {
 			return false;
 		}
 
-		if ( $wgArticleCountMethod === 'link' ) {
-			if ( $hasLinks === null ) { # not known, find out
-				if ( !$title ) {
-					$context = RequestContext::getMain();
-					$title = $context->getTitle();
+		switch ( $wgArticleCountMethod ) {
+			case 'any':
+				return true;
+			case 'comma':
+				$text = $this->getNativeData();
+				return strpos( $text, ',' ) !== false;
+			case 'link':
+				if ( $hasLinks === null ) { # not known, find out
+					if ( !$title ) {
+						$context = RequestContext::getMain();
+						$title = $context->getTitle();
+					}
+
+					$po = $this->getParserOutput( $title, null, null, false );
+					$links = $po->getLinks();
+					$hasLinks = !empty( $links );
 				}
 
-				$po = $this->getParserOutput( $title, null, null, false );
-				$links = $po->getLinks();
-				$hasLinks = !empty( $links );
-			}
-
-			return $hasLinks;
+				return $hasLinks;
 		}
 
-		return true;
+		return false;
 	}
 
 	/**

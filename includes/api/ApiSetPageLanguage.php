@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on January 1, 2017
+ *
  * Copyright © 2017 Justin Du "<justin.d128@gmail.com>"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -69,7 +73,7 @@ class ApiSetPageLanguage extends ApiBase {
 
 		// If change tagging was requested, check that the user is allowed to tag,
 		// and the tags are valid
-		if ( $params['tags'] ) {
+		if ( count( $params['tags'] ) ) {
 			$tagStatus = ChangeTags::canAddTagsAccompanyingChange( $params['tags'], $user );
 			if ( !$tagStatus->isOK() ) {
 				$this->dieStatus( $tagStatus );

@@ -42,17 +42,15 @@
 		this.limit = config.limit;
 
 		if ( 'name' in config ) {
-			// Use this instead of <input type="hidden">, because hidden inputs do not have separate
-			// 'value' and 'defaultValue' properties. The script on Special:Preferences
-			// (mw.special.preferences.confirmClose) checks this property to see if a field was changed.
-			this.hiddenInput = $( '<textarea>' )
-				.addClass( 'oo-ui-element-hidden' )
+			// If used inside HTML form, then create hidden input, which will store
+			// the results.
+			this.hiddenInput = $( '<input>' )
+				.attr( 'type', 'hidden' )
 				.attr( 'name', config.name )
 				.appendTo( this.$element );
+
 			// Update with preset values
 			this.updateHiddenInput();
-			// Set the default value (it might be different from just being empty)
-			this.hiddenInput.prop( 'defaultValue', this.getSelectedUsernames().join( '\n' ) );
 		}
 
 		this.menu = this.getMenu();
@@ -154,8 +152,8 @@
 	mw.widgets.UsersMultiselectWidget.prototype.updateHiddenInput = function () {
 		if ( 'hiddenInput' in this ) {
 			this.hiddenInput.val( this.getSelectedUsernames().join( '\n' ) );
-			// Trigger a 'change' event as if a user edited the text
-			// (it is not triggered when changing the value from JS code).
+			// Hidden inputs do not trigger onChange.
+			// @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/hidden
 			this.hiddenInput.trigger( 'change' );
 		}
 	};

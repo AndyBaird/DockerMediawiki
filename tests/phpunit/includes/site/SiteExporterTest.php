@@ -29,13 +29,10 @@
  *
  * @author Daniel Kinzler
  */
-class SiteExporterTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-	use PHPUnit4And6Compat;
+class SiteExporterTest extends PHPUnit_Framework_TestCase {
 
 	public function testConstructor_InvalidArgument() {
-		$this->setExpectedException( InvalidArgumentException::class );
+		$this->setExpectedException( 'InvalidArgumentException' );
 
 		new SiteExporter( 'Foo' );
 	}
@@ -78,7 +75,7 @@ class SiteExporterTest extends PHPUnit\Framework\TestCase {
 	}
 
 	private function newSiteStore( SiteList $sites ) {
-		$store = $this->getMockBuilder( SiteStore::class )->getMock();
+		$store = $this->getMockBuilder( 'SiteStore' )->getMock();
 
 		$store->expects( $this->once() )
 			->method( 'saveSites' )

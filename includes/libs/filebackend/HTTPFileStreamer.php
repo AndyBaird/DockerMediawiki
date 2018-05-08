@@ -64,6 +64,7 @@ class HTTPFileStreamer {
 	 * @param bool $sendErrors Send error messages if errors occur (like 404)
 	 * @param array $optHeaders HTTP request header map (e.g. "range") (use lowercase keys)
 	 * @param int $flags Bitfield of STREAM_* constants
+	 * @throws MWException
 	 * @return bool Success
 	 */
 	public function stream(
@@ -83,9 +84,9 @@ class HTTPFileStreamer {
 				is_int( $header ) ? HttpStatus::header( $header ) : header( $header );
 			};
 
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$info = stat( $this->path );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( !is_array( $info ) ) {
 			if ( $sendErrors ) {

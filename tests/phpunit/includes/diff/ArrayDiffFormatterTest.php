@@ -20,7 +20,7 @@ class ArrayDiffFormatterTest extends MediaWikiTestCase {
 	}
 
 	private function getMockDiff( $edits ) {
-		$diff = $this->getMockBuilder( Diff::class )
+		$diff = $this->getMockBuilder( 'Diff' )
 			->disableOriginalConstructor()
 			->getMock();
 		$diff->expects( $this->any() )
@@ -30,7 +30,7 @@ class ArrayDiffFormatterTest extends MediaWikiTestCase {
 	}
 
 	private function getMockDiffOp( $type = null, $orig = [], $closing = [] ) {
-		$diffOp = $this->getMockBuilder( DiffOp::class )
+		$diffOp = $this->getMockBuilder( 'DiffOp' )
 			->disableOriginalConstructor()
 			->getMock();
 		$diffOp->expects( $this->any() )

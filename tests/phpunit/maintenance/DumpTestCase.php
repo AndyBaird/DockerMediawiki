@@ -1,15 +1,5 @@
 <?php
 
-namespace MediaWiki\Tests\Maintenance;
-
-use ContentHandler;
-use ExecutableFinder;
-use MediaWikiLangTestCase;
-use Page;
-use User;
-use XMLReader;
-use MWException;
-
 /**
  * Base TestCase for dumps
  */
@@ -45,7 +35,7 @@ abstract class DumpTestCase extends MediaWikiLangTestCase {
 	 */
 	protected function checkHasGzip() {
 		if ( self::$hasGzip === null ) {
-			self::$hasGzip = ( ExecutableFinder::findInDefaultPaths( 'gzip' ) !== false );
+			self::$hasGzip = ( Installer::locateExecutableInDefaultPaths( 'gzip' ) !== false );
 		}
 
 		if ( !self::$hasGzip ) {

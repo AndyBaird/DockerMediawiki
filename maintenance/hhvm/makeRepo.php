@@ -97,7 +97,7 @@ class HHVMMakeRepo extends Maintenance {
 
 		$tmpDir = wfTempDir() . '/mw-make-repo' . mt_rand( 0, 1 << 31 );
 		if ( !mkdir( $tmpDir ) ) {
-			$this->fatalError( 'Unable to create temporary directory' );
+			$this->error( 'Unable to create temporary directory', 1 );
 		}
 		file_put_contents( "$tmpDir/file-list", implode( "\n", $files ) );
 
@@ -119,11 +119,11 @@ class HHVMMakeRepo extends Maintenance {
 		passthru( $cmd, $ret );
 		if ( $ret ) {
 			$this->cleanupTemp( $tmpDir );
-			$this->fatalError( "Error: HHVM returned error code $ret" );
+			$this->error( "Error: HHVM returned error code $ret", 1 );
 		}
 		if ( !rename( "$tmpDir/hhvm.hhbc", $this->getOption( 'output' ) ) ) {
 			$this->cleanupTemp( $tmpDir );
-			$this->fatalError( "Error: unable to rename output file" );
+			$this->error( "Error: unable to rename output file", 1 );
 		}
 		$this->cleanupTemp( $tmpDir );
 		return 0;
@@ -157,5 +157,5 @@ class HHVMMakeRepo extends Maintenance {
 	}
 }
 
-$maintClass = HHVMMakeRepo::class;
+$maintClass = 'HHVMMakeRepo';
 require RUN_MAINTENANCE_IF_MAIN;

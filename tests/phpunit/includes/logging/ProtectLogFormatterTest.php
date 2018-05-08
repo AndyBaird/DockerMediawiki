@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @covers ProtectLogFormatter
- */
 class ProtectLogFormatterTest extends LogFormatterTestCase {
 
 	/**

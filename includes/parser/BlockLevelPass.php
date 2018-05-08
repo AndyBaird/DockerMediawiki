@@ -26,7 +26,7 @@ class BlockLevelPass {
 	private $DTopen = false;
 	private $inPre = false;
 	private $lastSection = '';
-	private $lineStart;
+	private $linestart;
 	private $text;
 
 	# State constants for the definition list colon extraction
@@ -236,8 +236,7 @@ class BlockLevelPass {
 					$term = $t2 = '';
 					if ( $this->findColonNoLinks( $t, $term, $t2 ) !== false ) {
 						$t = $t2;
-						// Trim whitespace in list items
-						$output .= trim( $term ) . $this->nextItem( ':' );
+						$output .= $term . $this->nextItem( ':' );
 					}
 				}
 			} elseif ( $prefixLength || $lastPrefixLength ) {
@@ -275,8 +274,7 @@ class BlockLevelPass {
 						# @todo FIXME: This is dupe of code above
 						if ( $this->findColonNoLinks( $t, $term, $t2 ) !== false ) {
 							$t = $t2;
-							// Trim whitespace in list items
-							$output .= trim( $term ) . $this->nextItem( ':' );
+							$output .= $term . $this->nextItem( ':' );
 						}
 					}
 					++$commonPrefixLength;
@@ -291,42 +289,23 @@ class BlockLevelPass {
 			if ( 0 == $prefixLength ) {
 				# No prefix (not in list)--go to paragraph mode
 				# @todo consider using a stack for nestable elements like span, table and div
-
-				// P-wrapping and indent-pre are suppressed inside, not outside
-				$blockElems = 'table|h1|h2|h3|h4|h5|h6|pre|p|ul|ol|dl|li';
-				// P-wrapping and indent-pre are suppressed outside, not inside
-				$antiBlockElems = 'td|th';
-
 				$openMatch = preg_match(
-					'/<('
-						. "({$blockElems})|\\/({$antiBlockElems})|"
-						// Always suppresses
-						. '\\/?(tr)'
-						. ')\\b/iS',
+					'/(?:<table|<h1|<h2|<h3|<h4|<h5|<h6|<pre|<tr|'
+						. '<p|<ul|<ol|<dl|<li|<\\/tr|<\\/td|<\\/th)\\b/iS',
 					$t
 				);
 				$closeMatch = preg_match(
-					'/<('
-						. "\\/({$blockElems})|({$antiBlockElems})|"
-						// Never suppresses
-						. '\\/?(center|blockquote|div|hr|mw:)'
-						. ')\\b/iS',
+					'/(?:<\\/table|<\\/h1|<\\/h2|<\\/h3|<\\/h4|<\\/h5|<\\/h6|'
+						. '<td|<th|<\\/?blockquote|<\\/?div|<hr|<\\/pre|<\\/p|<\\/mw:|'
+						. Parser::MARKER_PREFIX
+						. '-pre|<\\/li|<\\/ul|<\\/ol|<\\/dl|<\\/?center)\\b/iS',
 					$t
 				);
 
-				// Any match closes the paragraph, but only when `!$closeMatch`
-				// do we enter block mode.  The oddities with table rows and
-				// cells are to avoid paragraph wrapping in interstitial spaces
-				// leading to fostered content.
-
 				if ( $openMatch || $closeMatch ) {
 					$pendingPTag = false;
-					// Only close the paragraph if we're not inside a <pre> tag, or if
-					// that <pre> tag has just been opened
-					if ( !$this->inPre || $preOpenMatch ) {
-						// @todo T7718: paragraph closed
-						$output .= $this->closeParagraph();
-					}
+					# @todo T7718: paragraph closed
+					$output .= $this->closeParagraph();
 					if ( $preOpenMatch && !$preCloseMatch ) {
 						$this->inPre = true;
 					}
@@ -350,14 +329,6 @@ class BlockLevelPass {
 							$this->lastSection = 'pre';
 						}
 						$t = substr( $t, 1 );
-					} elseif ( preg_match( '/^(?:<style\\b[^>]*>.*?<\\/style>\s*|<link\\b[^>]*>\s*)+$/iS', $t ) ) {
-						# T186965: <style> or <link> by itself on a line shouldn't open or close paragraphs.
-						# But it should clear $pendingPTag.
-						if ( $pendingPTag ) {
-							$output .= $this->closeParagraph();
-							$pendingPTag = false;
-							$this->lastSection = '';
-						}
 					} else {
 						# paragraph
 						if ( trim( $t ) === '' ) {
@@ -392,12 +363,9 @@ class BlockLevelPass {
 				$this->inPre = false;
 			}
 			if ( $pendingPTag === false ) {
+				$output .= $t;
 				if ( $prefixLength === 0 ) {
-					$output .= $t;
 					$output .= "\n";
-				} else {
-					// Trim whitespace in list items
-					$output .= trim( $t );
 				}
 			}
 		}
@@ -449,130 +417,130 @@ class BlockLevelPass {
 			$c = $str[$i];
 
 			switch ( $state ) {
-				case self::COLON_STATE_TEXT:
-					switch ( $c ) {
-						case "<":
-							# Could be either a <start> tag or an </end> tag
-							$state = self::COLON_STATE_TAGSTART;
-							break;
-						case ":":
-							if ( $ltLevel === 0 ) {
-								# We found it!
-								$before = substr( $str, 0, $i );
-								$after = substr( $str, $i + 1 );
-								return $i;
-							}
-							# Embedded in a tag; don't break it.
-							break;
-						default:
-							# Skip ahead looking for something interesting
-							if ( !preg_match( '/:|<|-\{/', $str, $m, PREG_OFFSET_CAPTURE, $i ) ) {
-								# Nothing else interesting
-								return false;
-							}
-							if ( $m[0][0] === '-{' ) {
-								$state = self::COLON_STATE_LC;
-								$lcLevel++;
-								$i = $m[0][1] + 1;
-							} else {
-								# Skip ahead to next interesting character.
-								$i = $m[0][1] - 1;
-							}
-							break;
-					}
+			case self::COLON_STATE_TEXT:
+				switch ( $c ) {
+				case "<":
+					# Could be either a <start> tag or an </end> tag
+					$state = self::COLON_STATE_TAGSTART;
 					break;
-				case self::COLON_STATE_LC:
-					# In language converter markup -{ ... }-
-					if ( !preg_match( '/-\{|\}-/', $str, $m, PREG_OFFSET_CAPTURE, $i ) ) {
-						# Nothing else interesting to find; abort!
-						# We're nested in language converter markup, but there
-						# are no close tags left.  Abort!
-						break 2;
-					} elseif ( $m[0][0] === '-{' ) {
-						$i = $m[0][1] + 1;
-						$lcLevel++;
-					} elseif ( $m[0][0] === '}-' ) {
-						$i = $m[0][1] + 1;
-						$lcLevel--;
-						if ( $lcLevel === 0 ) {
-							$state = self::COLON_STATE_TEXT;
-						}
+				case ":":
+					if ( $ltLevel === 0 ) {
+						# We found it!
+						$before = substr( $str, 0, $i );
+						$after = substr( $str, $i + 1 );
+						return $i;
 					}
-					break;
-				case self::COLON_STATE_TAG:
-					# In a <tag>
-					switch ( $c ) {
-						case ">":
-							$ltLevel++;
-							$state = self::COLON_STATE_TEXT;
-							break;
-						case "/":
-							# Slash may be followed by >?
-							$state = self::COLON_STATE_TAGSLASH;
-							break;
-						default:
-							# ignore
-					}
-					break;
-				case self::COLON_STATE_TAGSTART:
-					switch ( $c ) {
-						case "/":
-							$state = self::COLON_STATE_CLOSETAG;
-							break;
-						case "!":
-							$state = self::COLON_STATE_COMMENT;
-							break;
-						case ">":
-							# Illegal early close? This shouldn't happen D:
-							$state = self::COLON_STATE_TEXT;
-							break;
-						default:
-							$state = self::COLON_STATE_TAG;
-					}
-					break;
-				case self::COLON_STATE_CLOSETAG:
-					# In a </tag>
-					if ( $c === ">" ) {
-						if ( $ltLevel > 0 ) {
-							$ltLevel--;
-						} else {
-							# ignore the excess close tag, but keep looking for
-							# colons. (This matches Parsoid behavior.)
-							wfDebug( __METHOD__ . ": Invalid input; too many close tags\n" );
-						}
-						$state = self::COLON_STATE_TEXT;
-					}
-					break;
-				case self::COLON_STATE_TAGSLASH:
-					if ( $c === ">" ) {
-						# Yes, a self-closed tag <blah/>
-						$state = self::COLON_STATE_TEXT;
-					} else {
-						# Probably we're jumping the gun, and this is an attribute
-						$state = self::COLON_STATE_TAG;
-					}
-					break;
-				case self::COLON_STATE_COMMENT:
-					if ( $c === "-" ) {
-						$state = self::COLON_STATE_COMMENTDASH;
-					}
-					break;
-				case self::COLON_STATE_COMMENTDASH:
-					if ( $c === "-" ) {
-						$state = self::COLON_STATE_COMMENTDASHDASH;
-					} else {
-						$state = self::COLON_STATE_COMMENT;
-					}
-					break;
-				case self::COLON_STATE_COMMENTDASHDASH:
-					if ( $c === ">" ) {
-						$state = self::COLON_STATE_TEXT;
-					} else {
-						$state = self::COLON_STATE_COMMENT;
-					}
+					# Embedded in a tag; don't break it.
 					break;
 				default:
-					throw new MWException( "State machine error in " . __METHOD__ );
+					# Skip ahead looking for something interesting
+					if ( !preg_match( '/:|<|-\{/', $str, $m, PREG_OFFSET_CAPTURE, $i ) ) {
+						# Nothing else interesting
+						return false;
+					}
+					if ( $m[0][0] === '-{' ) {
+						$state = self::COLON_STATE_LC;
+						$lcLevel++;
+						$i = $m[0][1] + 1;
+					} else {
+						# Skip ahead to next interesting character.
+						$i = $m[0][1] - 1;
+					}
+					break;
+				}
+				break;
+			case self::COLON_STATE_LC:
+				# In language converter markup -{ ... }-
+				if ( !preg_match( '/-\{|\}-/', $str, $m, PREG_OFFSET_CAPTURE, $i ) ) {
+					# Nothing else interesting to find; abort!
+					# We're nested in language converter markup, but there
+					# are no close tags left.  Abort!
+					break 2;
+				} elseif ( $m[0][0] === '-{' ) {
+					$i = $m[0][1] + 1;
+					$lcLevel++;
+				} elseif ( $m[0][0] === '}-' ) {
+					$i = $m[0][1] + 1;
+					$lcLevel--;
+					if ( $lcLevel === 0 ) {
+						$state = self::COLON_STATE_TEXT;
+					}
+				}
+				break;
+			case self::COLON_STATE_TAG:
+				# In a <tag>
+				switch ( $c ) {
+				case ">":
+					$ltLevel++;
+					$state = self::COLON_STATE_TEXT;
+					break;
+				case "/":
+					# Slash may be followed by >?
+					$state = self::COLON_STATE_TAGSLASH;
+					break;
+				default:
+					# ignore
+				}
+				break;
+			case self::COLON_STATE_TAGSTART:
+				switch ( $c ) {
+				case "/":
+					$state = self::COLON_STATE_CLOSETAG;
+					break;
+				case "!":
+					$state = self::COLON_STATE_COMMENT;
+					break;
+				case ">":
+					# Illegal early close? This shouldn't happen D:
+					$state = self::COLON_STATE_TEXT;
+					break;
+				default:
+					$state = self::COLON_STATE_TAG;
+				}
+				break;
+			case self::COLON_STATE_CLOSETAG:
+				# In a </tag>
+				if ( $c === ">" ) {
+					if ( $ltLevel > 0 ) {
+						$ltLevel--;
+					} else {
+						# ignore the excess close tag, but keep looking for
+						# colons. (This matches Parsoid behavior.)
+						wfDebug( __METHOD__ . ": Invalid input; too many close tags\n" );
+					}
+					$state = self::COLON_STATE_TEXT;
+				}
+				break;
+			case self::COLON_STATE_TAGSLASH:
+				if ( $c === ">" ) {
+					# Yes, a self-closed tag <blah/>
+					$state = self::COLON_STATE_TEXT;
+				} else {
+					# Probably we're jumping the gun, and this is an attribute
+					$state = self::COLON_STATE_TAG;
+				}
+				break;
+			case self::COLON_STATE_COMMENT:
+				if ( $c === "-" ) {
+					$state = self::COLON_STATE_COMMENTDASH;
+				}
+				break;
+			case self::COLON_STATE_COMMENTDASH:
+				if ( $c === "-" ) {
+					$state = self::COLON_STATE_COMMENTDASHDASH;
+				} else {
+					$state = self::COLON_STATE_COMMENT;
+				}
+				break;
+			case self::COLON_STATE_COMMENTDASHDASH:
+				if ( $c === ">" ) {
+					$state = self::COLON_STATE_TEXT;
+				} else {
+					$state = self::COLON_STATE_COMMENT;
+				}
+				break;
+			default:
+				throw new MWException( "State machine error in " . __METHOD__ );
 			}
 		}
 		if ( $ltLevel > 0 || $lcLevel > 0 ) {

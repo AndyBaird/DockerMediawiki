@@ -96,12 +96,13 @@ class LinksDeletionUpdate extends DataUpdate implements EnqueueableDataUpdate {
 			}
 		}
 
-		// Refresh counts on categories that should be empty now
+		// Refresh the category table entry if it seems to have no pages. Check
+		// master for the most up-to-date cat_pages count.
 		if ( $title->getNamespace() === NS_CATEGORY ) {
 			$row = $dbw->selectRow(
 				'category',
 				[ 'cat_id', 'cat_title', 'cat_pages', 'cat_subcats', 'cat_files' ],
-				[ 'cat_title' => $title->getDBkey(), 'cat_pages <= 100' ],
+				[ 'cat_title' => $title->getDBkey(), 'cat_pages <= 0' ],
 				__METHOD__
 			);
 			if ( $row ) {

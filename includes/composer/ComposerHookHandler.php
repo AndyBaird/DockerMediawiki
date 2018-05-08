@@ -7,7 +7,7 @@ $GLOBALS['IP'] = __DIR__ . '/../../';
 require_once __DIR__ . '/../AutoLoader.php';
 
 /**
- * @license GNU GPL v2+
+ * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
 class ComposerHookHandler {

@@ -73,7 +73,7 @@ class ImportTextFiles extends Maintenance {
 					$files[$filename] = file_get_contents( $filename );
 				}
 				if ( !$found ) {
-					$this->fatalError( "Fatal error: The file '$arg' does not exist!" );
+					$this->error( "Fatal error: The file '$arg' does not exist!", 1 );
 				}
 			}
 		};
@@ -88,7 +88,7 @@ class ImportTextFiles extends Maintenance {
 		}
 
 		if ( !$user ) {
-			$this->fatalError( "Invalid username\n" );
+			$this->error( "Invalid username\n", true );
 		}
 		if ( $user->isAnon() ) {
 			$user->addToDatabase();
@@ -199,10 +199,10 @@ class ImportTextFiles extends Maintenance {
 
 		$this->output( "Done! $successCount succeeded, $skipCount skipped.\n" );
 		if ( $exit ) {
-			$this->fatalError( "Import failed with $failCount failed pages.\n", $exit );
+			$this->error( "Import failed with $failCount failed pages.\n", $exit );
 		}
 	}
 }
 
-$maintClass = ImportTextFiles::class;
+$maintClass = "ImportTextFiles";
 require_once RUN_MAINTENANCE_IF_MAIN;

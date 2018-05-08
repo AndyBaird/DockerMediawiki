@@ -51,7 +51,6 @@ $namespaceAliases = [
 ];
 
 $separatorTransformTable = [ ',' => '.', '.' => ',' ];
-$minimumGroupingDigits = 2;
 
 $specialPageAliases = [
 	'Allmessages'               => [ 'Hemû_Peyam' ],

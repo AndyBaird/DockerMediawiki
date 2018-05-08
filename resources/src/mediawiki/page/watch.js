@@ -2,17 +2,7 @@
  * Animate watch/unwatch links to use asynchronous API requests to
  * watch pages, rather than navigating to a different URI.
  *
- * Usage:
- *
- *     var watch = require( 'mediawiki.page.watch.ajax' );
- *     watch.updateWatchLink(
- *         $node,
- *         'watch',
- *         'loading'
- *     );
- *
- * @class mw.plugin.page.watch.ajax
- * @singleton
+ * @class mw.page.watch.ajax
  */
 ( function ( mw, $ ) {
 	var watch,
@@ -79,7 +69,7 @@
 	 * @return {string} The extracted action, defaults to 'view'
 	 */
 	function mwUriGetAction( url ) {
-		var action, actionPaths, key, m, parts;
+		var action, actionPaths, key, i, m, parts;
 
 		// TODO: Does MediaWiki give action path or query param
 		// precedence? If the former, move this to the bottom
@@ -92,7 +82,9 @@
 		for ( key in actionPaths ) {
 			if ( actionPaths.hasOwnProperty( key ) ) {
 				parts = actionPaths[ key ].split( '$1' );
-				parts = parts.map( mw.RegExp.escape );
+				for ( i = 0; i < parts.length; i++ ) {
+					parts[ i ] = mw.RegExp.escape( parts[ i ] );
+				}
 				m = new RegExp( parts.join( '(.+)' ) ).exec( url );
 				if ( m && m[ 1 ] ) {
 					return key;
@@ -109,6 +101,13 @@
 		updateWatchLink: updateWatchLink
 	};
 	module.exports = watch;
+
+	// Deprecated since 1.30
+	mw.log.deprecate( mw, 'page',
+		{ watch: watch },
+		'Use require( \'mediawiki.page.watch.ajax\' ) instead.',
+		'mw.page'
+	);
 
 	$( function () {
 		var $links = $( '.mw-watchlink a[data-mw="interface"], a.mw-watchlink[data-mw="interface"]' );

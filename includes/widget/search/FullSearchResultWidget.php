@@ -79,7 +79,7 @@ class FullSearchResultWidget implements SearchResultWidget {
 			if ( !Hooks::run( 'ShowSearchHit', [
 				$this->specialPage, $result, $terms,
 				&$link, &$redirect, &$section, &$extract,
-				&$score, &$desc, &$date, &$related, &$html
+				&$score, &$size, &$date, &$related, &$html
 			] ) ) {
 				return $html;
 			}
@@ -133,14 +133,13 @@ class FullSearchResultWidget implements SearchResultWidget {
 		$title = clone $result->getTitle();
 		$query = [];
 
-		$attributes = [ 'data-serp-pos' => $position ];
 		Hooks::run( 'ShowSearchHitTitle',
-			[ &$title, &$snippet, $result, $terms, $this->specialPage, &$query, &$attributes ] );
+			[ &$title, &$snippet, $result, $terms, $this->specialPage, &$query ] );
 
 		$link = $this->linkRenderer->makeLink(
 			$title,
 			$snippet,
-			$attributes,
+			[ 'data-serp-pos' => $position ],
 			$query
 		);
 
@@ -163,7 +162,7 @@ class FullSearchResultWidget implements SearchResultWidget {
 			: $this->linkRenderer->makeLink( $title, $text ? new HtmlArmor( $text ) : null );
 
 		return "<span class='searchalttitle'>" .
-				$this->specialPage->msg( $msgKey )->rawParams( $inner )->parse()
+				$this->specialPage->msg( $msgKey )->rawParams( $inner )->text()
 			. "</span>";
 	}
 

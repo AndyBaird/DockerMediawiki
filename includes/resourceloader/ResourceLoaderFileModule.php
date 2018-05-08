@@ -26,6 +26,7 @@
  * ResourceLoader module based on local JavaScript/CSS files.
  */
 class ResourceLoaderFileModule extends ResourceLoaderModule {
+	/* Protected Members */
 
 	/** @var string Local base path, see __construct() */
 	protected $localBasePath = '';
@@ -147,6 +148,8 @@ class ResourceLoaderFileModule extends ResourceLoaderModule {
 	 * Used in tests to detect missing dependencies.
 	 */
 	protected $missingLocalFileRefs = [];
+
+	/* Methods */
 
 	/**
 	 * Constructs a new module from an options array.

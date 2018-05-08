@@ -3,10 +3,9 @@
 use MediaWiki\Auth\AuthManager;
 
 /**
- * @covers PasswordReset
  * @group Database
  */
-class PasswordResetTest extends MediaWikiTestCase {
+class PasswordResetTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @dataProvider provideIsAllowed
 	 */
@@ -149,12 +148,6 @@ class PasswordResetTest extends MediaWikiTestCase {
 		$config = new HashConfig( [
 			'PasswordResetRoutes' => [ 'username' => true, 'email' => true ],
 			'EnableEmail' => true,
-		] );
-
-		// Unregister the hooks for proper unit testing
-		$this->mergeMwGlobalArrayValue( 'wgHooks', [
-			'User::mailPasswordInternal' => [],
-			'SpecialPasswordResetOnSubmit' => [],
 		] );
 
 		$authManager = $this->getMockBuilder( AuthManager::class )->disableOriginalConstructor()

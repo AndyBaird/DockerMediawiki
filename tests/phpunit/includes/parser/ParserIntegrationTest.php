@@ -8,29 +8,13 @@ use Wikimedia\ScopedCallback;
  * Note: the following groups are not used by PHPUnit.
  * The list in ParserTestFileSuite::__construct() is used instead.
  *
- * @group large
  * @group Database
  * @group Parser
  * @group ParserTests
  *
- * @covers Parser
- * @covers BlockLevelPass
- * @covers CoreParserFunctions
- * @covers CoreTagHooks
- * @covers Sanitizer
- * @covers Preprocessor
- * @covers Preprocessor_DOM
- * @covers Preprocessor_Hash
- * @covers DateFormatter
- * @covers LinkHolderArray
- * @covers StripState
- * @covers ParserOptions
- * @covers ParserOutput
+ * @todo covers tags
  */
-class ParserIntegrationTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-
+class ParserIntegrationTest extends PHPUnit_Framework_TestCase {
 	/** @var array */
 	private $ptTest;
 

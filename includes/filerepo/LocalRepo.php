@@ -34,17 +34,17 @@ use Wikimedia\Rdbms\IDatabase;
  */
 class LocalRepo extends FileRepo {
 	/** @var callable */
-	protected $fileFactory = [ LocalFile::class, 'newFromTitle' ];
+	protected $fileFactory = [ 'LocalFile', 'newFromTitle' ];
 	/** @var callable */
-	protected $fileFactoryKey = [ LocalFile::class, 'newFromKey' ];
+	protected $fileFactoryKey = [ 'LocalFile', 'newFromKey' ];
 	/** @var callable */
-	protected $fileFromRowFactory = [ LocalFile::class, 'newFromRow' ];
+	protected $fileFromRowFactory = [ 'LocalFile', 'newFromRow' ];
 	/** @var callable */
-	protected $oldFileFromRowFactory = [ OldLocalFile::class, 'newFromRow' ];
+	protected $oldFileFromRowFactory = [ 'OldLocalFile', 'newFromRow' ];
 	/** @var callable */
-	protected $oldFileFactory = [ OldLocalFile::class, 'newFromTitle' ];
+	protected $oldFileFactory = [ 'OldLocalFile', 'newFromTitle' ];
 	/** @var callable */
-	protected $oldFileFactoryKey = [ OldLocalFile::class, 'newFromKey' ];
+	protected $oldFileFactoryKey = [ 'OldLocalFile', 'newFromKey' ];
 
 	function __construct( array $info = null ) {
 		parent::__construct( $info );
@@ -91,7 +91,7 @@ class LocalRepo extends FileRepo {
 	 * interleave database locks with file operations, which is potentially a
 	 * remote operation.
 	 *
-	 * @param string[] $storageKeys
+	 * @param array $storageKeys
 	 *
 	 * @return Status
 	 */
@@ -310,9 +310,8 @@ class LocalRepo extends FileRepo {
 		}
 
 		if ( count( $imgNames ) ) {
-			$fileQuery = LocalFile::getQueryInfo();
-			$res = $dbr->select( $fileQuery['tables'], $fileQuery['fields'], [ 'img_name' => $imgNames ],
-				__METHOD__, [], $fileQuery['joins'] );
+			$res = $dbr->select( 'image',
+				LocalFile::selectFields(), [ 'img_name' => $imgNames ], __METHOD__ );
 			$applyMatchingFiles( $res, $searchSet, $finalFiles );
 		}
 
@@ -331,10 +330,8 @@ class LocalRepo extends FileRepo {
 		}
 
 		if ( count( $oiConds ) ) {
-			$fileQuery = OldLocalFile::getQueryInfo();
-			$res = $dbr->select( $fileQuery['tables'], $fileQuery['fields'],
-				$dbr->makeList( $oiConds, LIST_OR ),
-				__METHOD__, [], $fileQuery['joins'] );
+			$res = $dbr->select( 'oldimage',
+				OldLocalFile::selectFields(), $dbr->makeList( $oiConds, LIST_OR ), __METHOD__ );
 			$applyMatchingFiles( $res, $searchSet, $finalFiles );
 		}
 
@@ -371,18 +368,16 @@ class LocalRepo extends FileRepo {
 	 * SHA-1 content hash.
 	 *
 	 * @param string $hash A sha1 hash to look for
-	 * @return LocalFile[]
+	 * @return File[]
 	 */
 	function findBySha1( $hash ) {
 		$dbr = $this->getReplicaDB();
-		$fileQuery = LocalFile::getQueryInfo();
 		$res = $dbr->select(
-			$fileQuery['tables'],
-			$fileQuery['fields'],
+			'image',
+			LocalFile::selectFields(),
 			[ 'img_sha1' => $hash ],
 			__METHOD__,
-			[ 'ORDER BY' => 'img_name' ],
-			$fileQuery['joins']
+			[ 'ORDER BY' => 'img_name' ]
 		);
 
 		$result = [];
@@ -400,8 +395,8 @@ class LocalRepo extends FileRepo {
 	 *
 	 * Overrides generic implementation in FileRepo for performance reason
 	 *
-	 * @param string[] $hashes An array of hashes
-	 * @return array[] An Array of arrays or iterators of file objects and the hash as key
+	 * @param array $hashes An array of hashes
+	 * @return array An Array of arrays or iterators of file objects and the hash as key
 	 */
 	function findBySha1s( array $hashes ) {
 		if ( !count( $hashes ) ) {
@@ -409,14 +404,12 @@ class LocalRepo extends FileRepo {
 		}
 
 		$dbr = $this->getReplicaDB();
-		$fileQuery = LocalFile::getQueryInfo();
 		$res = $dbr->select(
-			$fileQuery['tables'],
-			$fileQuery['fields'],
+			'image',
+			LocalFile::selectFields(),
 			[ 'img_sha1' => $hashes ],
 			__METHOD__,
-			[ 'ORDER BY' => 'img_name' ],
-			$fileQuery['joins']
+			[ 'ORDER BY' => 'img_name' ]
 		);
 
 		$result = [];
@@ -434,21 +427,19 @@ class LocalRepo extends FileRepo {
 	 *
 	 * @param string $prefix The prefix to search for
 	 * @param int $limit The maximum amount of files to return
-	 * @return LocalFile[]
+	 * @return array
 	 */
 	public function findFilesByPrefix( $prefix, $limit ) {
 		$selectOptions = [ 'ORDER BY' => 'img_name', 'LIMIT' => intval( $limit ) ];
 
 		// Query database
 		$dbr = $this->getReplicaDB();
-		$fileQuery = LocalFile::getQueryInfo();
 		$res = $dbr->select(
-			$fileQuery['tables'],
-			$fileQuery['fields'],
+			'image',
+			LocalFile::selectFields(),
 			'img_name ' . $dbr->buildLike( $prefix, $dbr->anyString() ),
 			__METHOD__,
-			$selectOptions,
-			$fileQuery['joins']
+			$selectOptions
 		);
 
 		// Build file objects

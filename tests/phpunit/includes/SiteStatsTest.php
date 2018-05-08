@@ -6,9 +6,15 @@ class SiteStatsTest extends MediaWikiTestCase {
 	 * @covers SiteStats::jobs
 	 */
 	function testJobsCountGetCached() {
-		$cache = new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
-		$this->setService( 'MainWANObjectCache', $cache );
+		$this->setService( 'MainWANObjectCache',
+			new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ) );
+		$cache = \MediaWiki\MediaWikiServices::getInstance()->getMainWANObjectCache();
 		$jobq = JobQueueGroup::singleton();
+
+		// Delete EditPage jobs that might have been left behind by other tests
+		$jobq->get( 'htmlCacheUpdate' )->delete();
+		$jobq->get( 'recentChangesUpdate' )->delete();
+		$cache->delete( $cache->makeKey( 'SiteStats', 'jobscount' ) );
 
 		$jobq->push( new NullJob( Title::newMainPage(), [] ) );
 		$this->assertEquals( 1, SiteStats::jobs(),

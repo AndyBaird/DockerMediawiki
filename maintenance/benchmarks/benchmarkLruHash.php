@@ -32,7 +32,8 @@ class BenchmarkLruHash extends Benchmarker {
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( 'Benchmarks HashBagOStuff and MapCacheLRU.' );
-		$this->addOption( 'method', 'One of "construct" or "set". Default: [All]', false, true );
+		$this->addOption( 'construct', 'Run construct only', false, false );
+		$this->addOption( 'fill', 'Run fill only', false, false );
 	}
 
 	public function execute() {
@@ -45,26 +46,27 @@ class BenchmarkLruHash extends Benchmarker {
 		// 1000 keys (1...500, 500...1)
 		$keys = array_merge( $exampleKeys, array_reverse( $exampleKeys ) );
 
-		$method = $this->getOption( 'method' );
+		$fill = $this->hasOption( 'fill' ) || !$this->hasOption( 'construct' );
+		$construct = $this->hasOption( 'construct' ) || !$this->hasOption( 'fill' );
 		$benches = [];
 
-		if ( !$method || $method === 'construct' ) {
-			$benches['HashBagOStuff::__construct'] = [
+		if ( $construct ) {
+			$benches['HashBagOStuff-construct'] = [
 				'function' => function () use ( $max ) {
 					$obj = new HashBagOStuff( [ 'maxKeys' => $max ] );
 				},
 			];
-			$benches['MapCacheLRU::__construct'] = [
+			$benches['MapCacheLRU-construct'] = [
 				'function' => function () use ( $max ) {
 					$obj = new MapCacheLRU( $max );
 				},
 			];
 		}
 
-		if ( !$method || $method === 'set' ) {
-			// For the set bechmark, do object creation in setup (not measured)
+		if ( $fill ) {
+			// For the fill bechmark, ensure object creation is not measured.
 			$hObj = null;
-			$benches['HashBagOStuff::set'] = [
+			$benches['HashBagOStuff-fill'] = [
 				'setup' => function () use ( &$hObj, $max ) {
 					$hObj = new HashBagOStuff( [ 'maxKeys' => $max ] );
 				},
@@ -75,7 +77,7 @@ class BenchmarkLruHash extends Benchmarker {
 				}
 			];
 			$mObj = null;
-			$benches['MapCacheLRU::set'] = [
+			$benches['MapCacheLRU-fill'] = [
 				'setup' => function () use ( &$mObj, $max ) {
 					$mObj = new MapCacheLRU( $max );
 				},

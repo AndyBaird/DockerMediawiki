@@ -41,11 +41,6 @@ class LBFactorySimple extends LBFactory {
 
 	/** @var string */
 	private $loadMonitorClass;
-	/** @var int */
-	private $maxLag;
-
-	/** @var int Default 'maxLag' when unspecified */
-	const MAX_LAG_DEFAULT = 10;
 
 	/**
 	 * @see LBFactory::__construct()
@@ -77,7 +72,6 @@ class LBFactorySimple extends LBFactory {
 		$this->loadMonitorClass = isset( $conf['loadMonitorClass'] )
 			? $conf['loadMonitorClass']
 			: 'LoadMonitor';
-		$this->maxLag = isset( $conf['maxLag'] ) ? $conf['maxLag'] : self::MAX_LAG_DEFAULT;
 	}
 
 	/**
@@ -134,7 +128,6 @@ class LBFactorySimple extends LBFactory {
 			$this->baseLoadBalancerParams(),
 			[
 				'servers' => $servers,
-				'maxLag' => $this->maxLag,
 				'loadMonitor' => [ 'class' => $this->loadMonitorClass ],
 			]
 		) );

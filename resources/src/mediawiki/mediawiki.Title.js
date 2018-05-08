@@ -1,8 +1,10 @@
 /*!
  * @author Neil Kandalgaonkar, 2010
- * @author Timo Tijhof
+ * @author Timo Tijhof, 2011-2013
  * @since 1.18
  */
+
+/* eslint-disable no-use-before-define */
 
 ( function ( mw, $ ) {
 	/**
@@ -27,13 +29,28 @@
 	 *     mw.Title.makeTitle( NS_TEMPLATE, 'Template:Foo' ).getPrefixedText();   // => 'Template:Template:Foo'
 	 *
 	 * @class mw.Title
+	 * @constructor
+	 * @param {string} title Title of the page. If no second argument given,
+	 *  this will be searched for a namespace
+	 * @param {number} [namespace=NS_MAIN] If given, will used as default namespace for the given title
+	 * @throws {Error} When the title is invalid
 	 */
+	function Title( title, namespace ) {
+		var parsed = parse( title, namespace );
+		if ( !parsed ) {
+			throw new Error( 'Unable to parse title' );
+		}
+
+		this.namespace = parsed.namespace;
+		this.title = parsed.title;
+		this.ext = parsed.ext;
+		this.fragment = parsed.fragment;
+	}
 
 	/* Private members */
 
+	// eslint-disable-next-line vars-on-top
 	var
-		mwString = require( 'mediawiki.String' ),
-
 		namespaceIds = mw.config.get( 'wgNamespaceIds' ),
 
 		/**
@@ -322,7 +339,7 @@
 			// Except for special pages, e.g. [[Special:Block/Long name]]
 			// Note: The PHP implementation also asserts that even in NS_SPECIAL, the title should
 			// be less than 512 bytes.
-			if ( namespace !== NS_SPECIAL && mwString.byteLength( title ) > TITLE_MAX_BYTES ) {
+			if ( namespace !== NS_SPECIAL && $.byteLength( title ) > TITLE_MAX_BYTES ) {
 				return false;
 			}
 
@@ -409,7 +426,21 @@
 		 * @return {string}
 		 */
 		trimToByteLength = function ( s, length ) {
-			return mwString.trimByteLength( '', s, length ).newVal;
+			var byteLength, chopOffChars, chopOffBytes;
+
+			// bytelength is always greater or equal to the length in characters
+			s = s.substr( 0, length );
+			while ( ( byteLength = $.byteLength( s ) ) > length ) {
+				// Calculate how many characters can be safely removed
+				// First, we need to know how many bytes the string exceeds the threshold
+				chopOffBytes = byteLength - length;
+				// A character in UTF-8 is at most 4 bytes
+				// One character must be removed in any case because the
+				// string is too long
+				chopOffChars = Math.max( 1, Math.floor( chopOffBytes / 4 ) );
+				s = s.substr( 0, s.length - chopOffChars );
+			}
+			return s;
 		},
 
 		/**
@@ -426,25 +457,6 @@
 			// There is a special byte limit for file names and ... remember the dot
 			return trimToByteLength( name, FILENAME_MAX_BYTES - extension.length - 1 ) + '.' + extension;
 		};
-
-	/**
-	 * @method constructor
-	 * @param {string} title Title of the page. If no second argument given,
-	 *  this will be searched for a namespace
-	 * @param {number} [namespace=NS_MAIN] If given, will used as default namespace for the given title
-	 * @throws {Error} When the title is invalid
-	 */
-	function Title( title, namespace ) {
-		var parsed = parse( title, namespace );
-		if ( !parsed ) {
-			throw new Error( 'Unable to parse title' );
-		}
-
-		this.namespace = parsed.namespace;
-		this.title = parsed.title;
-		this.ext = parsed.ext;
-		this.fragment = parsed.fragment;
-	}
 
 	/* Static members */
 
@@ -525,7 +537,7 @@
 		namespace = defaultNamespace === undefined ? NS_MAIN : defaultNamespace;
 
 		// Normalise additional whitespace
-		title = title.replace( /\s/g, ' ' ).trim();
+		title = $.trim( title.replace( /\s/g, ' ' ) );
 
 		// Process initial colon
 		if ( title !== '' && title[ 0 ] === ':' ) {
@@ -567,7 +579,7 @@
 				ext = parts.pop();
 
 				// Remove whitespace of the name part (that W/O extension)
-				title = parts.join( '.' ).trim();
+				title = $.trim( parts.join( '.' ) );
 
 				// Cut, if too long and append file extension
 				title = trimFileNameToByteLength( title, ext );
@@ -575,7 +587,7 @@
 			} else {
 
 				// Missing file extension
-				title = parts.join( '.' ).trim();
+				title = $.trim( parts.join( '.' ) );
 
 				// Name has no file extension and a fallback wasn't provided either
 				return null;

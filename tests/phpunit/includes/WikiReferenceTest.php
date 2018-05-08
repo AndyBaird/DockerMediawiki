@@ -3,9 +3,8 @@
 /**
  * @covers WikiReference
  */
-class WikiReferenceTest extends PHPUnit\Framework\TestCase {
 
-	use MediaWikiCoversValidator;
+class WikiReferenceTest extends PHPUnit_Framework_TestCase {
 
 	public function provideGetDisplayName() {
 		return [

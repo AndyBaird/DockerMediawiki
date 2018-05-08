@@ -28,7 +28,6 @@
 use Wikimedia\Rdbms\ResultWrapper;
 use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\Rdbms\IDatabase;
-use MediaWiki\MediaWikiServices;
 
 /**
  * Class for fetching backlink lists, approximate backlink counts and
@@ -72,11 +71,6 @@ class BacklinkCache {
 	protected $fullResultCache = [];
 
 	/**
-	 * @var WANObjectCache
-	 */
-	protected $wanCache;
-
-	/**
 	 * Local copy of a database object.
 	 *
 	 * Accessor: BacklinkCache::getDB()
@@ -99,7 +93,6 @@ class BacklinkCache {
 	 */
 	public function __construct( Title $title ) {
 		$this->title = $title;
-		$this->wanCache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 	}
 
 	/**
@@ -129,12 +122,11 @@ class BacklinkCache {
 	}
 
 	/**
-	 * Clear locally stored data and database object. Invalidate data in memcache.
+	 * Clear locally stored data and database object.
 	 */
 	public function clear() {
 		$this->partitionCache = [];
 		$this->fullResultCache = [];
-		$this->wanCache->touchCheckKey( $this->makeCheckKey() );
 		unset( $this->db );
 	}
 
@@ -332,6 +324,7 @@ class BacklinkCache {
 	public function getNumLinks( $table, $max = INF ) {
 		global $wgUpdateRowsPerJob;
 
+		$cache = ObjectCache::getMainWANInstance();
 		// 1) try partition cache ...
 		if ( isset( $this->partitionCache[$table] ) ) {
 			$entry = reset( $this->partitionCache[$table] );
@@ -344,22 +337,15 @@ class BacklinkCache {
 			return min( $max, $this->fullResultCache[$table]->numRows() );
 		}
 
-		$memcKey = $this->wanCache->makeKey(
+		$memcKey = $cache->makeKey(
 			'numbacklinks',
 			md5( $this->title->getPrefixedDBkey() ),
 			$table
 		);
 
 		// 3) ... fallback to memcached ...
-		$curTTL = INF;
-		$count = $this->wanCache->get(
-			$memcKey,
-			$curTTL,
-			[
-				$this->makeCheckKey()
-			]
-		);
-		if ( $count && ( $curTTL > 0 ) ) {
+		$count = $cache->get( $memcKey );
+		if ( $count ) {
 			return min( $max, $count );
 		}
 
@@ -373,7 +359,7 @@ class BacklinkCache {
 			// Fetch the full title info, since the caller will likely need it next
 			$count = $this->getLinks( $table, false, false, $max )->count();
 			if ( $count < $max ) { // full count
-				$this->wanCache->set( $memcKey, $count, self::CACHE_EXPIRY );
+				$cache->set( $memcKey, $count, self::CACHE_EXPIRY );
 			}
 		}
 
@@ -397,6 +383,7 @@ class BacklinkCache {
 			return $this->partitionCache[$table][$batchSize]['batches'];
 		}
 
+		$cache = ObjectCache::getMainWANInstance();
 		$this->partitionCache[$table][$batchSize] = false;
 		$cacheEntry =& $this->partitionCache[$table][$batchSize];
 
@@ -408,7 +395,7 @@ class BacklinkCache {
 			return $cacheEntry['batches'];
 		}
 
-		$memcKey = $this->wanCache->makeKey(
+		$memcKey = $cache->makeKey(
 			'backlinks',
 			md5( $this->title->getPrefixedDBkey() ),
 			$table,
@@ -416,15 +403,8 @@ class BacklinkCache {
 		);
 
 		// 3) ... fallback to memcached ...
-		$curTTL = 0;
-		$memcValue = $this->wanCache->get(
-			$memcKey,
-			$curTTL,
-			[
-				$this->makeCheckKey()
-			]
-		);
-		if ( is_array( $memcValue ) && ( $curTTL > 0 ) ) {
+		$memcValue = $cache->get( $memcKey );
+		if ( is_array( $memcValue ) ) {
 			$cacheEntry = $memcValue;
 			wfDebug( __METHOD__ . ": got from memcached $memcKey\n" );
 
@@ -455,15 +435,15 @@ class BacklinkCache {
 		}
 
 		// Save partitions to memcached
-		$this->wanCache->set( $memcKey, $cacheEntry, self::CACHE_EXPIRY );
+		$cache->set( $memcKey, $cacheEntry, self::CACHE_EXPIRY );
 
 		// Save backlink count to memcached
-		$memcKey = $this->wanCache->makeKey(
+		$memcKey = $cache->makeKey(
 			'numbacklinks',
 			md5( $this->title->getPrefixedDBkey() ),
 			$table
 		);
-		$this->wanCache->set( $memcKey, $cacheEntry['numRows'], self::CACHE_EXPIRY );
+		$cache->set( $memcKey, $cacheEntry['numRows'], self::CACHE_EXPIRY );
 
 		wfDebug( __METHOD__ . ": got from database\n" );
 
@@ -562,17 +542,5 @@ class BacklinkCache {
 
 		return TitleArray::newFromResult(
 			new FakeResultWrapper( array_values( $mergedRes ) ) );
-	}
-
-	/**
-	 * Returns check key for the backlinks cache for a particular title
-	 *
-	 * @return String
-	 */
-	private function makeCheckKey() {
-		return $this->wanCache->makeKey(
-			'backlinks',
-			md5( $this->title->getPrefixedDBkey() )
-		);
 	}
 }

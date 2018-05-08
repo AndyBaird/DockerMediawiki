@@ -32,7 +32,7 @@ class TidySupport {
 	 * @param bool $useConfiguration
 	 */
 	public function __construct( $useConfiguration = false ) {
-		global $wgUseTidy, $wgTidyBin, $wgTidyInternal, $wgTidyConfig,
+		global $IP, $wgUseTidy, $wgTidyBin, $wgTidyInternal, $wgTidyConfig,
 			$wgTidyConf, $wgTidyOpts;
 
 		$this->enabled = true;
@@ -55,7 +55,26 @@ class TidySupport {
 				$this->enabled = false;
 			}
 		} else {
-			$this->config = [ 'driver' => 'RemexHtml' ];
+			$this->config = [
+				'tidyConfigFile' => "$IP/includes/tidy/tidy.conf",
+				'tidyCommandLine' => '',
+			];
+			if ( extension_loaded( 'tidy' ) && ( wfIsHHVM() || class_exists( 'tidy' ) ) ) {
+				$this->config['driver'] = wfIsHHVM() ? 'RaggettInternalHHVM' : 'RaggettInternalPHP';
+			} else {
+				if ( is_executable( $wgTidyBin ) ) {
+					$this->config['driver'] = 'RaggettExternal';
+					$this->config['tidyBin'] = $wgTidyBin;
+				} else {
+					$path = Installer::locateExecutableInDefaultPaths( $wgTidyBin );
+					if ( $path !== false ) {
+						$this->config['driver'] = 'RaggettExternal';
+						$this->config['tidyBin'] = $wgTidyBin;
+					} else {
+						$this->enabled = false;
+					}
+				}
+			}
 		}
 		if ( !$this->enabled ) {
 			$this->config = [ 'driver' => 'disabled' ];

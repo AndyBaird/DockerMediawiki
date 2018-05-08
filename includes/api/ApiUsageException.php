@@ -16,6 +16,7 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
+ * @defgroup API API
  */
 
 /**
@@ -212,7 +213,7 @@ class ApiUsageException extends UsageException implements ILocalizedException {
 	 * @inheritDoc
 	 */
 	public function getMessageObject() {
-		return Status::wrap( $this->status )->getMessage();
+		return $this->status->getMessage();
 	}
 
 	/**

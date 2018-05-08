@@ -12,7 +12,6 @@
 	 *  selected, makes inactive.
 	 * @cfg {string[]} [subset] Defining the names of filters that are a subset of this filter
 	 * @cfg {Object} [conflicts] Defines the conflicts for this filter
-	 * @cfg {boolean} [visible=true] The visibility of the group
 	 */
 	mw.rcfilters.dm.FilterItem = function MwRcfiltersDmFilterItem( param, groupModel, config ) {
 		config = config || {};
@@ -30,7 +29,6 @@
 		this.subset = config.subset || [];
 		this.conflicts = config.conflicts || {};
 		this.superset = [];
-		this.visible = config.visible === undefined ? true : !!config.visible;
 
 		// Interaction states
 		this.included = false;
@@ -139,7 +137,7 @@
 				// if the item is also not highlighted. See T161273
 				superset = this.getSuperset();
 				// For this message we need to collect the affecting superset
-				affectingItems = this.getGroupModel().findSelectedItems( this )
+				affectingItems = this.getGroupModel().getSelectedItems( this )
 					.filter( function ( item ) {
 						return superset.indexOf( item.getName() ) !== -1;
 					} )
@@ -149,7 +147,7 @@
 
 				messageKey = 'rcfilters-state-message-subset';
 			} else if ( this.isFullyCovered() && !this.isHighlighted() ) {
-				affectingItems = this.getGroupModel().findSelectedItems( this )
+				affectingItems = this.getGroupModel().getSelectedItems( this )
 					.map( function ( item ) {
 						return mw.msg( 'quotation-marks', item.getLabel() );
 					} );
@@ -371,28 +369,4 @@
 			this.emit( 'update' );
 		}
 	};
-
-	/**
-	 * Toggle the visibility of this item
-	 *
-	 * @param {boolean} [isVisible] Item is visible
-	 */
-	mw.rcfilters.dm.FilterItem.prototype.toggleVisible = function ( isVisible ) {
-		isVisible = isVisible === undefined ? !this.visible : !!isVisible;
-
-		if ( this.visible !== isVisible ) {
-			this.visible = isVisible;
-			this.emit( 'update' );
-		}
-	};
-
-	/**
-	 * Check whether the item is visible
-	 *
-	 * @return {boolean} Item is visible
-	 */
-	mw.rcfilters.dm.FilterItem.prototype.isVisible = function () {
-		return this.visible;
-	};
-
 }( mediaWiki ) );

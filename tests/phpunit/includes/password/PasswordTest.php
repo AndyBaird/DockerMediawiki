@@ -36,6 +36,6 @@ class PasswordTest extends MediaWikiTestCase {
 		$passwordFactory = new PasswordFactory();
 		$invalid = $passwordFactory->newFromPlaintext( null );
 
-		$this->assertInstanceOf( InvalidPassword::class, $invalid );
+		$this->assertInstanceOf( 'InvalidPassword', $invalid );
 	}
 }

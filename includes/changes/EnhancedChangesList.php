@@ -324,7 +324,7 @@ class EnhancedChangesList extends ChangesList {
 				$first--;
 			}
 			# Get net change
-			$charDifference = $this->formatCharacterDifference( $block[$first], $block[$last] ) ?: false;
+			$charDifference = $this->formatCharacterDifference( $block[$first], $block[$last] );
 		}
 
 		$numberofWatchingusers = $this->numberofWatchingusers( $block[0]->numberofWatchingusers );

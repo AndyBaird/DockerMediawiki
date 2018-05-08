@@ -4,17 +4,17 @@ namespace Wikimedia\Rdbms;
 
 class Blob implements IBlob {
 	/** @var string */
-	protected $data;
+	protected $mData;
 
 	/**
 	 * @param string $data
 	 */
 	public function __construct( $data ) {
-		$this->data = $data;
+		$this->mData = $data;
 	}
 
 	public function fetch() {
-		return $this->data;
+		return $this->mData;
 	}
 }
 

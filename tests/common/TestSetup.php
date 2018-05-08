@@ -39,7 +39,7 @@ class TestSetup {
 		$wgMainStash = 'hash';
 		// Use memory job queue
 		$wgJobTypeConf = [
-			'default' => [ 'class' => JobQueueMemory::class, 'order' => 'fifo' ],
+			'default' => [ 'class' => 'JobQueueMemory', 'order' => 'fifo' ],
 		];
 
 		$wgUseDatabaseMessages = false; # Set for future resets
@@ -47,10 +47,10 @@ class TestSetup {
 		// Assume UTC for testing purposes
 		$wgLocaltimezone = 'UTC';
 
-		$wgLocalisationCacheConf['storeClass'] = LCStoreNull::class;
+		$wgLocalisationCacheConf['storeClass'] = 'LCStoreNull';
 
 		// Do not bother updating search tables
-		$wgSearchType = SearchEngineDummy::class;
+		$wgSearchType = 'SearchEngineDummy';
 
 		// Generic MediaWiki\Session\SessionManager configuration for tests
 		// We use CookieSessionProvider because things might be expecting

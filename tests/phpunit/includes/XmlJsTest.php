@@ -3,9 +3,7 @@
 /**
  * @group Xml
  */
-class XmlJsTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class XmlJs extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @covers XmlJsCode::__construct

@@ -6,7 +6,7 @@ use stdClass;
 
 class MssqlResultWrapper extends ResultWrapper {
 	/** @var int|null */
-	private $seekTo = null;
+	private $mSeekTo = null;
 
 	/**
 	 * @return stdClass|bool
@@ -14,10 +14,10 @@ class MssqlResultWrapper extends ResultWrapper {
 	public function fetchObject() {
 		$res = $this->result;
 
-		if ( $this->seekTo !== null ) {
-			$result = sqlsrv_fetch_object( $res, stdClass::class, [],
-				SQLSRV_SCROLL_ABSOLUTE, $this->seekTo );
-			$this->seekTo = null;
+		if ( $this->mSeekTo !== null ) {
+			$result = sqlsrv_fetch_object( $res, 'stdClass', [],
+				SQLSRV_SCROLL_ABSOLUTE, $this->mSeekTo );
+			$this->mSeekTo = null;
 		} else {
 			$result = sqlsrv_fetch_object( $res );
 		}
@@ -36,10 +36,10 @@ class MssqlResultWrapper extends ResultWrapper {
 	public function fetchRow() {
 		$res = $this->result;
 
-		if ( $this->seekTo !== null ) {
+		if ( $this->mSeekTo !== null ) {
 			$result = sqlsrv_fetch_array( $res, SQLSRV_FETCH_BOTH,
-				SQLSRV_SCROLL_ABSOLUTE, $this->seekTo );
-			$this->seekTo = null;
+				SQLSRV_SCROLL_ABSOLUTE, $this->mSeekTo );
+			$this->mSeekTo = null;
 		} else {
 			$result = sqlsrv_fetch_array( $res );
 		}
@@ -70,7 +70,7 @@ class MssqlResultWrapper extends ResultWrapper {
 		}
 
 		// Unlike MySQL, the seek actually happens on the next access
-		$this->seekTo = $row;
+		$this->mSeekTo = $row;
 		return true;
 	}
 }

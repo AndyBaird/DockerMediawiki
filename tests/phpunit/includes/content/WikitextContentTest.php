@@ -40,7 +40,7 @@ more stuff
 			[ "WikitextContentTest_testGetSecondaryDataUpdates_1",
 				CONTENT_MODEL_WIKITEXT, "hello ''world''\n",
 				[
-					LinksUpdate::class => [
+					'LinksUpdate' => [
 						'mRecursive' => true,
 						'mLinks' => []
 					]
@@ -49,7 +49,7 @@ more stuff
 			[ "WikitextContentTest_testGetSecondaryDataUpdates_2",
 				CONTENT_MODEL_WIKITEXT, "hello [[world test 21344]]\n",
 				[
-					LinksUpdate::class => [
+					'LinksUpdate' => [
 						'mRecursive' => true,
 						'mLinks' => [
 							[ 'World_test_21344' => 0 ]
@@ -268,6 +268,16 @@ just a test"
 			],
 			[ 'Foo',
 				null,
+				'comma',
+				false
+			],
+			[ 'Foo, bar',
+				null,
+				'comma',
+				true
+			],
+			[ 'Foo',
+				null,
 				'link',
 				false
 			],
@@ -289,6 +299,11 @@ just a test"
 			[ '#REDIRECT [[bar]]',
 				true,
 				'any',
+				false
+			],
+			[ '#REDIRECT [[bar]]',
+				true,
+				'comma',
 				false
 			],
 			[ '#REDIRECT [[bar]]',
@@ -431,11 +446,11 @@ just a test"
 		return [
 			[ "WikitextContentTest_testGetSecondaryDataUpdates_1",
 				CONTENT_MODEL_WIKITEXT, "hello ''world''\n",
-				[ LinksDeletionUpdate::class => [] ]
+				[ 'LinksDeletionUpdate' => [] ]
 			],
 			[ "WikitextContentTest_testGetSecondaryDataUpdates_2",
 				CONTENT_MODEL_WIKITEXT, "hello [[world test 21344]]\n",
-				[ LinksDeletionUpdate::class => [] ]
+				[ 'LinksDeletionUpdate' => [] ]
 			],
 			// @todo more...?
 		];

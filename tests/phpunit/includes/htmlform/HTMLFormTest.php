@@ -1,57 +1,21 @@
 <?php
 
-/**
- * @covers HTMLForm
- *
- * @license GNU GPL v2+
- * @author Gergő Tisza
- * @author Thiemo Mättig
- */
-class HTMLFormTest extends MediaWikiTestCase {
 
-	private function newInstance() {
+class HTMLFormTest extends MediaWikiTestCase {
+	public function testGetHTML_empty() {
 		$form = new HTMLForm( [] );
 		$form->setTitle( Title::newFromText( 'Foo' ) );
-		return $form;
-	}
-
-	public function testGetHTML_empty() {
-		$form = $this->newInstance();
 		$form->prepareForm();
 		$html = $form->getHTML( false );
-		$this->assertStringStartsWith( '<form ', $html );
+		$this->assertRegExp( '/<form\b/', $html );
 	}
 
 	/**
 	 * @expectedException LogicException
 	 */
 	public function testGetHTML_noPrepare() {
-		$form = $this->newInstance();
+		$form = new HTMLForm( [] );
+		$form->setTitle( Title::newFromText( 'Foo' ) );
 		$form->getHTML( false );
 	}
-
-	public function testAutocompleteDefaultsToNull() {
-		$form = $this->newInstance();
-		$this->assertNotContains( 'autocomplete', $form->wrapForm( '' ) );
-	}
-
-	public function testAutocompleteWhenSetToNull() {
-		$form = $this->newInstance();
-		$form->setAutocomplete( null );
-		$this->assertNotContains( 'autocomplete', $form->wrapForm( '' ) );
-	}
-
-	public function testAutocompleteWhenSetToFalse() {
-		$form = $this->newInstance();
-		// Previously false was used instead of null to indicate the attribute should not be set
-		$form->setAutocomplete( false );
-		$this->assertNotContains( 'autocomplete', $form->wrapForm( '' ) );
-	}
-
-	public function testAutocompleteWhenSetToOff() {
-		$form = $this->newInstance();
-		$form->setAutocomplete( 'off' );
-		$this->assertContains( ' autocomplete="off"', $form->wrapForm( '' ) );
-	}
-
 }

@@ -45,21 +45,19 @@ if ( isset( $options['limit'] ) ) {
 	$limit = 1000;
 	$untilHappy = true;
 }
-$type = isset( $options['type'] ) ? $options['type'] : ConcatenatedGzipHistoryBlob::class;
+$type = isset( $options['type'] ) ? $options['type'] : 'ConcatenatedGzipHistoryBlob';
 
 $dbr = $this->getDB( DB_REPLICA );
-$revQuery = Revision::getQueryInfo( [ 'page', 'text' ] );
 $res = $dbr->select(
-	$revQuery['tables'],
-	$revQuery['fields'],
+	[ 'page', 'revision', 'text' ],
+	'*',
 	[
 		'page_namespace' => $title->getNamespace(),
 		'page_title' => $title->getDBkey(),
+		'page_id=rev_page',
 		'rev_timestamp > ' . $dbr->addQuotes( $dbr->timestamp( $start ) ),
-	],
-	__FILE__,
-	[ 'LIMIT' => $limit ],
-	$revQuery['joins']
+		'rev_text_id=old_id'
+	], __FILE__, [ 'LIMIT' => $limit ]
 );
 
 $blob = new $type;

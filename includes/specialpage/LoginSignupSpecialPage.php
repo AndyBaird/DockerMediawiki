@@ -478,6 +478,7 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 	/**
 	 * Replace some globals to make sure the fact that the user has just been logged in is
 	 * reflected in the current request.
+	 * @param User $user
 	 */
 	protected function setSessionUserForCurrentRequest() {
 		global $wgUser, $wgLang;
@@ -515,6 +516,7 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 	 * @private
 	 */
 	protected function mainLoginForm( array $requests, $msg = '', $msgtype = 'error' ) {
+		$titleObj = $this->getPageTitle();
 		$user = $this->getUser();
 		$out = $this->getOutput();
 
@@ -1180,7 +1182,7 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 								],
 								$this->msg(
 									$loggedIn ? 'userlogin-createanother' : 'userlogin-joinproject'
-								)->text()
+								)->escaped()
 							)
 						);
 					},

@@ -60,5 +60,5 @@ class CheckBadRedirects extends Maintenance {
 	}
 }
 
-$maintClass = CheckBadRedirects::class;
+$maintClass = "CheckBadRedirects";
 require_once RUN_MAINTENANCE_IF_MAIN;

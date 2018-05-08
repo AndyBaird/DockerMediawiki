@@ -609,7 +609,7 @@ abstract class AuthManagerSpecialPage extends SpecialPage {
 			} elseif ( array_key_exists( 'type', $definition ) ) {
 				$class = HTMLForm::$typeMappings[$definition['type']];
 			}
-			if ( $class !== HTMLInfoField::class ) {
+			if ( $class !== 'HTMLInfoField' ) {
 				$definition['tabindex'] = $i;
 				$i++;
 			}

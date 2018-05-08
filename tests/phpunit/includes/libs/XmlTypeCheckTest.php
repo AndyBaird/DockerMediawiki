@@ -5,14 +5,12 @@
  * @group Xml
  * @covers XMLTypeCheck
  */
-class XmlTypeCheckTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-
+class XmlTypeCheckTest extends PHPUnit_Framework_TestCase {
 	const WELL_FORMED_XML = "<root><child /></root>";
 	const MAL_FORMED_XML = "<root><child /></error>";
-	// phpcs:ignore Generic.Files.LineLength
+	// @codingStandardsIgnoreStart Generic.Files.LineLength
 	const XML_WITH_PIH = '<?xml version="1.0"?><?xml-stylesheet type="text/xsl" href="/w/index.php"?><svg><child /></svg>';
+	// @codingStandardsIgnoreEnd
 
 	/**
 	 * @covers XMLTypeCheck::newFromString

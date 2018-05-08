@@ -158,9 +158,6 @@ abstract class JobQueueAggregator {
 	}
 }
 
-/**
- * @ingroup JobQueue
- */
 class JobQueueAggregatorNull extends JobQueueAggregator {
 	protected function doNotifyQueueEmpty( $wiki, $type ) {
 		return true;

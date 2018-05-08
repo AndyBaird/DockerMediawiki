@@ -46,10 +46,10 @@ class ChangePassword extends Maintenance {
 		} elseif ( $this->hasOption( "userid" ) ) {
 			$user = User::newFromId( $this->getOption( 'userid' ) );
 		} else {
-			$this->fatalError( "A \"user\" or \"userid\" must be set to change the password for" );
+			$this->error( "A \"user\" or \"userid\" must be set to change the password for", true );
 		}
 		if ( !$user || !$user->getId() ) {
-			$this->fatalError( "No such user: " . $this->getOption( 'user' ) );
+			$this->error( "No such user: " . $this->getOption( 'user' ), true );
 		}
 		$password = $this->getOption( 'password' );
 		try {
@@ -64,10 +64,10 @@ class ChangePassword extends Maintenance {
 			$user->saveSettings();
 			$this->output( "Password set for " . $user->getName() . "\n" );
 		} catch ( PasswordError $pwe ) {
-			$this->fatalError( $pwe->getText() );
+			$this->error( $pwe->getText(), true );
 		}
 	}
 }
 
-$maintClass = ChangePassword::class;
+$maintClass = "ChangePassword";
 require_once RUN_MAINTENANCE_IF_MAIN;

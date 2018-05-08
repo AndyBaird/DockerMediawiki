@@ -732,7 +732,7 @@ abstract class BagOStuff implements IExpiringStore, LoggerAwareInterface {
 	 * @since 1.27
 	 * @param string $keyspace
 	 * @param array $args
-	 * @return string Colon-delimited list of $keyspace followed by escaped components of $args
+	 * @return string
 	 */
 	public function makeKeyInternal( $keyspace, $args ) {
 		$key = $keyspace;
@@ -747,11 +747,10 @@ abstract class BagOStuff implements IExpiringStore, LoggerAwareInterface {
 	 * Make a global cache key.
 	 *
 	 * @since 1.27
-	 * @param string $class Key class
-	 * @param string $component [optional] Key component (starting with a key collection name)
-	 * @return string Colon-delimited list of $keyspace followed by escaped components of $args
+	 * @param string $keys,... Key component
+	 * @return string
 	 */
-	public function makeGlobalKey( $class, $component = null ) {
+	public function makeGlobalKey() {
 		return $this->makeKeyInternal( 'global', func_get_args() );
 	}
 
@@ -759,11 +758,10 @@ abstract class BagOStuff implements IExpiringStore, LoggerAwareInterface {
 	 * Make a cache key, scoped to this instance's keyspace.
 	 *
 	 * @since 1.27
-	 * @param string $class Key class
-	 * @param string $component [optional] Key component (starting with a key collection name)
-	 * @return string Colon-delimited list of $keyspace followed by escaped components of $args
+	 * @param string $keys,... Key component
+	 * @return string
 	 */
-	public function makeKey( $class, $component = null ) {
+	public function makeKey() {
 		return $this->makeKeyInternal( $this->keyspace, func_get_args() );
 	}
 

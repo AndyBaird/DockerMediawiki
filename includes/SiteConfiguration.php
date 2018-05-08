@@ -20,8 +20,6 @@
  * @file
  */
 
-use MediaWiki\Shell\Shell;
-
 /**
  * This is a class for holding configuration settings, particularly for
  * multi-wiki sites.
@@ -548,21 +546,19 @@ class SiteConfiguration {
 			} else {
 				$this->cfgCache[$wiki] = [];
 			}
-			$result = Shell::makeScriptCommand(
+			$retVal = 1;
+			$cmd = wfShellWikiCmd(
 				"$IP/maintenance/getConfiguration.php",
 				[
 					'--wiki', $wiki,
 					'--settings', implode( ' ', $settings ),
-					'--format', 'PHP',
+					'--format', 'PHP'
 				]
-			)
-				// limit.sh breaks this call
-				->limits( [ 'memory' => 0, 'filesize' => 0 ] )
-				->execute();
-
-			$data = trim( $result->getStdout() );
-			if ( $result->getExitCode() != 0 || !strlen( $data ) ) {
-				throw new MWException( "Failed to run getConfiguration.php: {$result->getStdout()}" );
+			);
+			// ulimit5.sh breaks this call
+			$data = trim( wfShellExec( $cmd, $retVal, [], [ 'memory' => 0 ] ) );
+			if ( $retVal != 0 || !strlen( $data ) ) {
+				throw new MWException( "Failed to run getConfiguration.php." );
 			}
 			$res = unserialize( $data );
 			if ( !is_array( $res ) ) {

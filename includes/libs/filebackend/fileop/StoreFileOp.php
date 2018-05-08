@@ -77,9 +77,9 @@ class StoreFileOp extends FileOp {
 	}
 
 	protected function getSourceSha1Base36() {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$hash = sha1_file( $this->params['src'] );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 		if ( $hash !== false ) {
 			$hash = Wikimedia\base_convert( $hash, 16, 36, 31 );
 		}

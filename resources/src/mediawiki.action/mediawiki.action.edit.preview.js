@@ -99,8 +99,7 @@
 				rvdifftotext: $textbox.textSelection( 'getContents' ),
 				rvdifftotextpst: true,
 				rvprop: '',
-				rvsection: section === '' ? undefined : section,
-				uselang: mw.config.get( 'wgUserLanguage' )
+				rvsection: section === '' ? undefined : section
 			} );
 
 			// Wait for the summary before showing the diff so the page doesn't jump twice
@@ -137,7 +136,7 @@
 
 			parseRequest = api.post( postData );
 			parseRequest.done( function ( response ) {
-				var newList, $displaytitle, $content, $parent, $list;
+				var li, newList, $displaytitle, $content, $parent, $list;
 				if ( response.parse.jsconfigvars ) {
 					mw.config.set( response.parse.jsconfigvars );
 				}
@@ -183,8 +182,9 @@
 					$( '.catlinks[data-mw="interface"]' ).replaceWith( $content );
 				}
 				if ( response.parse.templates ) {
-					newList = response.parse.templates.map( function ( template ) {
-						return $( '<li>' )
+					newList = [];
+					$.each( response.parse.templates, function ( i, template ) {
+						li = $( '<li>' )
 							.append( $( '<a>' )
 								.attr( {
 									href: mw.util.getUrl( template.title ),
@@ -192,6 +192,7 @@
 								} )
 								.text( template.title )
 							);
+						newList.push( li );
 					} );
 
 					$editform.find( '.templatesUsed .mw-editfooter-list' ).detach().empty().append( newList ).appendTo( '.templatesUsed' );
@@ -200,9 +201,10 @@
 					$( '.limitreport' ).html( response.parse.limitreporthtml );
 				}
 				if ( response.parse.langlinks && mw.config.get( 'skin' ) === 'vector' ) {
-					newList = response.parse.langlinks.map( function ( langlink ) {
+					newList = [];
+					$.each( response.parse.langlinks, function ( i, langlink ) {
 						var bcp47 = mw.language.bcp47( langlink.lang );
-						return $( '<li>' )
+						li = $( '<li>' )
 							.addClass( 'interlanguage-link interwiki-' + langlink.lang )
 							.append( $( '<a>' )
 								.attr( {
@@ -213,6 +215,7 @@
 								} )
 								.text( langlink.autonym )
 							);
+						newList.push( li );
 					} );
 					$list = $( '#p-lang ul' );
 					$parent = $list.parent();

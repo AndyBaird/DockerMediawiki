@@ -5,9 +5,7 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group ResourceLoader
  */
-class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class ResourceLoaderClientHtmlTest extends PHPUnit_Framework_TestCase {
 
 	protected static function expandVariables( $text ) {
 		return strtr( $text, [
@@ -42,10 +40,10 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 	protected static function makeSampleModules() {
 		$modules = [
 			'test' => [],
-			'test.private' => [ 'group' => 'private' ],
-			'test.shouldembed.empty' => [ 'shouldEmbed' => true, 'isKnownEmpty' => true ],
+			'test.top' => [ 'position' => 'top' ],
+			'test.private.top' => [ 'group' => 'private', 'position' => 'top' ],
+			'test.private.bottom' => [ 'group' => 'private', 'position' => 'bottom' ],
 			'test.shouldembed' => [ 'shouldEmbed' => true ],
-			'test.user' => [ 'group' => 'user' ],
 
 			'test.styles.pure' => [ 'type' => ResourceLoaderModule::LOAD_STYLES ],
 			'test.styles.mixed' => [],
@@ -74,6 +72,7 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 			],
 
 			'test.scripts' => [],
+			'test.scripts.top' => [ 'position' => 'top' ],
 			'test.scripts.user' => [ 'group' => 'user' ],
 			'test.scripts.user.empty' => [ 'group' => 'user', 'isKnownEmpty' => true ],
 			'test.scripts.raw' => [ 'isRaw' => true ],
@@ -113,10 +112,10 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 		$client = new ResourceLoaderClientHtml( $context );
 		$client->setModules( [
 			'test',
-			'test.private',
-			'test.shouldembed.empty',
+			'test.private.bottom',
+			'test.private.top',
+			'test.top',
 			'test.shouldembed',
-			'test.user',
 			'test.unregistered',
 		] );
 		$client->setModuleStyles( [
@@ -129,44 +128,44 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 		] );
 		$client->setModuleScripts( [
 			'test.scripts',
-			'test.scripts.user',
 			'test.scripts.user.empty',
+			'test.scripts.top',
 			'test.scripts.shouldembed',
 			'test.unregistered.scripts',
 		] );
 
 		$expected = [
 			'states' => [
-				'test.private' => 'loading',
-				'test.shouldembed.empty' => 'ready',
+				'test.private.top' => 'loading',
+				'test.private.bottom' => 'loading',
 				'test.shouldembed' => 'loading',
-				'test.user' => 'loading',
 				'test.styles.pure' => 'ready',
 				'test.styles.user.empty' => 'ready',
 				'test.styles.private' => 'ready',
 				'test.styles.shouldembed' => 'ready',
 				'test.scripts' => 'loading',
-				'test.scripts.user' => 'loading',
+				'test.scripts.top' => 'loading',
 				'test.scripts.user.empty' => 'ready',
 				'test.scripts.shouldembed' => 'loading',
 			],
 			'general' => [
 				'test',
+				'test.top',
 			],
 			'styles' => [
 				'test.styles.pure',
 			],
 			'scripts' => [
 				'test.scripts',
-				'test.scripts.user',
+				'test.scripts.top',
 				'test.scripts.shouldembed',
 			],
 			'embed' => [
 				'styles' => [ 'test.styles.private', 'test.styles.shouldembed' ],
 				'general' => [
-					'test.private',
+					'test.private.bottom',
+					'test.private.top',
 					'test.shouldembed',
-					'test.user',
 				],
 			],
 		];
@@ -189,72 +188,34 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 		$client = new ResourceLoaderClientHtml( $context );
 		$client->setConfig( [ 'key' => 'value' ] );
 		$client->setModules( [
-			'test',
-			'test.private',
+			'test.top',
+			'test.private.top',
 		] );
 		$client->setModuleStyles( [
 			'test.styles.pure',
 			'test.styles.private',
 		] );
 		$client->setModuleScripts( [
-			'test.scripts',
+			'test.scripts.top',
 		] );
 		$client->setExemptStates( [
 			'test.exempt' => 'ready',
 		] );
 
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Generic.Files.LineLength
 		$expected = '<script>document.documentElement.className = document.documentElement.className.replace( /(^|\s)client-nojs(\s|$)/, "$1client-js$2" );</script>' . "\n"
 			. '<script>(window.RLQ=window.RLQ||[]).push(function(){'
 			. 'mw.config.set({"key":"value"});'
-			. 'mw.loader.state({"test.exempt":"ready","test.private":"loading","test.styles.pure":"ready","test.styles.private":"ready","test.scripts":"loading"});'
-			. 'mw.loader.implement("test.private@{blankVer}",function($,jQuery,require,module){},{"css":[]});'
-			. 'mw.loader.load(["test"]);'
-			. 'mw.loader.load("/w/load.php?debug=false\u0026lang=nl\u0026modules=test.scripts\u0026only=scripts\u0026skin=fallback");'
+			. 'mw.loader.state({"test.exempt":"ready","test.private.top":"loading","test.styles.pure":"ready","test.styles.private":"ready","test.scripts.top":"loading"});'
+			. 'mw.loader.implement("test.private.top@{blankVer}",function($,jQuery,require,module){},{"css":[]});'
+			. 'mw.loader.load(["test.top"]);'
+			. 'mw.loader.load("/w/load.php?debug=false\u0026lang=nl\u0026modules=test.scripts.top\u0026only=scripts\u0026skin=fallback");'
 			. '});</script>' . "\n"
 			. '<link rel="stylesheet" href="/w/load.php?debug=false&amp;lang=nl&amp;modules=test.styles.pure&amp;only=styles&amp;skin=fallback"/>' . "\n"
 			. '<style>.private{}</style>' . "\n"
 			. '<script async="" src="/w/load.php?debug=false&amp;lang=nl&amp;modules=startup&amp;only=scripts&amp;skin=fallback"></script>';
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 		$expected = self::expandVariables( $expected );
-
-		$this->assertEquals( $expected, $client->getHeadHtml() );
-	}
-
-	/**
-	 * Confirm that 'target' is passed down to the startup module's load url.
-	 *
-	 * @covers ResourceLoaderClientHtml::getHeadHtml
-	 */
-	public function testGetHeadHtmlWithTarget() {
-		$client = new ResourceLoaderClientHtml(
-			self::makeContext(),
-			[ 'target' => 'example' ]
-		);
-
-		// phpcs:disable Generic.Files.LineLength
-		$expected = '<script>document.documentElement.className = document.documentElement.className.replace( /(^|\s)client-nojs(\s|$)/, "$1client-js$2" );</script>' . "\n"
-			. '<script async="" src="/w/load.php?debug=false&amp;lang=nl&amp;modules=startup&amp;only=scripts&amp;skin=fallback&amp;target=example"></script>';
-		// phpcs:enable
-
-		$this->assertEquals( $expected, $client->getHeadHtml() );
-	}
-
-	/**
-	 * Confirm that a null 'target' is the same as no target.
-	 *
-	 * @covers ResourceLoaderClientHtml::getHeadHtml
-	 */
-	public function testGetHeadHtmlWithNullTarget() {
-		$client = new ResourceLoaderClientHtml(
-			self::makeContext(),
-			[ 'target' => null ]
-		);
-
-		// phpcs:disable Generic.Files.LineLength
-		$expected = '<script>document.documentElement.className = document.documentElement.className.replace( /(^|\s)client-nojs(\s|$)/, "$1client-js$2" );</script>' . "\n"
-			. '<script async="" src="/w/load.php?debug=false&amp;lang=nl&amp;modules=startup&amp;only=scripts&amp;skin=fallback"></script>';
-		// phpcs:enable
 
 		$this->assertEquals( $expected, $client->getHeadHtml() );
 	}
@@ -284,8 +245,8 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 	}
 
 	public static function provideMakeLoad() {
-		// phpcs:disable Generic.Files.LineLength
 		return [
+			// @codingStandardsIgnoreStart Generic.Files.LineLength
 			[
 				'context' => [],
 				'modules' => [ 'test.unknown' ],
@@ -300,9 +261,9 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 			],
 			[
 				'context' => [],
-				'modules' => [ 'test.private' ],
+				'modules' => [ 'test.private.top' ],
 				'only' => ResourceLoaderModule::TYPE_COMBINED,
-				'output' => '<script>(window.RLQ=window.RLQ||[]).push(function(){mw.loader.implement("test.private@{blankVer}",function($,jQuery,require,module){},{"css":[]});});</script>',
+				'output' => '<script>(window.RLQ=window.RLQ||[]).push(function(){mw.loader.implement("test.private.top@{blankVer}",function($,jQuery,require,module){},{"css":[]});});</script>',
 			],
 			[
 				'context' => [],
@@ -312,22 +273,10 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 				'output' => '<script async="" src="/w/load.php?debug=false&amp;lang=nl&amp;modules=test.scripts.raw&amp;only=scripts&amp;skin=fallback"></script>',
 			],
 			[
-				'context' => [ 'sync' => true ],
-				'modules' => [ 'test.scripts.raw' ],
-				'only' => ResourceLoaderModule::TYPE_SCRIPTS,
-				'output' => '<script src="/w/load.php?debug=false&amp;lang=nl&amp;modules=test.scripts.raw&amp;only=scripts&amp;skin=fallback&amp;sync=1"></script>',
-			],
-			[
 				'context' => [],
 				'modules' => [ 'test.scripts.user' ],
 				'only' => ResourceLoaderModule::TYPE_SCRIPTS,
 				'output' => '<script>(window.RLQ=window.RLQ||[]).push(function(){mw.loader.load("/w/load.php?debug=false\u0026lang=nl\u0026modules=test.scripts.user\u0026only=scripts\u0026skin=fallback\u0026user=Example\u0026version=0a56zyi");});</script>',
-			],
-			[
-				'context' => [],
-				'modules' => [ 'test.user' ],
-				'only' => ResourceLoaderModule::TYPE_COMBINED,
-				'output' => '<script>(window.RLQ=window.RLQ||[]).push(function(){mw.loader.load("/w/load.php?debug=false\u0026lang=nl\u0026modules=test.user\u0026skin=fallback\u0026user=Example\u0026version=0a56zyi");});</script>',
 			],
 			[
 				'context' => [ 'debug' => true ],
@@ -389,8 +338,8 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 					. '<style>.orderingC{}.orderingD{}</style>' . "\n"
 					. '<link rel="stylesheet" href="/w/load.php?debug=false&amp;lang=nl&amp;modules=test.ordering.e&amp;only=styles&amp;skin=fallback"/>'
 			],
+			// @codingStandardsIgnoreEnd
 		];
-		// phpcs:enable
 	}
 
 	/**
@@ -408,7 +357,7 @@ class ResourceLoaderClientHtmlTest extends PHPUnit\Framework\TestCase {
 	public function testMakeLoad( array $extraQuery, array $modules, $type, $expected ) {
 		$context = self::makeContext( $extraQuery );
 		$context->getResourceLoader()->register( self::makeSampleModules() );
-		$actual = ResourceLoaderClientHtml::makeLoad( $context, $modules, $type, $extraQuery );
+		$actual = ResourceLoaderClientHtml::makeLoad( $context, $modules, $type );
 		$expected = self::expandVariables( $expected );
 		$this->assertEquals( $expected, (string)$actual );
 	}

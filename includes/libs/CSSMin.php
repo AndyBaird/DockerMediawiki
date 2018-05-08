@@ -29,6 +29,8 @@
  */
 class CSSMin {
 
+	/* Constants */
+
 	/** @var string Strip marker for comments. **/
 	const PLACEHOLDER = "\x7fPLACEHOLDER\x7f";
 
@@ -39,6 +41,8 @@ class CSSMin {
 
 	const EMBED_REGEX = '\/\*\s*\@embed\s*\*\/';
 	const COMMENT_REGEX = '\/\*.*?\*\/';
+
+	/* Protected Static Members */
 
 	/** @var array List of common image files extensions and MIME-types */
 	protected static $mimeTypes = [
@@ -52,6 +56,8 @@ class CSSMin {
 		'xbm' => 'image/x-xbitmap',
 		'svg' => 'image/svg+xml',
 	];
+
+	/* Static Methods */
 
 	/**
 	 * Get a list of local files referenced in a stylesheet (includes non-existent files).
@@ -132,9 +138,6 @@ class CSSMin {
 	 */
 	public static function encodeStringAsDataURI( $contents, $type, $ie8Compat = true ) {
 		// Try #1: Non-encoded data URI
-
-		// Remove XML declaration, it's not needed with data URI usage
-		$contents = preg_replace( "/<\\?xml.*?\\?>/", '', $contents );
 		// The regular expression matches ASCII whitespace and printable characters.
 		if ( preg_match( '/^[\r\n\t\x20-\x7e]+$/', $contents ) ) {
 			// Do not base64-encode non-binary files (sane SVGs).
@@ -146,15 +149,7 @@ class CSSMin {
 				'%2F' => '/', // Unencode slashes
 				'%3A' => ':', // Unencode colons
 				'%3D' => '=', // Unencode equals signs
-				'%0A' => ' ', // Change newlines to spaces
-				'%0D' => ' ', // Change carriage returns to spaces
-				'%09' => ' ', // Change tabs to spaces
 			] );
-			// Consolidate runs of multiple spaces in a row
-			$encoded = preg_replace( '/ {2,}/', ' ', $encoded );
-			// Remove leading and trailing spaces
-			$encoded = preg_replace( '/^ | $/', '', $encoded );
-
 			$uri = 'data:' . $type . ',' . $encoded;
 			if ( !$ie8Compat || strlen( $uri ) < self::DATA_URI_SIZE_LIMIT ) {
 				return $uri;
@@ -173,14 +168,18 @@ class CSSMin {
 
 	/**
 	 * Serialize a string (escape and quote) for use as a CSS string value.
-	 * https://www.w3.org/TR/2016/WD-cssom-1-20160317/#serialize-a-string
+	 * http://www.w3.org/TR/2013/WD-cssom-20131205/#serialize-a-string
 	 *
 	 * @param string $value
 	 * @return string
+	 * @throws Exception
 	 */
 	public static function serializeStringValue( $value ) {
-		$value = strtr( $value, [ "\0" => "\\fffd ", '\\' => '\\\\', '"' => '\\"' ] );
-		$value = preg_replace_callback( '/[\x01-\x1f\x7f]/', function ( $match ) {
+		if ( strstr( $value, "\0" ) ) {
+			throw new Exception( "Invalid character in CSS string" );
+		}
+		$value = strtr( $value, [ '\\' => '\\\\', '"' => '\\"' ] );
+		$value = preg_replace_callback( '/[\x01-\x1f\x7f-\x9f]/', function ( $match ) {
 			return '\\' . base_convert( ord( $match[0] ), 10, 16 ) . ' ';
 		}, $value );
 		return '"' . $value . '"';
@@ -420,11 +419,11 @@ class CSSMin {
 			//   is only supported in PHP 5.6. Use a getter method for now.
 			$urlRegex = '(' .
 				// Unquoted url
-				'url\(\s*(?P<file0>[^\s\'"][^\?\)]+?)(?P<query0>\?[^\)]*?|)\s*\)' .
+				'url\(\s*(?P<file0>[^\'"][^\?\)]*?)(?P<query0>\?[^\)]*?|)\s*\)' .
 				// Single quoted url
-				'|url\(\s*\'(?P<file1>[^\?\']+?)(?P<query1>\?[^\']*?|)\'\s*\)' .
+				'|url\(\s*\'(?P<file1>[^\?\']*?)(?P<query1>\?[^\']*?|)\'\s*\)' .
 				// Double quoted url
-				'|url\(\s*"(?P<file2>[^\?"]+?)(?P<query2>\?[^"]*?|)"\s*\)' .
+				'|url\(\s*"(?P<file2>[^\?"]*?)(?P<query2>\?[^"]*?|)"\s*\)' .
 				')';
 		}
 		return $urlRegex;
@@ -442,9 +441,6 @@ class CSSMin {
 				$match['file'] = $match['file1'];
 				$match['query'] = $match['query1'];
 			} else {
-				if ( !isset( $match['file2'] ) || $match['file2'][1] === -1 ) {
-					throw new Exception( 'URL must be non-empty' );
-				}
 				$match['file'] = $match['file2'];
 				$match['query'] = $match['query2'];
 			}
@@ -456,9 +452,6 @@ class CSSMin {
 				$match['file'] = $match['file1'];
 				$match['query'] = $match['query1'];
 			} else {
-				if ( !isset( $match['file2'] ) || $match['file2'] === '' ) {
-					throw new Exception( 'URL must be non-empty' );
-				}
 				$match['file'] = $match['file2'];
 				$match['query'] = $match['query2'];
 			}
@@ -537,8 +530,8 @@ class CSSMin {
 	public static function minify( $css ) {
 		return trim(
 			str_replace(
-				[ '; ', ': ', ' {', '{ ', ', ', '} ', ';}', '( ', ' )', '[ ', ' ]' ],
-				[ ';', ':', '{', '{', ',', '}', '}', '(', ')', '[', ']' ],
+				[ '; ', ': ', ' {', '{ ', ', ', '} ', ';}' ],
+				[ ';', ':', '{', '{', ',', '}', '}' ],
 				preg_replace( [ '/\s+/', '/\/\*.*?\*\//s' ], [ ' ', '' ], $css )
 			)
 		);

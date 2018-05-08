@@ -56,9 +56,9 @@ class PopulateFilearchiveSha1 extends LoggedUpdateMaintenance {
 		}
 
 		$this->output( "Populating fa_sha1 field from fa_storage_key\n" );
-		$endId = $dbw->selectField( $table, 'MAX(fa_id)', '', __METHOD__ );
+		$endId = $dbw->selectField( $table, 'MAX(fa_id)', false, __METHOD__ );
 
-		$batchSize = $this->getBatchSize();
+		$batchSize = $this->mBatchSize;
 		$done = 0;
 
 		do {
@@ -104,5 +104,5 @@ class PopulateFilearchiveSha1 extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = PopulateFilearchiveSha1::class;
+$maintClass = "PopulateFilearchiveSha1";
 require_once RUN_MAINTENANCE_IF_MAIN;

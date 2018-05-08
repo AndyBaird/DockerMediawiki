@@ -41,26 +41,24 @@ class UpdateRestrictions extends Maintenance {
 
 	public function execute() {
 		$db = $this->getDB( DB_MASTER );
-		$batchSize = $this->getBatchSize();
 		if ( !$db->tableExists( 'page_restrictions' ) ) {
-			$this->fatalError( "page_restrictions table does not exist" );
+			$this->error( "page_restrictions table does not exist", true );
 		}
 
-		$start = $db->selectField( 'page', 'MIN(page_id)', '', __METHOD__ );
+		$start = $db->selectField( 'page', 'MIN(page_id)', false, __METHOD__ );
 		if ( !$start ) {
-			$this->fatalError( "Nothing to do." );
+			$this->error( "Nothing to do.", true );
 		}
-		$end = $db->selectField( 'page', 'MAX(page_id)', '', __METHOD__ );
+		$end = $db->selectField( 'page', 'MAX(page_id)', false, __METHOD__ );
 
 		# Do remaining chunk
-		$end += $batchSize - 1;
+		$end += $this->mBatchSize - 1;
 		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
+		$blockEnd = $start + $this->mBatchSize - 1;
 		$encodedExpiry = 'infinity';
 		while ( $blockEnd <= $end ) {
 			$this->output( "...doing page_id from $blockStart to $blockEnd out of $end\n" );
-			$cond = "page_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd .
-				" AND page_restrictions !=''";
+			$cond = "page_id BETWEEN $blockStart AND $blockEnd AND page_restrictions !=''";
 			$res = $db->select(
 				'page',
 				[ 'page_id', 'page_namespace', 'page_restrictions' ],
@@ -107,8 +105,8 @@ class UpdateRestrictions extends Maintenance {
 					throw new MWException( "Deadlock loop failed wtf :(" );
 				}
 			}
-			$blockStart += $batchSize - 1;
-			$blockEnd += $batchSize - 1;
+			$blockStart += $this->mBatchSize - 1;
+			$blockEnd += $this->mBatchSize - 1;
 			wfWaitForSlaves();
 		}
 		$this->output( "...removing dead rows from page_restrictions\n" );
@@ -126,5 +124,5 @@ class UpdateRestrictions extends Maintenance {
 	}
 }
 
-$maintClass = UpdateRestrictions::class;
+$maintClass = "UpdateRestrictions";
 require_once RUN_MAINTENANCE_IF_MAIN;

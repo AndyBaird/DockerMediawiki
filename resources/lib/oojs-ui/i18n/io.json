@@ -1,8 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
-			"Idojc",
-			"Joao Xavier"
+			"Idojc"
 		]
 	},
 	"ooui-outline-control-move-down": "Movar elemento adsube",
@@ -11,7 +10,6 @@
 	"ooui-toolbar-more": "Plu multa",
 	"ooui-toolgroup-expand": "Plu multa",
 	"ooui-toolgroup-collapse": "Min multa",
-	"ooui-item-remove": "Eliminar",
 	"ooui-dialog-message-accept": "Aplikar",
 	"ooui-dialog-message-reject": "Anular",
 	"ooui-dialog-process-error": "Ulo faliis",

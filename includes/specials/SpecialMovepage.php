@@ -235,18 +235,18 @@ class MovePageForm extends UnlistedSpecialPage {
 		}
 
 		if ( count( $err ) ) {
+			$out->addHTML( "<div class='errorbox'>\n" );
 			$action_desc = $this->msg( 'action-move' )->plain();
-			$errMsgHtml = $this->msg( 'permissionserrorstext-withaction',
-				count( $err ), $action_desc )->parseAsBlock();
+			$out->addWikiMsg( 'permissionserrorstext-withaction', count( $err ), $action_desc );
 
 			if ( count( $err ) == 1 ) {
 				$errMsg = $err[0];
 				$errMsgName = array_shift( $errMsg );
 
 				if ( $errMsgName == 'hookaborted' ) {
-					$errMsgHtml .= "<p>{$errMsg[0]}</p>\n";
+					$out->addHTML( "<p>{$errMsg[0]}</p>\n" );
 				} else {
-					$errMsgHtml .= $this->msg( $errMsgName, $errMsg )->parseAsBlock();
+					$out->addWikiMsgArray( $errMsgName, $errMsg );
 				}
 			} else {
 				$errStr = [];
@@ -260,9 +260,9 @@ class MovePageForm extends UnlistedSpecialPage {
 					}
 				}
 
-				$errMsgHtml .= '<ul><li>' . implode( "</li>\n<li>", $errStr ) . "</li></ul>\n";
+				$out->addHTML( '<ul><li>' . implode( "</li>\n<li>", $errStr ) . "</li></ul>\n" );
 			}
-			$out->addHTML( Html::errorBox( $errMsgHtml ) );
+			$out->addHTML( "</div>\n" );
 		}
 
 		if ( $this->oldTitle->isProtected( 'move' ) ) {
@@ -287,8 +287,8 @@ class MovePageForm extends UnlistedSpecialPage {
 			$out->addHTML( "</div>\n" );
 		}
 
-		// Length limit for wpReason and wpNewTitleMain is enforced in the
-		// mediawiki.special.movePage module
+		// Byte limit (not string length limit) for wpReason and wpNewTitleMain
+		// is enforced in the mediawiki.special.movePage module
 
 		$immovableNamespaces = [];
 		foreach ( array_keys( $this->getLanguage()->getNamespaces() ) as $nsId ) {
@@ -326,16 +326,11 @@ class MovePageForm extends UnlistedSpecialPage {
 			]
 		);
 
-		// HTML maxlength uses "UTF-16 code units", which means that characters outside BMP
-		// (e.g. emojis) count for two each. This limit is overridden in JS to instead count
-		// Unicode codepoints (or 255 UTF-8 bytes for old schema).
-		$conf = $this->getConfig();
-		$oldCommentSchema = $conf->get( 'CommentTableSchemaMigrationStage' ) === MIGRATION_OLD;
 		$fields[] = new OOUI\FieldLayout(
 			new OOUI\TextInputWidget( [
 				'name' => 'wpReason',
 				'id' => 'wpReason',
-				'maxLength' => $oldCommentSchema ? 200 : CommentStore::COMMENT_CHARACTER_LIMIT,
+				'maxLength' => 200,
 				'infusable' => true,
 				'value' => $this->reason,
 			] ),

@@ -20,8 +20,8 @@
  * @file
  * @ingroup Deployment
  */
+use Wikimedia\Rdbms\Field;
 use Wikimedia\Rdbms\MySQLField;
-use Wikimedia\Rdbms\IDatabase;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -83,7 +83,7 @@ class MysqlUpdater extends DatabaseUpdater {
 			[ 'doUserUniqueUpdate' ],
 			[ 'doUserGroupsUpdate' ],
 			[ 'addField', 'site_stats', 'ss_total_pages', 'patch-ss_total_articles.sql' ],
-			[ 'addTable', 'user_newtalk', 'patch-usernewtalk.sql' ],
+			[ 'addTable', 'user_newtalk', 'patch-usernewtalk2.sql' ],
 			[ 'addTable', 'transcache', 'patch-transcache.sql' ],
 			[ 'addField', 'interwiki', 'iw_trans', 'patch-interwiki-trans.sql' ],
 
@@ -325,29 +325,10 @@ class MysqlUpdater extends DatabaseUpdater {
 			[ 'renameIndex', 'user_properties', 'user_properties_user_property', 'PRIMARY', false,
 				'patch-user_properties-fix-pk.sql' ],
 			[ 'addTable', 'comment', 'patch-comment-table.sql' ],
-
-			// This field was added in 1.31, but is put here so it can be used by 'migrateComments'
-			[ 'addField', 'image', 'img_description_id', 'patch-image-img_description_id.sql' ],
-
 			[ 'migrateComments' ],
 			[ 'renameIndex', 'l10n_cache', 'lc_lang_key', 'PRIMARY', false,
 				'patch-l10n_cache-primary-key.sql' ],
 			[ 'doUnsignedSyncronisation' ],
-
-			// 1.31
-			[ 'addTable', 'slots', 'patch-slots.sql' ],
-			[ 'addField', 'slots', 'slot_origin', 'patch-slot-origin.sql' ],
-			[ 'addTable', 'content', 'patch-content.sql' ],
-			[ 'addTable', 'slot_roles', 'patch-slot_roles.sql' ],
-			[ 'addTable', 'content_models', 'patch-content_models.sql' ],
-			[ 'migrateArchiveText' ],
-			[ 'addTable', 'actor', 'patch-actor-table.sql' ],
-			[ 'migrateActors' ],
-			[ 'modifyField', 'revision', 'rev_text_id', 'patch-rev_text_id-default.sql' ],
-			[ 'modifyTable', 'site_stats', 'patch-site_stats-modify.sql' ],
-			[ 'populateArchiveRevId' ],
-			[ 'addIndex', 'recentchanges', 'rc_namespace_title_timestamp',
-				'patch-recentchanges-nttindex.sql' ],
 		];
 	}
 
@@ -409,7 +390,7 @@ class MysqlUpdater extends DatabaseUpdater {
 		global $IP;
 
 		if ( !$this->doTable( 'interwiki' ) ) {
-			return;
+			return true;
 		}
 
 		if ( $this->db->tableExists( "interwiki", __METHOD__ ) ) {
@@ -444,7 +425,7 @@ class MysqlUpdater extends DatabaseUpdater {
 	}
 
 	protected function doOldLinksUpdate() {
-		$cl = $this->maintenance->runChild( ConvertLinks::class );
+		$cl = $this->maintenance->runChild( 'ConvertLinks' );
 		$cl->execute();
 	}
 
@@ -484,17 +465,6 @@ class MysqlUpdater extends DatabaseUpdater {
 			return;
 		}
 
-		$insertOpts = [ 'IGNORE' ];
-		$selectOpts = [];
-
-		// If wl_id exists, make insertSelect() more replication-safe by
-		// ordering on that column. If not, hint that it should be safe anyway.
-		if ( $this->db->fieldExists( 'watchlist', 'wl_id', __METHOD__ ) ) {
-			$selectOpts['ORDER BY'] = 'wl_id';
-		} else {
-			$insertOpts[] = 'NO_AUTO_COLUMNS';
-		}
-
 		$this->output( "Adding missing watchlist talk page rows... " );
 		$this->db->insertSelect( 'watchlist', 'watchlist',
 			[
@@ -502,7 +472,7 @@ class MysqlUpdater extends DatabaseUpdater {
 				'wl_namespace' => 'wl_namespace | 1',
 				'wl_title' => 'wl_title',
 				'wl_notificationtimestamp' => 'wl_notificationtimestamp'
-			], [ 'NOT (wl_namespace & 1)' ], __METHOD__, $insertOpts, $selectOpts );
+			], [ 'NOT (wl_namespace & 1)' ], __METHOD__, 'IGNORE' );
 		$this->output( "done.\n" );
 
 		$this->output( "Adding missing watchlist subject page rows... " );
@@ -512,7 +482,7 @@ class MysqlUpdater extends DatabaseUpdater {
 				'wl_namespace' => 'wl_namespace & ~1',
 				'wl_title' => 'wl_title',
 				'wl_notificationtimestamp' => 'wl_notificationtimestamp'
-			], [ 'wl_namespace & 1' ], __METHOD__, $insertOpts, $selectOpts );
+			], [ 'wl_namespace & 1' ], __METHOD__, 'IGNORE' );
 		$this->output( "done.\n" );
 	}
 
@@ -561,12 +531,25 @@ class MysqlUpdater extends DatabaseUpdater {
 				) );
 			}
 			$sql = "SELECT cur_title, cur_namespace, cur_id, cur_timestamp FROM $cur WHERE ";
-			$dupeTitles = [];
+			$firstCond = true;
 			foreach ( $duplicate as $ns => $titles ) {
-				$dupeTitles[] = "( cur_namespace = {$ns} AND cur_title in ("
-					. $this->db->makeList( $titles ) . ") ) \n";
+				if ( $firstCond ) {
+					$firstCond = false;
+				} else {
+					$sql .= ' OR ';
+				}
+				$sql .= "( cur_namespace = {$ns} AND cur_title in (";
+				$first = true;
+				foreach ( $titles as $t ) {
+					if ( $first ) {
+						$sql .= $this->db->addQuotes( $t );
+						$first = false;
+					} else {
+						$sql .= ', ' . $this->db->addQuotes( $t );
+					}
+				}
+				$sql .= ") ) \n";
 			}
-			$sql .= $this->db->makeList( $dupeTitles, IDatabase::LIST_OR );
 			# By sorting descending, the most recent entry will be the first in the list.
 			# All following entries will be deleted by the next while-loop.
 			$sql .= 'ORDER BY cur_namespace, cur_title, cur_timestamp DESC';
@@ -895,8 +878,7 @@ class MysqlUpdater extends DatabaseUpdater {
 		$this->applyPatch( 'patch-templatelinks.sql', false, "Creating templatelinks table" );
 
 		$this->output( "Populating...\n" );
-		$services = MediaWikiServices::getInstance();
-		if ( $services->getDBLoadBalancer()->getServerCount() > 1 ) {
+		if ( wfGetLB()->getServerCount() > 1 ) {
 			// Slow, replication-friendly update
 			$res = $this->db->select( 'pagelinks', [ 'pl_from', 'pl_namespace', 'pl_title' ],
 				[ 'pl_namespace' => NS_TEMPLATE ], __METHOD__ );
@@ -904,7 +886,7 @@ class MysqlUpdater extends DatabaseUpdater {
 			foreach ( $res as $row ) {
 				$count = ( $count + 1 ) % 100;
 				if ( $count == 0 ) {
-					$lbFactory = $services->getDBLoadBalancerFactory();
+					$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 					$lbFactory->waitForReplication( [ 'wiki' => wfWikiID() ] );
 				}
 				$this->db->insert( 'templatelinks',
@@ -924,8 +906,7 @@ class MysqlUpdater extends DatabaseUpdater {
 					'tl_title' => 'pl_title'
 				], [
 					'pl_namespace' => 10
-				], __METHOD__,
-				[ 'NO_AUTO_COLUMNS' ] // There's no "tl_id" auto-increment field
+				], __METHOD__
 			);
 		}
 		$this->output( "Done. Please run maintenance/refreshLinks.php for a more " .
@@ -966,7 +947,7 @@ class MysqlUpdater extends DatabaseUpdater {
 		$this->output( "done.\n" );
 
 		$this->output( "Migrating old restrictions to new table...\n" );
-		$task = $this->maintenance->runChild( UpdateRestrictions::class );
+		$task = $this->maintenance->runChild( 'UpdateRestrictions' );
 		$task->execute();
 	}
 
@@ -989,7 +970,7 @@ class MysqlUpdater extends DatabaseUpdater {
 			"may want to hit Ctrl-C and do this manually with maintenance/\n" .
 			"populateCategory.php.\n"
 		);
-		$task = $this->maintenance->runChild( PopulateCategory::class );
+		$task = $this->maintenance->runChild( 'PopulateCategory' );
 		$task->execute();
 		$this->output( "Done populating category table.\n" );
 	}
@@ -1001,7 +982,7 @@ class MysqlUpdater extends DatabaseUpdater {
 				"databases, you may want to hit Ctrl-C and do this manually with\n" .
 				"maintenance/populateParentId.php.\n" );
 
-			$task = $this->maintenance->runChild( PopulateParentId::class );
+			$task = $this->maintenance->runChild( 'PopulateParentId' );
 			$task->execute();
 		}
 	}

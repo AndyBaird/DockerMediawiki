@@ -2,6 +2,8 @@
 /**
  * API module to handle links table back-queries
  *
+ * Created on Aug 19, 2014
+ *
  * Copyright © 2014 Wikimedia Foundation and contributors
  *
  * This program is free software; you can redistribute it and/or modify
@@ -159,9 +161,7 @@ class ApiQueryBacklinksprop extends ApiQueryGeneratorBase {
 				}
 			} else {
 				$this->addWhereFld( "{$p}_from_namespace", $params['namespace'] );
-				if ( !empty( $settings['from_namespace'] )
-					&& $params['namespace'] !== null && count( $params['namespace'] ) > 1
-				) {
+				if ( !empty( $settings['from_namespace'] ) && count( $params['namespace'] ) > 1 ) {
 					$sortby["{$p}_from_namespace"] = 'int';
 				}
 			}

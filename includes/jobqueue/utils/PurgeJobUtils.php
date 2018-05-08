@@ -37,9 +37,7 @@ class PurgeJobUtils {
 			return;
 		}
 
-		DeferredUpdates::addUpdate( new AutoCommitUpdate(
-			$dbw,
-			__METHOD__,
+		$dbw->onTransactionIdle(
 			function () use ( $dbw, $namespace, $dbkeys ) {
 				$services = MediaWikiServices::getInstance();
 				$lbFactory = $services->getDBLoadBalancerFactory();
@@ -76,7 +74,8 @@ class PurgeJobUtils {
 					);
 					$lbFactory->commitAndWaitForReplication( __METHOD__, $ticket );
 				}
-			}
-		) );
+			},
+			__METHOD__
+		);
 	}
 }

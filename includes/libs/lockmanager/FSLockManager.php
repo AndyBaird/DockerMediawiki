@@ -122,13 +122,13 @@ class FSLockManager extends LockManager {
 			if ( isset( $this->handles[$path] ) ) {
 				$handle = $this->handles[$path];
 			} else {
-				Wikimedia\suppressWarnings();
+				MediaWiki\suppressWarnings();
 				$handle = fopen( $this->getLockPath( $path ), 'a+' );
 				if ( !$handle ) { // lock dir missing?
 					mkdir( $this->lockDir, 0777, true );
 					$handle = fopen( $this->getLockPath( $path ), 'a+' ); // try again
 				}
-				Wikimedia\restoreWarnings();
+				MediaWiki\restoreWarnings();
 			}
 			if ( $handle ) {
 				// Either a shared or exclusive lock

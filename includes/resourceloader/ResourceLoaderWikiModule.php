@@ -22,7 +22,6 @@
  * @author Roan Kattouw
  */
 
-use MediaWiki\Linker\LinkTarget;
 use Wikimedia\Rdbms\Database;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -30,8 +29,8 @@ use Wikimedia\Rdbms\IDatabase;
  * Abstraction for ResourceLoader modules which pull from wiki pages
  *
  * This can only be used for wiki pages in the MediaWiki and User namespaces,
- * because of its dependence on the functionality of Title::isUserConfigPage()
- * and Title::isSiteConfigPage().
+ * because of its dependence on the functionality of Title::isCssJsSubpage
+ * and Title::isCssOrJsPage().
  *
  * This module supports being used as a placeholder for a module on a remote wiki.
  * To do so, getDB() must be overloaded to return a foreign database object that
@@ -51,19 +50,7 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 	// Origin defaults to users with sitewide authority
 	protected $origin = self::ORIGIN_USER_SITEWIDE;
 
-	// In-process cache for title info, structured as an array
-	// [
-	//  <batchKey> // Pipe-separated list of sorted keys from getPages
-	//   => [
-	//     <titleKey> => [ // Normalised title key
-	//       'page_len' => ..,
-	//       'page_latest' => ..,
-	//       'page_touched' => ..,
-	//     ]
-	//   ]
-	// ]
-	// @see self::fetchTitleInfo()
-	// @see self::makeTitleKey()
+	// In-process cache for title info
 	protected $titleInfo = [];
 
 	// List of page names that contain CSS
@@ -157,22 +144,24 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 
 	/**
 	 * @param string $titleText
-	 * @param ResourceLoaderContext|null $context (but passing null is deprecated)
 	 * @return null|string
-	 * @since 1.32 added the $context parameter
 	 */
-	protected function getContent( $titleText, ResourceLoaderContext $context = null ) {
+	protected function getContent( $titleText ) {
 		$title = Title::newFromText( $titleText );
 		if ( !$title ) {
 			return null; // Bad title
 		}
 
-		$content = $this->getContentObj( $title, $context );
-		if ( !$content ) {
-			return null; // No content found
+		// If the page is a redirect, follow the redirect.
+		if ( $title->isRedirect() ) {
+			$content = $this->getContentObj( $title );
+			$title = $content ? $content->getUltimateRedirectTarget() : null;
+			if ( !$title ) {
+				return null; // Dead redirect
+			}
 		}
 
-		$handler = $content->getContentHandler();
+		$handler = ContentHandler::getForTitle( $title );
 		if ( $handler->isSupportedFormat( CONTENT_FORMAT_CSS ) ) {
 			$format = CONTENT_FORMAT_CSS;
 		} elseif ( $handler->isSupportedFormat( CONTENT_FORMAT_JAVASCRIPT ) ) {
@@ -181,79 +170,31 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 			return null; // Bad content model
 		}
 
+		$content = $this->getContentObj( $title );
+		if ( !$content ) {
+			return null; // No content found
+		}
+
 		return $content->serialize( $format );
 	}
 
 	/**
 	 * @param Title $title
-	 * @param ResourceLoaderContext|null $context (but passing null is deprecated)
-	 * @param int|null $maxRedirects Maximum number of redirects to follow. If
-	 *  null, uses $wgMaxRedirects
 	 * @return Content|null
-	 * @since 1.32 added the $context and $maxRedirects parameters
 	 */
-	protected function getContentObj(
-		Title $title, ResourceLoaderContext $context = null, $maxRedirects = null
-	) {
-		if ( $context === null ) {
-			wfDeprecated( __METHOD__ . ' without a ResourceLoader context', '1.32' );
+	protected function getContentObj( Title $title ) {
+		$revision = Revision::newKnownCurrent( wfGetDB( DB_REPLICA ), $title->getArticleID(),
+			$title->getLatestRevID() );
+		if ( !$revision ) {
+			return null;
 		}
-
-		$overrideCallback = $context ? $context->getContentOverrideCallback() : null;
-		$content = $overrideCallback ? call_user_func( $overrideCallback, $title ) : null;
-		if ( $content ) {
-			if ( !$content instanceof Content ) {
-				$this->getLogger()->error(
-					'Bad content override for "{title}" in ' . __METHOD__,
-					[ 'title' => $title->getPrefixedText() ]
-				);
-				return null;
-			}
-		} else {
-			$revision = Revision::newKnownCurrent( wfGetDB( DB_REPLICA ), $title );
-			if ( !$revision ) {
-				return null;
-			}
-			$content = $revision->getContent( Revision::RAW );
-
-			if ( !$content ) {
-				$this->getLogger()->error(
-					'Failed to load content of JS/CSS page "{title}" in ' . __METHOD__,
-					[ 'title' => $title->getPrefixedText() ]
-				);
-				return null;
-			}
+		$revision->setTitle( $title );
+		$content = $revision->getContent( Revision::RAW );
+		if ( !$content ) {
+			wfDebugLog( 'resourceloader', __METHOD__ . ': failed to load content of JS/CSS page!' );
+			return null;
 		}
-
-		if ( $content && $content->isRedirect() ) {
-			if ( $maxRedirects === null ) {
-				$maxRedirects = $this->getConfig()->get( 'MaxRedirects' ) ?: 0;
-			}
-			if ( $maxRedirects > 0 ) {
-				$newTitle = $content->getRedirectTarget();
-				return $newTitle ? $this->getContentObj( $newTitle, $context, $maxRedirects - 1 ) : null;
-			}
-		}
-
 		return $content;
-	}
-
-	/**
-	 * @param ResourceLoaderContext $context
-	 * @return bool
-	 */
-	public function shouldEmbedModule( ResourceLoaderContext $context ) {
-		$overrideCallback = $context->getContentOverrideCallback();
-		if ( $overrideCallback && $this->getSource() === 'local' ) {
-			foreach ( $this->getPages( $context ) as $page => $info ) {
-				$title = Title::newFromText( $page );
-				if ( $title && call_user_func( $overrideCallback, $title ) !== null ) {
-					return true;
-				}
-			}
-		}
-
-		return parent::shouldEmbedModule( $context );
 	}
 
 	/**
@@ -266,7 +207,7 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 			if ( $options['type'] !== 'script' ) {
 				continue;
 			}
-			$script = $this->getContent( $titleText, $context );
+			$script = $this->getContent( $titleText );
 			if ( strval( $script ) !== '' ) {
 				$script = $this->validateScriptFile( $titleText, $script );
 				$scripts .= ResourceLoader::makeComment( $titleText ) . $script . "\n";
@@ -286,7 +227,7 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 				continue;
 			}
 			$media = isset( $options['media'] ) ? $options['media'] : 'all';
-			$style = $this->getContent( $titleText, $context );
+			$style = $this->getContent( $titleText );
 			if ( strval( $style ) === '' ) {
 				continue;
 			}
@@ -339,10 +280,6 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 	public function isKnownEmpty( ResourceLoaderContext $context ) {
 		$revisions = $this->getTitleInfo( $context );
 
-		// If a module has dependencies it cannot be empty. An empty array will be cast to false
-		if ( $this->getDependencies() ) {
-			return false;
-		}
 		// For user modules, don't needlessly load if there are no non-empty pages
 		if ( $this->getGroup() === 'user' ) {
 			foreach ( $revisions as $revision ) {
@@ -360,13 +297,8 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 		return count( $revisions ) === 0;
 	}
 
-	private function setTitleInfo( $batchKey, array $titleInfo ) {
-		$this->titleInfo[$batchKey] = $titleInfo;
-	}
-
-	private static function makeTitleKey( LinkTarget $title ) {
-		// Used for keys in titleInfo.
-		return "{$title->getNamespace()}:{$title->getDBkey()}";
+	private function setTitleInfo( $key, array $titleInfo ) {
+		$this->titleInfo[$key] = $titleInfo;
 	}
 
 	/**
@@ -383,30 +315,11 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 
 		$pageNames = array_keys( $this->getPages( $context ) );
 		sort( $pageNames );
-		$batchKey = implode( '|', $pageNames );
-		if ( !isset( $this->titleInfo[$batchKey] ) ) {
-			$this->titleInfo[$batchKey] = static::fetchTitleInfo( $dbr, $pageNames, __METHOD__ );
+		$key = implode( '|', $pageNames );
+		if ( !isset( $this->titleInfo[$key] ) ) {
+			$this->titleInfo[$key] = static::fetchTitleInfo( $dbr, $pageNames, __METHOD__ );
 		}
-
-		$titleInfo = $this->titleInfo[$batchKey];
-
-		// Override the title info from the overrides, if any
-		$overrideCallback = $context->getContentOverrideCallback();
-		if ( $overrideCallback ) {
-			foreach ( $pageNames as $page ) {
-				$title = Title::newFromText( $page );
-				$content = $title ? call_user_func( $overrideCallback, $title ) : null;
-				if ( $content !== null ) {
-					$titleInfo[$title->getPrefixedText()] = [
-						'page_len' => $content->getSize(),
-						'page_latest' => 'TBD', // None available
-						'page_touched' => wfTimestamp( TS_MW ),
-					];
-				}
-			}
-		}
-
-		return $titleInfo;
+		return $this->titleInfo[$key];
 	}
 
 	protected static function fetchTitleInfo( IDatabase $db, array $pages, $fname = __METHOD__ ) {
@@ -429,8 +342,8 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 			foreach ( $res as $row ) {
 				// Avoid including ids or timestamps of revision/page tables so
 				// that versions are not wasted
-				$title = new TitleValue( (int)$row->page_namespace, $row->page_title );
-				$titleInfo[ self::makeTitleKey( $title ) ] = [
+				$title = Title::makeTitle( $row->page_namespace, $row->page_title );
+				$titleInfo[$title->getPrefixedText()] = [
 					'page_len' => $row->page_len,
 					'page_latest' => $row->page_latest,
 					'page_touched' => $row->page_touched,
@@ -499,23 +412,23 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 			$pages = $wikiModule->getPages( $context );
 			// Before we intersect, map the names to canonical form (T145673).
 			$intersect = [];
-			foreach ( $pages as $pageName => $unused ) {
-				$title = Title::newFromText( $pageName );
+			foreach ( $pages as $page => $unused ) {
+				$title = Title::newFromText( $page );
 				if ( $title ) {
-					$intersect[ self::makeTitleKey( $title ) ] = 1;
+					$intersect[ $title->getPrefixedText() ] = 1;
 				} else {
 					// Page name may be invalid if user-provided (e.g. gadgets)
 					$rl->getLogger()->info(
 						'Invalid wiki page title "{title}" in ' . __METHOD__,
-						[ 'title' => $pageName ]
+						[ 'title' => $page ]
 					);
 				}
 			}
 			$info = array_intersect_key( $allInfo, $intersect );
 			$pageNames = array_keys( $pages );
 			sort( $pageNames );
-			$batchKey = implode( '|', $pageNames );
-			$wikiModule->setTitleInfo( $batchKey, $info );
+			$key = implode( '|', $pageNames );
+			$wikiModule->setTitleInfo( $key, $info );
 		}
 	}
 
@@ -539,7 +452,7 @@ class ResourceLoaderWikiModule extends ResourceLoaderModule {
 		} elseif ( $new && in_array( $new->getContentFormat(), $formats ) ) {
 			$purge = true;
 		} else {
-			$purge = ( $title->isSiteConfigPage() || $title->isUserConfigPage() );
+			$purge = ( $title->isCssOrJsPage() || $title->isCssJsSubpage() );
 		}
 
 		if ( $purge ) {

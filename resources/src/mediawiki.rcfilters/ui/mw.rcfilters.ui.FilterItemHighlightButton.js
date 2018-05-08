@@ -33,14 +33,12 @@
 		this.model = model;
 
 		// Event
-		this.model.connect( this, { update: 'updateUiBasedOnModel' } );
+		this.model.connect( this, { update: 'onModelUpdate' } );
 		this.colorPickerWidget.connect( this, { chooseColor: 'onChooseColor' } );
 		// This lives inside a MenuOptionWidget, which intercepts mousedown
 		// to select the item. We want to prevent that when we click the highlight
 		// button
 		this.$element.on( 'mousedown', function ( e ) { e.stopPropagation(); } );
-
-		this.updateUiBasedOnModel();
 
 		this.$element
 			.addClass( 'mw-rcfilters-ui-filterItemHighlightButton' );
@@ -62,7 +60,7 @@
 	/**
 	 * Respond to item model update event
 	 */
-	mw.rcfilters.ui.FilterItemHighlightButton.prototype.updateUiBasedOnModel = function () {
+	mw.rcfilters.ui.FilterItemHighlightButton.prototype.onModelUpdate = function () {
 		var currentColor = this.model.getHighlightColor(),
 			widget = this;
 

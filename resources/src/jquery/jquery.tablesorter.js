@@ -77,13 +77,9 @@
 		if ( node.tagName.toLowerCase() === 'img' ) {
 			return $node.attr( 'alt' ) || ''; // handle undefined alt
 		}
-		return $.makeArray( node.childNodes ).map( function ( elem ) {
+		return $.map( $.makeArray( node.childNodes ), function ( elem ) {
 			if ( elem.nodeType === Node.ELEMENT_NODE ) {
-				if ( $( elem ).hasClass( 'reference' ) ) {
-					return null;
-				} else {
-					return getElementSortKey( elem );
-				}
+				return getElementSortKey( elem );
 			}
 			return $.text( elem );
 		} ).join( '' );
@@ -109,7 +105,7 @@
 				if ( rowIndex !== lastRowIndex ) {
 					lastRowIndex = rowIndex;
 					cellIndex = $( rows[ rowIndex ] ).data( 'columnToCell' )[ column ];
-					nodeValue = getElementSortKey( rows[ rowIndex ].cells[ cellIndex ] ).trim();
+					nodeValue = $.trim( getElementSortKey( rows[ rowIndex ].cells[ cellIndex ] ) );
 				}
 			} else {
 				nodeValue = '';
@@ -293,8 +289,8 @@
 
 	function uniqueElements( array ) {
 		var uniques = [];
-		array.forEach( function ( elem ) {
-			if ( elem !== undefined && uniques.indexOf( elem ) === -1 ) {
+		$.each( array, function ( i, elem ) {
+			if ( elem !== undefined && $.inArray( elem, uniques ) === -1 ) {
 				uniques.push( elem );
 			}
 		} );
@@ -349,7 +345,7 @@
 				} );
 			} );
 			// We want to find the row that has the most columns (ignoring colspan)
-			exploded.forEach( function ( cellArray, index ) {
+			$.each( exploded, function ( index, cellArray ) {
 				headerCount = $( uniqueElements( cellArray ) ).filter( 'th' ).length;
 				if ( headerCount >= maxSeen ) {
 					maxSeen = headerCount;
@@ -427,9 +423,9 @@
 	 */
 	function setHeadersOrder( $headers, sortList, headerToColumns ) {
 		// Loop through all headers to retrieve the indices of the columns the header spans across:
-		headerToColumns.forEach( function ( columns, headerIndex ) {
+		$.each( headerToColumns, function ( headerIndex, columns ) {
 
-			columns.forEach( function ( columnIndex, i ) {
+			$.each( columns, function ( i, columnIndex ) {
 				var header = $headers[ headerIndex ],
 					$header = $( header );
 
@@ -441,7 +437,7 @@
 					} );
 				} else {
 					// Column shall be sorted: Apply designated count and order.
-					sortList.forEach( function ( sortColumn ) {
+					$.each( sortList, function ( j, sortColumn ) {
 						if ( sortColumn[ 0 ] === i ) {
 							$header.data( {
 								order: sortColumn[ 1 ],
@@ -626,8 +622,8 @@
 				}
 				return ret;
 			} );
-			rowspanCells.forEach( function ( cell ) {
-				$.data( cell, 'tablesorter' ).needResort = false;
+			$.each( rowspanCells, function () {
+				$.data( this, 'tablesorter' ).needResort = false;
 			} );
 		}
 		resortCells();
@@ -765,14 +761,14 @@
 
 	/**
 	 * Converts sort objects [ { Integer: String }, ... ] to the internally used nested array
-	 * structure [ [ Integer, Integer ], ... ]
+	 * structure [ [ Integer , Integer ], ... ]
 	 *
 	 * @param {Array} sortObjects List of sort objects.
 	 * @return {Array} List of internal sort definitions.
 	 */
 	function convertSortList( sortObjects ) {
 		var sortList = [];
-		sortObjects.forEach( function ( sortObject ) {
+		$.each( sortObjects, function ( i, sortObject ) {
 			$.each( sortObject, function ( columnIndex, order ) {
 				var orderIndex = ( order === 'desc' ) ? 1 : 0;
 				sortList.push( [ parseInt( columnIndex, 10 ), orderIndex ] );
@@ -929,8 +925,9 @@
 						cell = this;
 						// Get current column index
 						columns = config.headerToColumns[ $cell.data( 'headerIndex' ) ];
-						newSortList = columns.map( function ( c ) {
-							return [ c, $cell.data( 'order' ) ];
+						newSortList = $.map( columns, function ( c ) {
+							// jQuery "helpfully" flattens the arrays...
+							return [ [ c, $cell.data( 'order' ) ] ];
 						} );
 						// Index of first column belonging to this header
 						i = columns[ 0 ];
@@ -1094,7 +1091,7 @@
 		},
 		format: function ( s ) {
 			var tsc;
-			s = s.toLowerCase().trim();
+			s = $.trim( s.toLowerCase() );
 			if ( ts.collationRegex ) {
 				tsc = ts.collationTable;
 				s = s.replace( ts.collationRegex, function ( match ) {
@@ -1148,7 +1145,7 @@
 			return ts.rgx.url[ 0 ].test( s );
 		},
 		format: function ( s ) {
-			return s.replace( ts.rgx.url[ 1 ], '' ).trim();
+			return $.trim( s.replace( ts.rgx.url[ 1 ], '' ) );
 		},
 		type: 'text'
 	} );
@@ -1211,7 +1208,7 @@
 		},
 		format: function ( s ) {
 			var match, y;
-			s = s.toLowerCase().trim();
+			s = $.trim( s.toLowerCase() );
 
 			if ( ( match = s.match( ts.dateRegex[ 0 ] ) ) !== null ) {
 				if ( mw.config.get( 'wgDefaultDateFormat' ) === 'mdy' || mw.config.get( 'wgPageContentLanguage' ) === 'en' ) {
@@ -1270,7 +1267,7 @@
 	ts.addParser( {
 		id: 'number',
 		is: function ( s ) {
-			return $.tablesorter.numberRegex.test( s.trim() );
+			return $.tablesorter.numberRegex.test( $.trim( s ) );
 		},
 		format: function ( s ) {
 			return $.tablesorter.formatDigit( s );

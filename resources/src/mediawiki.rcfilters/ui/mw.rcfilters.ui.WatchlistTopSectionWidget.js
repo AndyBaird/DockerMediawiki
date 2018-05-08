@@ -52,7 +52,6 @@
 
 		$bottomTable = $( '<div>' )
 			.addClass( 'mw-rcfilters-ui-table' )
-			.addClass( 'mw-rcfilters-ui-watchlistTopSectionWidget-savedLinksTable' )
 			.append(
 				$( '<div>' )
 					.addClass( 'mw-rcfilters-ui-row' )

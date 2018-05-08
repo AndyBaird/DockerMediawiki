@@ -69,9 +69,9 @@ class SpecialUnlockdb extends FormSpecialPage {
 		}
 
 		$readOnlyFile = $this->getConfig()->get( 'ReadOnlyFile' );
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$res = unlink( $readOnlyFile );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( $res ) {
 			return Status::newGood();

@@ -24,9 +24,7 @@
  * @copyright © 2014 Wikimedia Foundation and contributors
  * @since 1.25
  */
-class XhprofDataTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class XhprofDataTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @covers XhprofData::splitKey

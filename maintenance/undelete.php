@@ -41,7 +41,7 @@ class Undelete extends Maintenance {
 
 		$title = Title::newFromText( $pageName );
 		if ( !$title ) {
-			$this->fatalError( "Invalid title" );
+			$this->error( "Invalid title", true );
 		}
 		if ( $user === false ) {
 			$wgUser = User::newSystemUser( 'Command line script', [ 'steal' => true ] );
@@ -49,7 +49,7 @@ class Undelete extends Maintenance {
 			$wgUser = User::newFromName( $user );
 		}
 		if ( !$wgUser ) {
-			$this->fatalError( "Invalid username" );
+			$this->error( "Invalid username", true );
 		}
 		$archive = new PageArchive( $title, RequestContext::getMain()->getConfig() );
 		$this->output( "Undeleting " . $title->getPrefixedDBkey() . '...' );
@@ -58,5 +58,5 @@ class Undelete extends Maintenance {
 	}
 }
 
-$maintClass = Undelete::class;
+$maintClass = "Undelete";
 require_once RUN_MAINTENANCE_IF_MAIN;

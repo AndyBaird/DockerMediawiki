@@ -109,7 +109,7 @@ TEXT
 					__METHOD__,
 					[
 						'ORDER BY' => 'page_title',
-						'LIMIT' => $this->getBatchSize(),
+						'LIMIT' => $this->mBatchSize,
 					],
 					[
 						'category' => [ 'LEFT JOIN', 'page_title = cat_title' ],
@@ -161,7 +161,7 @@ TEXT
 					__METHOD__,
 					[
 						'ORDER BY' => 'cat_title',
-						'LIMIT' => $this->getBatchSize(),
+						'LIMIT' => $this->mBatchSize,
 					],
 					[
 						'page' => [ 'LEFT JOIN', [
@@ -199,5 +199,5 @@ TEXT
 	}
 }
 
-$maintClass = CleanupEmptyCategories::class;
+$maintClass = 'CleanupEmptyCategories';
 require_once RUN_MAINTENANCE_IF_MAIN;

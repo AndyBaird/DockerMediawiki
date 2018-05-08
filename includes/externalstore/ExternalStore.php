@@ -3,8 +3,6 @@
  * @defgroup ExternalStorage ExternalStorage
  */
 
-use MediaWiki\MediaWikiServices;
-
 /**
  * Interface for data storage in external repositories.
  *
@@ -54,9 +52,16 @@ class ExternalStore {
 	 * @return ExternalStoreMedium|bool The store class or false on error
 	 */
 	public static function getStoreObject( $proto, array $params = [] ) {
-		return MediaWikiServices::getInstance()
-			->getExternalStoreFactory()
-			->getStoreObject( $proto, $params );
+		global $wgExternalStores;
+
+		if ( !$wgExternalStores || !in_array( $proto, $wgExternalStores ) ) {
+			return false; // protocol not enabled
+		}
+
+		$class = 'ExternalStore' . ucfirst( $proto );
+
+		// Any custom modules should be added to $wgAutoLoadClasses for on-demand loading
+		return class_exists( $class ) ? new $class( $params ) : false;
 	}
 
 	/**
@@ -92,7 +97,6 @@ class ExternalStore {
 	 * @param array $urls The URLs of the text to get
 	 * @return array Map from url to its data.  Data is either string when found
 	 *     or false on failure.
-	 * @throws MWException
 	 */
 	public static function batchFetchFromURLs( array $urls ) {
 		$batches = [];
@@ -158,7 +162,7 @@ class ExternalStore {
 	 * provided by $wgDefaultExternalStore.
 	 *
 	 * @param string $data
-	 * @param array $params Map of ExternalStoreMedium::__construct context parameters
+	 * @param array $params Associative array of ExternalStoreMedium parameters
 	 * @return string|bool The URL of the stored data item, or false on error
 	 * @throws MWException
 	 */
@@ -176,7 +180,7 @@ class ExternalStore {
 	 *
 	 * @param array $tryStores Refer to $wgDefaultExternalStore
 	 * @param string $data
-	 * @param array $params Map of ExternalStoreMedium::__construct context parameters
+	 * @param array $params Associative array of ExternalStoreMedium parameters
 	 * @return string|bool The URL of the stored data item, or false on error
 	 * @throws MWException
 	 */
@@ -191,25 +195,19 @@ class ExternalStore {
 			if ( $store === false ) {
 				throw new MWException( "Invalid external storage protocol - $storeUrl" );
 			}
-
 			try {
-				if ( $store->isReadOnly( $path ) ) {
-					$msg = 'read only';
-				} else {
-					$url = $store->store( $path, $data );
-					if ( strlen( $url ) ) {
-						return $url; // a store accepted the write; done!
-					}
-					$msg = 'operation failed';
-				}
+				$url = $store->store( $path, $data ); // Try to save the object
 			} catch ( Exception $error ) {
-				$msg = 'caught exception';
+				$url = false;
 			}
-
-			unset( $tryStores[$index] ); // Don't try this one again!
-			$tryStores = array_values( $tryStores ); // Must have consecutive keys
-			wfDebugLog( 'ExternalStorage',
-				"Unable to store text to external storage $storeUrl ($msg)" );
+			if ( strlen( $url ) ) {
+				return $url; // Done!
+			} else {
+				unset( $tryStores[$index] ); // Don't try this one again!
+				$tryStores = array_values( $tryStores ); // Must have consecutive keys
+				wfDebugLog( 'ExternalStorage',
+					"Unable to store text to external storage $storeUrl" );
+			}
 		}
 		// All stores failed
 		if ( $error ) {
@@ -217,29 +215,6 @@ class ExternalStore {
 		} else {
 			throw new MWException( "Unable to store text to external storage" );
 		}
-	}
-
-	/**
-	 * @return bool Whether all the default insertion stores are marked as read-only
-	 * @since 1.31
-	 */
-	public static function defaultStoresAreReadOnly() {
-		global $wgDefaultExternalStore;
-
-		$tryStores = (array)$wgDefaultExternalStore;
-		if ( !$tryStores ) {
-			return false; // no stores exists which can be "read only"
-		}
-
-		foreach ( $tryStores as $storeUrl ) {
-			list( $proto, $path ) = explode( '://', $storeUrl, 2 );
-			$store = self::getStoreObject( $proto, [] );
-			if ( !$store->isReadOnly( $path ) ) {
-				return false; // at least one store is not read-only
-			}
-		}
-
-		return true; // all stores are read-only
 	}
 
 	/**

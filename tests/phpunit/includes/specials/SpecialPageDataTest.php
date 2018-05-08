@@ -2,9 +2,12 @@
 
 /**
  * @covers SpecialPageData
+ *
  * @group Database
+ *
  * @group SpecialPage
  *
+ * @license GPL-2.0+
  * @author Daniel Kinzler
  */
 class SpecialPageDataTest extends SpecialPageTestBase {

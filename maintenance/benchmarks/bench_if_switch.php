@@ -106,5 +106,5 @@ class BenchIfSwitch extends Benchmarker {
 	}
 }
 
-$maintClass = BenchIfSwitch::class;
+$maintClass = 'BenchIfSwitch';
 require_once RUN_MAINTENANCE_IF_MAIN;

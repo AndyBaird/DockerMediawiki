@@ -62,9 +62,9 @@ class TempFSFile extends FSFile {
 				$tmpDirectory = self::getUsableTempDirectory();
 			}
 			$path = wfTempDir() . '/' . $prefix . $hex . $ext;
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$newFileHandle = fopen( $path, 'x' );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( $newFileHandle ) {
 				fclose( $newFileHandle );
 				$tmpFile = new self( $path );
@@ -119,9 +119,9 @@ class TempFSFile extends FSFile {
 	 */
 	public function purge() {
 		$this->canDelete = false; // done
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$ok = unlink( $this->path );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		unset( self::$pathsCollect[$this->path] );
 
@@ -179,9 +179,9 @@ class TempFSFile extends FSFile {
 	 */
 	public static function purgeAllOnShutdown() {
 		foreach ( self::$pathsCollect as $path ) {
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			unlink( $path );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 		}
 	}
 

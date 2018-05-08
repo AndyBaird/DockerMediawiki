@@ -176,22 +176,16 @@ class OOUIHTMLForm extends HTMLForm {
 	 * @return string HTML
 	 */
 	protected function formatSection( array $fieldsHtml, $sectionName, $anyFieldHasLabel ) {
-		if ( !$fieldsHtml ) {
-			// Do not generate any wrappers for empty sections. Sections may be empty if they only have
-			// subsections, but no fields. A legend will still be added in wrapFieldSetSection().
-			return '';
-		}
-
-		$html = implode( '', $fieldsHtml );
-
+		$config = [
+			'items' => $fieldsHtml,
+		];
 		if ( $sectionName ) {
-			$html = Html::rawElement(
-				'div',
-				[ 'id' => Sanitizer::escapeIdForAttribute( $sectionName ) ],
-				$html
-			);
+			$config['id'] = Sanitizer::escapeIdForAttribute( $sectionName );
 		}
-		return $html;
+		if ( is_string( $this->mWrapperLegend ) ) {
+			$config['label'] = $this->mWrapperLegend;
+		}
+		return new OOUI\FieldsetLayout( $config );
 	}
 
 	/**
@@ -249,8 +243,9 @@ class OOUIHTMLForm extends HTMLForm {
 	}
 
 	public function getBody() {
-		$html = parent::getBody();
-		if ( $this->mHeader || $this->oouiErrors || $this->oouiWarnings ) {
+		$fieldset = parent::getBody();
+		// FIXME This only works for forms with no subsections
+		if ( $fieldset instanceof OOUI\FieldsetLayout ) {
 			$classes = [ 'mw-htmlform-ooui-header' ];
 			if ( $this->oouiErrors ) {
 				$classes[] = 'mw-htmlform-ooui-header-errors';
@@ -258,42 +253,33 @@ class OOUIHTMLForm extends HTMLForm {
 			if ( $this->oouiWarnings ) {
 				$classes[] = 'mw-htmlform-ooui-header-warnings';
 			}
-			// if there's no header, don't create an (empty) LabelWidget, simply use a placeholder
-			if ( $this->mHeader ) {
-				$element = new OOUI\LabelWidget( [ 'label' => new OOUI\HtmlSnippet( $this->mHeader ) ] );
-			} else {
-				$element = new OOUI\Widget( [] );
+			if ( $this->mHeader || $this->oouiErrors || $this->oouiWarnings ) {
+				// if there's no header, don't create an (empty) LabelWidget, simply use a placeholder
+				if ( $this->mHeader ) {
+					$element = new OOUI\LabelWidget( [ 'label' => new OOUI\HtmlSnippet( $this->mHeader ) ] );
+				} else {
+					$element = new OOUI\Widget( [] );
+				}
+				$fieldset->addItems( [
+					new OOUI\FieldLayout(
+						$element,
+						[
+							'align' => 'top',
+							'errors' => $this->oouiErrors,
+							'notices' => $this->oouiWarnings,
+							'classes' => $classes,
+						]
+					)
+				], 0 );
 			}
-			$html = new OOUI\FieldLayout(
-				$element,
-				[
-					'align' => 'top',
-					'errors' => $this->oouiErrors,
-					'notices' => $this->oouiWarnings,
-					'classes' => $classes,
-				]
-			) . $html;
 		}
-		return $html;
+		return $fieldset;
 	}
 
 	public function wrapForm( $html ) {
-		if ( is_string( $this->mWrapperLegend ) ) {
-			$content = new OOUI\FieldsetLayout( [
-				'label' => $this->mWrapperLegend,
-				'items' => [
-					new OOUI\Widget( [
-						'content' => new OOUI\HtmlSnippet( $html )
-					] ),
-				],
-			] );
-		} else {
-			$content = new OOUI\HtmlSnippet( $html );
-		}
-
 		$form = new OOUI\FormLayout( $this->getFormAttributes() + [
 			'classes' => [ 'mw-htmlform', 'mw-htmlform-ooui' ],
-			'content' => $content,
+			'content' => new OOUI\HtmlSnippet( $html ),
 		] );
 
 		// Include a wrapper for style, if requested.

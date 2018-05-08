@@ -9,9 +9,7 @@
  *
  * @group Cache
  */
-class ProcessCacheLRUTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class ProcessCacheLRUTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * Helper to verify emptiness of a cache object.
@@ -60,7 +58,6 @@ class ProcessCacheLRUTest extends PHPUnit\Framework\TestCase {
 
 	/**
 	 * Highlight diff between assertEquals and assertNotSame
-	 * @coversNothing
 	 */
 	public function testPhpUnitArrayEquality() {
 		$one = [ 'A' => 1, 'B' => 2 ];

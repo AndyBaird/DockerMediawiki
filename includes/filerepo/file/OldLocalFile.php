@@ -27,7 +27,7 @@
  * @ingroup FileAbstraction
  */
 class OldLocalFile extends LocalFile {
-	/** @var string|int Timestamp */
+	/** @var string Timestamp */
 	protected $requestedTime;
 
 	/** @var string Archive name */
@@ -39,8 +39,8 @@ class OldLocalFile extends LocalFile {
 	/**
 	 * @param Title $title
 	 * @param FileRepo $repo
-	 * @param string|int $time
-	 * @return self
+	 * @param null|int $time Timestamp or null
+	 * @return OldLocalFile
 	 * @throws MWException
 	 */
 	static function newFromTitle( $title, $repo, $time = null ) {
@@ -56,7 +56,7 @@ class OldLocalFile extends LocalFile {
 	 * @param Title $title
 	 * @param FileRepo $repo
 	 * @param string $archiveName
-	 * @return self
+	 * @return OldLocalFile
 	 */
 	static function newFromArchiveName( $title, $repo, $archiveName ) {
 		return new self( $title, $repo, null, $archiveName );
@@ -65,7 +65,7 @@ class OldLocalFile extends LocalFile {
 	/**
 	 * @param stdClass $row
 	 * @param FileRepo $repo
-	 * @return self
+	 * @return OldLocalFile
 	 */
 	static function newFromRow( $row, $repo ) {
 		$title = Title::makeTitle( NS_FILE, $row->oi_name );
@@ -93,10 +93,7 @@ class OldLocalFile extends LocalFile {
 			$conds['oi_timestamp'] = $dbr->timestamp( $timestamp );
 		}
 
-		$fileQuery = self::getQueryInfo();
-		$row = $dbr->selectRow(
-			$fileQuery['tables'], $fileQuery['fields'], $conds, __METHOD__, [], $fileQuery['joins']
-		);
+		$row = $dbr->selectRow( 'oldimage', self::selectFields(), $conds, __METHOD__ );
 		if ( $row ) {
 			return self::newFromRow( $row, $repo );
 		} else {
@@ -106,23 +103,11 @@ class OldLocalFile extends LocalFile {
 
 	/**
 	 * Fields in the oldimage table
-	 * @deprecated since 1.31, use self::getQueryInfo() instead.
-	 * @return string[]
+	 * @todo Deprecate this in favor of a method that returns tables and joins
+	 *  as well, and use CommentStore::getJoin().
+	 * @return array
 	 */
 	static function selectFields() {
-		global $wgActorTableSchemaMigrationStage;
-
-		wfDeprecated( __METHOD__, '1.31' );
-		if ( $wgActorTableSchemaMigrationStage > MIGRATION_WRITE_BOTH ) {
-			// If code is using this instead of self::getQueryInfo(), there's a
-			// decent chance it's going to try to directly access
-			// $row->oi_user or $row->oi_user_text and we can't give it
-			// useful values here once those aren't being written anymore.
-			throw new BadMethodCallException(
-				'Cannot use ' . __METHOD__ . ' when $wgActorTableSchemaMigrationStage > MIGRATION_WRITE_BOTH'
-			);
-		}
-
 		return [
 			'oi_name',
 			'oi_archive_name',
@@ -136,63 +121,17 @@ class OldLocalFile extends LocalFile {
 			'oi_minor_mime',
 			'oi_user',
 			'oi_user_text',
-			'oi_actor' => $wgActorTableSchemaMigrationStage > MIGRATION_OLD ? 'oi_actor' : null,
 			'oi_timestamp',
 			'oi_deleted',
 			'oi_sha1',
-		] + CommentStore::getStore()->getFields( 'oi_description' );
-	}
-
-	/**
-	 * Return the tables, fields, and join conditions to be selected to create
-	 * a new oldlocalfile object.
-	 * @since 1.31
-	 * @param string[] $options
-	 *   - omit-lazy: Omit fields that are lazily cached.
-	 * @return array[] With three keys:
-	 *   - tables: (string[]) to include in the `$table` to `IDatabase->select()`
-	 *   - fields: (string[]) to include in the `$vars` to `IDatabase->select()`
-	 *   - joins: (array) to include in the `$join_conds` to `IDatabase->select()`
-	 */
-	public static function getQueryInfo( array $options = [] ) {
-		$commentQuery = CommentStore::getStore()->getJoin( 'oi_description' );
-		$actorQuery = ActorMigration::newMigration()->getJoin( 'oi_user' );
-		$ret = [
-			'tables' => [ 'oldimage' ] + $commentQuery['tables'] + $actorQuery['tables'],
-			'fields' => [
-				'oi_name',
-				'oi_archive_name',
-				'oi_size',
-				'oi_width',
-				'oi_height',
-				'oi_bits',
-				'oi_media_type',
-				'oi_major_mime',
-				'oi_minor_mime',
-				'oi_timestamp',
-				'oi_deleted',
-				'oi_sha1',
-			] + $commentQuery['fields'] + $actorQuery['fields'],
-			'joins' => $commentQuery['joins'] + $actorQuery['joins'],
-		];
-
-		if ( in_array( 'omit-nonlazy', $options, true ) ) {
-			// Internal use only for getting only the lazy fields
-			$ret['fields'] = [];
-		}
-		if ( !in_array( 'omit-lazy', $options, true ) ) {
-			// Note: Keep this in sync with self::getLazyCacheFields()
-			$ret['fields'][] = 'oi_metadata';
-		}
-
-		return $ret;
+		] + CommentStore::newKey( 'oi_description' )->getFields();
 	}
 
 	/**
 	 * @param Title $title
 	 * @param FileRepo $repo
-	 * @param string|int|null $time Timestamp or null to load by archive name
-	 * @param string|null $archiveName Archive name or null to load by timestamp
+	 * @param string $time Timestamp or null to load by archive name
+	 * @param string $archiveName Archive name or null to load by timestamp
 	 * @throws MWException
 	 */
 	function __construct( $title, $repo, $time, $archiveName ) {
@@ -249,15 +188,8 @@ class OldLocalFile extends LocalFile {
 		} else {
 			$conds['oi_timestamp'] = $dbr->timestamp( $this->requestedTime );
 		}
-		$fileQuery = static::getQueryInfo();
-		$row = $dbr->selectRow(
-			$fileQuery['tables'],
-			$fileQuery['fields'],
-			$conds,
-			__METHOD__,
-			[ 'ORDER BY' => 'oi_timestamp DESC' ],
-			$fileQuery['joins']
-		);
+		$row = $dbr->selectRow( 'oldimage', $this->getCacheFields( 'oi_' ),
+			$conds, __METHOD__, [ 'ORDER BY' => 'oi_timestamp DESC' ] );
 		if ( $row ) {
 			$this->loadFromRow( $row, 'oi_' );
 		} else {
@@ -277,27 +209,14 @@ class OldLocalFile extends LocalFile {
 		} else {
 			$conds['oi_timestamp'] = $dbr->timestamp( $this->requestedTime );
 		}
-		$fileQuery = static::getQueryInfo( [ 'omit-nonlazy' ] );
 		// In theory the file could have just been renamed/deleted...oh well
-		$row = $dbr->selectRow(
-			$fileQuery['tables'],
-			$fileQuery['fields'],
-			$conds,
-			__METHOD__,
-			[ 'ORDER BY' => 'oi_timestamp DESC' ],
-			$fileQuery['joins']
-		);
+		$row = $dbr->selectRow( 'oldimage', $this->getLazyCacheFields( 'oi_' ),
+			$conds, __METHOD__, [ 'ORDER BY' => 'oi_timestamp DESC' ] );
 
 		if ( !$row ) { // fallback to master
 			$dbr = $this->repo->getMasterDB();
-			$row = $dbr->selectRow(
-				$fileQuery['tables'],
-				$fileQuery['fields'],
-				$conds,
-				__METHOD__,
-				[ 'ORDER BY' => 'oi_timestamp DESC' ],
-				$fileQuery['joins']
-			);
+			$row = $dbr->selectRow( 'oldimage', $this->getLazyCacheFields( 'oi_' ),
+				$conds, __METHOD__, [ 'ORDER BY' => 'oi_timestamp DESC' ] );
 		}
 
 		if ( $row ) {
@@ -309,8 +228,11 @@ class OldLocalFile extends LocalFile {
 		}
 	}
 
-	/** @inheritDoc */
-	protected function getCacheFields( $prefix = 'img_' ) {
+	/**
+	 * @param string $prefix
+	 * @return array
+	 */
+	function getCacheFields( $prefix = 'img_' ) {
 		$fields = parent::getCacheFields( $prefix );
 		$fields[] = $prefix . 'archive_name';
 		$fields[] = $prefix . 'deleted';
@@ -446,8 +368,7 @@ class OldLocalFile extends LocalFile {
 			return false;
 		}
 
-		$commentFields = CommentStore::getStore()->insert( $dbw, 'oi_description', $comment );
-		$actorFields = ActorMigration::newMigration()->getInsertValues( $dbw, 'oi_user', $user );
+		$commentFields = CommentStore::newKey( 'oi_description' )->insert( $dbw, $comment );
 		$dbw->insert( 'oldimage',
 			[
 				'oi_name' => $this->getName(),
@@ -457,12 +378,14 @@ class OldLocalFile extends LocalFile {
 				'oi_height' => intval( $props['height'] ),
 				'oi_bits' => $props['bits'],
 				'oi_timestamp' => $dbw->timestamp( $timestamp ),
+				'oi_user' => $user->getId(),
+				'oi_user_text' => $user->getName(),
 				'oi_metadata' => $props['metadata'],
 				'oi_media_type' => $props['media_type'],
 				'oi_major_mime' => $props['major_mime'],
 				'oi_minor_mime' => $props['minor_mime'],
 				'oi_sha1' => $props['sha1'],
-			] + $commentFields + $actorFields, __METHOD__
+			] + $commentFields, __METHOD__
 		);
 
 		return true;

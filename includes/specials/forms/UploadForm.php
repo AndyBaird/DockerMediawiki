@@ -159,7 +159,7 @@ class UploadForm extends HTMLForm {
 		}
 
 		$descriptor['UploadFile'] = [
-			'class' => UploadSourceField::class,
+			'class' => 'UploadSourceField',
 			'section' => 'source',
 			'type' => 'file',
 			'id' => 'wpUploadFile',
@@ -174,7 +174,7 @@ class UploadForm extends HTMLForm {
 		if ( $canUploadByUrl ) {
 			$this->mMaxUploadSize['url'] = UploadBase::getMaxUploadSize( 'url' );
 			$descriptor['UploadFileURL'] = [
-				'class' => UploadSourceField::class,
+				'class' => 'UploadSourceField',
 				'section' => 'source',
 				'id' => 'wpUploadFileURL',
 				'radio-id' => 'wpSourceTypeurl',
@@ -322,7 +322,7 @@ class UploadForm extends HTMLForm {
 		} else {
 			$descriptor['License'] = [
 				'type' => 'select',
-				'class' => Licenses::class,
+				'class' => 'Licenses',
 				'section' => 'description',
 				'id' => 'wpLicense',
 				'label-message' => 'license',
@@ -406,11 +406,14 @@ class UploadForm extends HTMLForm {
 	protected function addUploadJS() {
 		$config = $this->getConfig();
 
+		$useAjaxDestCheck = $config->get( 'UseAjax' ) && $config->get( 'AjaxUploadDestCheck' );
+		$useAjaxLicensePreview = $config->get( 'UseAjax' ) &&
+			$config->get( 'AjaxLicensePreview' ) && $config->get( 'EnableAPI' );
 		$this->mMaxUploadSize['*'] = UploadBase::getMaxUploadSize();
 
 		$scriptVars = [
-			'wgAjaxUploadDestCheck' => $config->get( 'AjaxUploadDestCheck' ),
-			'wgAjaxLicensePreview' => $config->get( 'AjaxLicensePreview' ),
+			'wgAjaxUploadDestCheck' => $useAjaxDestCheck,
+			'wgAjaxLicensePreview' => $useAjaxLicensePreview,
 			'wgUploadAutoFill' => !$this->mForReUpload &&
 				// If we received mDestFile from the request, don't autofill
 				// the wpDestFile textbox

@@ -14,18 +14,21 @@
 		 */
 		isCategory: function ( title ) {
 			var apiPromise = this.get( {
-				formatversion: 2,
 				prop: 'categoryinfo',
-				titles: [ String( title ) ]
+				titles: String( title )
 			} );
 
 			return apiPromise
 				.then( function ( data ) {
-					return !!(
-						data.query && // query is missing on title=""
-						data.query.pages && // query.pages is missing on title="#" or title="mw:"
-						data.query.pages[ 0 ].categoryinfo
-					);
+					var exists = false;
+					if ( data.query && data.query.pages ) {
+						$.each( data.query.pages, function ( id, page ) {
+							if ( page.categoryinfo ) {
+								exists = true;
+							}
+						} );
+					}
+					return exists;
 				} )
 				.promise( { abort: apiPromise.abort } );
 		},
@@ -43,7 +46,6 @@
 		getCategoriesByPrefix: function ( prefix ) {
 			// Fetch with allpages to only get categories that have a corresponding description page.
 			var apiPromise = this.get( {
-				formatversion: 2,
 				list: 'allpages',
 				apprefix: prefix,
 				apnamespace: mw.config.get( 'wgNamespaceIds' ).category
@@ -51,9 +53,13 @@
 
 			return apiPromise
 				.then( function ( data ) {
-					return data.query.allpages.map( function ( category ) {
-						return new mw.Title( category.title ).getMainText();
-					} );
+					var texts = [];
+					if ( data.query && data.query.allpages ) {
+						$.each( data.query.allpages, function ( i, category ) {
+							texts.push( new mw.Title( category.title ).getMainText() );
+						} );
+					}
+					return texts;
 				} )
 				.promise( { abort: apiPromise.abort } );
 		},
@@ -69,25 +75,26 @@
 		 */
 		getCategories: function ( title ) {
 			var apiPromise = this.get( {
-				formatversion: 2,
 				prop: 'categories',
-				titles: [ String( title ) ]
+				titles: String( title )
 			} );
 
 			return apiPromise
 				.then( function ( data ) {
-					var page;
-
-					if ( !data.query || !data.query.pages ) {
-						return false;
+					var titles = false;
+					if ( data.query && data.query.pages ) {
+						$.each( data.query.pages, function ( id, page ) {
+							if ( page.categories ) {
+								if ( titles === false ) {
+									titles = [];
+								}
+								$.each( page.categories, function ( i, cat ) {
+									titles.push( new mw.Title( cat.title ) );
+								} );
+							}
+						} );
 					}
-					page = data.query.pages[ 0 ];
-					if ( !page.categories ) {
-						return false;
-					}
-					return page.categories.map( function ( cat ) {
-						return new mw.Title( cat.title );
-					} );
+					return titles;
 				} )
 				.promise( { abort: apiPromise.abort } );
 		}

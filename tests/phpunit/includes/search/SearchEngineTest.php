@@ -220,12 +220,12 @@ class SearchEngineTest extends MediaWikiLangTestCase {
 		/**
 		 * @var $mockEngine SearchEngine
 		 */
-		$mockEngine = $this->getMockBuilder( SearchEngine::class )
+		$mockEngine = $this->getMockBuilder( 'SearchEngine' )
 			->setMethods( [ 'makeSearchFieldMapping' ] )->getMock();
 
 		$mockFieldBuilder = function ( $name, $type ) {
 			$mockField =
-				$this->getMockBuilder( SearchIndexFieldDefinition::class )->setConstructorArgs( [
+				$this->getMockBuilder( 'SearchIndexFieldDefinition' )->setConstructorArgs( [
 					$name,
 					$type
 				] )->getMock();
@@ -258,7 +258,7 @@ class SearchEngineTest extends MediaWikiLangTestCase {
 		$fields = $mockEngine->getSearchIndexFields();
 		$this->assertArrayHasKey( 'language', $fields );
 		$this->assertArrayHasKey( 'category', $fields );
-		$this->assertInstanceOf( SearchIndexField::class, $fields['testField'] );
+		$this->assertInstanceOf( 'SearchIndexField', $fields['testField'] );
 
 		$mapping = $fields['testField']->getMapping( $mockEngine );
 		$this->assertArrayHasKey( 'testData', $mapping );
@@ -287,7 +287,7 @@ class SearchEngineTest extends MediaWikiLangTestCase {
 	}
 
 	public function addAugmentors( &$setAugmentors, &$rowAugmentors ) {
-		$setAugmentor = $this->createMock( ResultSetAugmentor::class );
+		$setAugmentor = $this->createMock( 'ResultSetAugmentor' );
 		$setAugmentor->expects( $this->once() )
 			->method( 'augmentAll' )
 			->willReturnCallback( function ( SearchResultSet $resultSet ) {
@@ -301,7 +301,7 @@ class SearchEngineTest extends MediaWikiLangTestCase {
 			} );
 		$setAugmentors['testSet'] = $setAugmentor;
 
-		$rowAugmentor = $this->createMock( ResultAugmentor::class );
+		$rowAugmentor = $this->createMock( 'ResultAugmentor' );
 		$rowAugmentor->expects( $this->exactly( 2 ) )
 			->method( 'augment' )
 			->willReturnCallback( function ( SearchResult $result ) {

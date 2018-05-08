@@ -88,7 +88,8 @@ class WebRequest {
 	 * @codeCoverageIgnore
 	 */
 	public function __construct() {
-		$this->requestTime = $_SERVER['REQUEST_TIME_FLOAT'];
+		$this->requestTime = isset( $_SERVER['REQUEST_TIME_FLOAT'] )
+			? $_SERVER['REQUEST_TIME_FLOAT'] : microtime( true );
 
 		// POST overrides GET data
 		// We don't use $_REQUEST here to avoid interference from cookies...
@@ -122,9 +123,9 @@ class WebRequest {
 			if ( !preg_match( '!^https?://!', $url ) ) {
 				$url = 'http://unused' . $url;
 			}
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$a = parse_url( $url );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( $a ) {
 				$path = isset( $a['path'] ) ? $a['path'] : '';
 
@@ -141,7 +142,7 @@ class WebRequest {
 				$router->add( "$wgScript/$1" );
 
 				if ( isset( $_SERVER['SCRIPT_NAME'] )
-					&& preg_match( '/\.php/', $_SERVER['SCRIPT_NAME'] )
+					&& preg_match( '/\.php5?/', $_SERVER['SCRIPT_NAME'] )
 				) {
 					# Check for SCRIPT_NAME, we handle index.php explicitly
 					# But we do have some other .php files such as img_auth.php
@@ -269,8 +270,6 @@ class WebRequest {
 	 * @since 1.27
 	 */
 	public static function getRequestId() {
-		// This method is called from various error handlers and should be kept simple.
-
 		if ( !self::$reqId ) {
 			self::$reqId = isset( $_SERVER['UNIQUE_ID'] )
 				? $_SERVER['UNIQUE_ID'] : wfRandomString( 24 );
@@ -408,7 +407,7 @@ class WebRequest {
 	 *
 	 * @since 1.28
 	 * @param string $name
-	 * @param string|null $default
+	 * @param string|null $default Optional default
 	 * @return string|null
 	 */
 	public function getRawVal( $name, $default = null ) {
@@ -432,7 +431,7 @@ class WebRequest {
 	 * selected by a drop-down menu). For freeform input, see getText().
 	 *
 	 * @param string $name
-	 * @param string|null $default Optional default (or null)
+	 * @param string $default Optional default (or null)
 	 * @return string|null
 	 */
 	public function getVal( $name, $default = null ) {
@@ -782,8 +781,6 @@ class WebRequest {
 	 * @return string
 	 */
 	public static function getGlobalRequestURL() {
-		// This method is called on fatal errors; it should not depend on anything complex.
-
 		if ( isset( $_SERVER['REQUEST_URI'] ) && strlen( $_SERVER['REQUEST_URI'] ) ) {
 			$base = $_SERVER['REQUEST_URI'];
 		} elseif ( isset( $_SERVER['HTTP_X_ORIGINAL_URL'] )
@@ -959,7 +956,7 @@ class WebRequest {
 	public function response() {
 		/* Lazy initialization of response object for this request */
 		if ( !is_object( $this->response ) ) {
-			$class = ( $this instanceof FauxRequest ) ? FauxResponse::class : WebResponse::class;
+			$class = ( $this instanceof FauxRequest ) ? 'FauxResponse' : 'WebResponse';
 			$this->response = new $class();
 		}
 		return $this->response;

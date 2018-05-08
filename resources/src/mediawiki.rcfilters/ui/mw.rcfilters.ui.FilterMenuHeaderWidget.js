@@ -35,17 +35,6 @@
 		} );
 		this.backButton.toggle( this.model.getCurrentView() !== 'default' );
 
-		// Help icon for Tagged edits
-		this.helpIcon = new OO.ui.ButtonWidget( {
-			icon: 'help',
-			framed: false,
-			title: mw.msg( 'rcfilters-view-tags-help-icon-tooltip' ),
-			classes: [ 'mw-rcfilters-ui-filterMenuHeaderWidget-helpIcon' ],
-			href: mw.util.getUrl( 'Special:Tags' ),
-			target: '_blank'
-		} );
-		this.helpIcon.toggle( this.model.getCurrentView() === 'tags' );
-
 		// Highlight button
 		this.highlightButton = new OO.ui.ToggleButtonWidget( {
 			icon: 'highlight',
@@ -59,6 +48,7 @@
 			classes: [ 'mw-rcfilters-ui-filterMenuHeaderWidget-invertNamespacesButton' ]
 		} );
 		this.invertNamespacesButton.toggle( this.model.getCurrentView() === 'namespaces' );
+		this.updateInvertButton( this.model.areNamespacesInverted() );
 
 		// Events
 		this.backButton.connect( this, { click: 'onBackButtonClick' } );
@@ -68,10 +58,9 @@
 			.connect( this, { click: 'onInvertNamespacesButtonClick' } );
 		this.model.connect( this, {
 			highlightChange: 'onModelHighlightChange',
-			searchChange: 'onModelSearchChange',
-			initialize: 'onModelInitialize'
+			invertChange: 'onModelInvertChange',
+			update: 'onModelUpdate'
 		} );
-		this.view = this.model.getCurrentView();
 
 		// Initialize
 		this.$element
@@ -91,7 +80,7 @@
 								$( '<div>' )
 									.addClass( 'mw-rcfilters-ui-cell' )
 									.addClass( 'mw-rcfilters-ui-filterMenuHeaderWidget-header-title' )
-									.append( this.$label, this.helpIcon.$element ),
+									.append( this.$label ),
 								$( '<div>' )
 									.addClass( 'mw-rcfilters-ui-cell' )
 									.addClass( 'mw-rcfilters-ui-filterMenuHeaderWidget-header-invert' )
@@ -113,32 +102,15 @@
 	/* Methods */
 
 	/**
-	 * Respond to model initialization event
-	 *
-	 * Note: need to wait for initialization before getting the invertModel
-	 * and registering its update event. Creating all the models before the UI
-	 * would help with that.
-	 */
-	mw.rcfilters.ui.FilterMenuHeaderWidget.prototype.onModelInitialize = function () {
-		this.invertModel = this.model.getInvertModel();
-		this.updateInvertButton();
-		this.invertModel.connect( this, { update: 'updateInvertButton' } );
-	};
-
-	/**
 	 * Respond to model update event
 	 */
-	mw.rcfilters.ui.FilterMenuHeaderWidget.prototype.onModelSearchChange = function () {
+	mw.rcfilters.ui.FilterMenuHeaderWidget.prototype.onModelUpdate = function () {
 		var currentView = this.model.getCurrentView();
 
-		if ( this.view !== currentView ) {
-			this.setLabel( this.model.getViewTitle( currentView ) );
+		this.setLabel( this.model.getViewTitle( currentView ) );
 
-			this.invertNamespacesButton.toggle( currentView === 'namespaces' );
-			this.backButton.toggle( currentView !== 'default' );
-			this.helpIcon.toggle( currentView === 'tags' );
-			this.view = currentView;
-		}
+		this.invertNamespacesButton.toggle( currentView === 'namespaces' );
+		this.backButton.toggle( currentView !== 'default' );
 	};
 
 	/**
@@ -151,12 +123,23 @@
 	};
 
 	/**
-	 * Update the state of the invert button
+	 * Respond to model invert change event
+	 *
+	 * @param {boolean} isInverted Namespaces selection is inverted
 	 */
-	mw.rcfilters.ui.FilterMenuHeaderWidget.prototype.updateInvertButton = function () {
-		this.invertNamespacesButton.setActive( this.invertModel.isSelected() );
+	mw.rcfilters.ui.FilterMenuHeaderWidget.prototype.onModelInvertChange = function ( isInverted ) {
+		this.updateInvertButton( isInverted );
+	};
+
+	/**
+	 * Update the state of the invert button
+	 *
+	 * @param {boolean} isInverted Namespaces selection is inverted
+	 */
+	mw.rcfilters.ui.FilterMenuHeaderWidget.prototype.updateInvertButton = function ( isInverted ) {
+		this.invertNamespacesButton.setActive( isInverted );
 		this.invertNamespacesButton.setLabel(
-			this.invertModel.isSelected() ?
+			isInverted ?
 				mw.msg( 'rcfilters-exclude-button-on' ) :
 				mw.msg( 'rcfilters-exclude-button-off' )
 		);

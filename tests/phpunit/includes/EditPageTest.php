@@ -29,16 +29,8 @@ class EditPageTest extends MediaWikiLangTestCase {
 		$wgNamespaceContentModels[12312] = "testing";
 		$wgContentHandlers["testing"] = 'DummyContentHandlerForTesting';
 
-		MWNamespace::clearCaches();
+		MWNamespace::getCanonicalNamespaces( true ); # reset namespace cache
 		$wgContLang->resetNamespaces(); # reset namespace cache
-	}
-
-	protected function tearDown() {
-		global $wgContLang;
-
-		MWNamespace::clearCaches();
-		$wgContLang->resetNamespaces(); # reset namespace cache
-		parent::tearDown();
 	}
 
 	/**
@@ -717,7 +709,7 @@ hello
 		$ep->importFormData( $req );
 
 		$this->setExpectedException(
-			MWException::class,
+			'MWException',
 			'This content model is not supported: testing'
 		);
 

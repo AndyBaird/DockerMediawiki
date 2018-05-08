@@ -8,80 +8,36 @@
 		 * @private
 		 */
 		init: function () {
-			var $topSection,
-				mainWrapperWidget,
-				conditionalViews = {},
-				$initialFieldset = $( 'fieldset.cloptions' ),
+			var $topLinks,
+				rcTopSection,
+				$watchlistDetails,
+				wlTopSection,
 				savedQueriesPreferenceName = mw.config.get( 'wgStructuredChangeFiltersSavedQueriesPreferenceName' ),
-				daysPreferenceName = mw.config.get( 'wgStructuredChangeFiltersDaysPreferenceName' ),
-				limitPreferenceName = mw.config.get( 'wgStructuredChangeFiltersLimitPreferenceName' ),
 				filtersModel = new mw.rcfilters.dm.FiltersViewModel(),
-				changesListModel = new mw.rcfilters.dm.ChangesListViewModel( $initialFieldset ),
-				savedQueriesModel = new mw.rcfilters.dm.SavedQueriesModel( filtersModel ),
-				specialPage = mw.config.get( 'wgCanonicalSpecialPageName' ),
+				changesListModel = new mw.rcfilters.dm.ChangesListViewModel(),
+				savedQueriesModel = new mw.rcfilters.dm.SavedQueriesModel(),
 				controller = new mw.rcfilters.Controller(
 					filtersModel, changesListModel, savedQueriesModel,
 					{
-						savedQueriesPreferenceName: savedQueriesPreferenceName,
-						daysPreferenceName: daysPreferenceName,
-						limitPreferenceName: limitPreferenceName,
-						normalizeTarget: specialPage === 'Recentchangeslinked'
+						savedQueriesPreferenceName: savedQueriesPreferenceName
 					}
-				);
+				),
+				$overlay = $( '<div>' )
+					.addClass( 'mw-rcfilters-ui-overlay' ),
+				filtersWidget = new mw.rcfilters.ui.FilterWrapperWidget(
+					controller, filtersModel, savedQueriesModel, changesListModel, { $overlay: $overlay } ),
+				savedLinksListWidget = new mw.rcfilters.ui.SavedLinksListWidget(
+					controller, savedQueriesModel, { $overlay: $overlay }
+				),
+				currentPage = mw.config.get( 'wgCanonicalNamespace' ) +
+					':' +
+					mw.config.get( 'wgCanonicalSpecialPageName' );
 
 			// TODO: The changesListWrapperWidget should be able to initialize
 			// after the model is ready.
-
-			if ( specialPage === 'Recentchanges' ) {
-				$topSection = $( '.mw-recentchanges-toplinks' ).detach();
-			} else if ( specialPage === 'Watchlist' ) {
-				$( '#contentSub, form#mw-watchlist-resetbutton' ).remove();
-				$topSection = $( '.watchlistDetails' ).detach().contents();
-			} else if ( specialPage === 'Recentchangeslinked' ) {
-				conditionalViews.recentChangesLinked = {
-					groups: [
-						{
-							name: 'page',
-							type: 'any_value',
-							title: '',
-							hidden: true,
-							sticky: true,
-							filters: [
-								{
-									name: 'target',
-									'default': ''
-								}
-							]
-						},
-						{
-							name: 'toOrFrom',
-							type: 'boolean',
-							title: '',
-							hidden: true,
-							sticky: true,
-							filters: [
-								{
-									name: 'showlinkedto',
-									'default': false
-								}
-							]
-						}
-					]
-				};
-			}
-
-			mainWrapperWidget = new mw.rcfilters.ui.MainWrapperWidget(
-				controller,
-				filtersModel,
-				savedQueriesModel,
-				changesListModel,
-				{
-					$topSection: $topSection,
-					$filtersContainer: $( '.rcfilters-container' ),
-					$changesListContainer: $( '.mw-changeslist, .mw-changeslist-empty' ),
-					$formContainer: $initialFieldset
-				}
-			);
+			// eslint-disable-next-line no-new
+			new mw.rcfilters.ui.ChangesListWrapperWidget(
+				filtersModel, changesListModel, controller, $( '.mw-changeslist, .mw-changeslist-empty' ) );
 
 			// Remove the -loading class that may have been added on the server side.
 			// If we are in fact going to load a default saved query, this .initialize()
@@ -90,13 +46,18 @@
 
 			controller.initialize(
 				mw.config.get( 'wgStructuredChangeFilters' ),
-				// All namespaces without Media namespace
-				rcfilters.getNamespaces( [ 'Media' ] ),
-				mw.config.get( 'wgRCFiltersChangeTags' ),
-				conditionalViews
+				mw.config.get( 'wgFormattedNamespaces' ),
+				mw.config.get( 'wgRCFiltersChangeTags' )
 			);
 
-			mainWrapperWidget.initFormWidget( specialPage );
+			// eslint-disable-next-line no-new
+			new mw.rcfilters.ui.FormWrapperWidget(
+				filtersModel, changesListModel, controller, $( 'fieldset.cloptions' ) );
+
+			$( '.rcfilters-container' ).append( filtersWidget.$element );
+			$( 'body' )
+				.append( $overlay )
+				.addClass( 'mw-rcfilters-ui-initialized' );
 
 			$( 'a.mw-helplink' ).attr(
 				'href',
@@ -105,7 +66,25 @@
 
 			controller.replaceUrl();
 
-			mainWrapperWidget.setTopSection( specialPage );
+			if ( currentPage === 'Special:Recentchanges' ||
+				currentPage === 'Special:Recentchangeslinked' ) {
+				$topLinks = $( '.mw-recentchanges-toplinks' ).detach();
+
+				rcTopSection = new mw.rcfilters.ui.RcTopSectionWidget(
+					savedLinksListWidget, $topLinks
+				);
+				filtersWidget.setTopSection( rcTopSection.$element );
+			} // end Special:RC
+
+			if ( currentPage === 'Special:Watchlist' ) {
+				$( '#contentSub, form#mw-watchlist-resetbutton' ).detach();
+				$watchlistDetails = $( '.watchlistDetails' ).detach().contents();
+
+				wlTopSection = new mw.rcfilters.ui.WatchlistTopSectionWidget(
+					controller, changesListModel, savedLinksListWidget, $watchlistDetails
+				);
+				filtersWidget.setTopSection( wlTopSection.$element );
+			} // end Special:WL
 
 			/**
 			 * Fired when initialization of the filtering interface for changes list is complete.
@@ -114,38 +93,10 @@
 			 * @member mw.hook
 			 */
 			mw.hook( 'structuredChangeFilters.ui.initialized' ).fire();
-		},
-
-		/**
-		 * Get list of namespaces and remove unused ones
-		 *
-		 * @member mw.rcfilters
-		 * @private
-		 *
-		 * @param {Array} unusedNamespaces Names of namespaces to remove
-		 * @return {Array} Filtered array of namespaces
-		 */
-		getNamespaces: function ( unusedNamespaces ) {
-			var i, length, name, id,
-				namespaceIds = mw.config.get( 'wgNamespaceIds' ),
-				namespaces = mw.config.get( 'wgFormattedNamespaces' );
-
-			for ( i = 0, length = unusedNamespaces.length; i < length; i++ ) {
-				name = unusedNamespaces[ i ];
-				id = namespaceIds[ name.toLowerCase() ];
-				delete namespaces[ id ];
-			}
-
-			return namespaces;
 		}
 	};
 
-	// Early execute of init
-	if ( document.readyState === 'interactive' || document.readyState === 'complete' ) {
-		rcfilters.init();
-	} else {
-		$( rcfilters.init );
-	}
+	$( rcfilters.init );
 
 	module.exports = rcfilters;
 

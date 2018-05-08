@@ -20,14 +20,13 @@
  * @file
  */
 
-use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\LoadBalancer;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\DBConnRef;
 use Wikimedia\Rdbms\MaintainableDBConnRef;
 
 /**
- * DB accessible external objects.
+ * DB accessable external objects.
  *
  * In this system, each store "location" maps to a database "cluster".
  * The clusters must be defined in the normal LBFactory configuration.
@@ -104,10 +103,6 @@ class ExternalStoreDB extends ExternalStoreMedium {
 		return "DB://$location/$id";
 	}
 
-	public function isReadOnly( $location ) {
-		return ( $this->getLoadBalancer( $location )->getReadOnlyReason() !== false );
-	}
-
 	/**
 	 * Get a LoadBalancer for the specified cluster
 	 *
@@ -115,8 +110,7 @@ class ExternalStoreDB extends ExternalStoreMedium {
 	 * @return LoadBalancer
 	 */
 	private function getLoadBalancer( $cluster ) {
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		return $lbFactory->getExternalLB( $cluster );
+		return wfGetLBFactory()->getExternalLB( $cluster );
 	}
 
 	/**

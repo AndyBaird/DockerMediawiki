@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @covers UploadLogFormatter
- */
 class UploadLogFormatterTest extends LogFormatterTestCase {
 
 	/**

@@ -101,5 +101,5 @@ class BenchmarkDeleteTruncate extends Benchmarker {
 	}
 }
 
-$maintClass = BenchmarkDeleteTruncate::class;
+$maintClass = 'BenchmarkDeleteTruncate';
 require_once RUN_MAINTENANCE_IF_MAIN;

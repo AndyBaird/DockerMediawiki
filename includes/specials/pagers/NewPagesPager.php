@@ -28,7 +28,7 @@ class NewPagesPager extends ReverseChronologicalPager {
 	protected $opts;
 
 	/**
-	 * @var HTMLForm
+	 * @var HtmlForm
 	 */
 	protected $mForm;
 
@@ -39,8 +39,6 @@ class NewPagesPager extends ReverseChronologicalPager {
 	}
 
 	function getQueryInfo() {
-		$rcQuery = RecentChange::getQueryInfo();
-
 		$conds = [];
 		$conds['rc_new'] = 1;
 
@@ -70,19 +68,18 @@ class NewPagesPager extends ReverseChronologicalPager {
 		}
 
 		if ( $user ) {
-			$conds[] = ActorMigration::newMigration()->getWhere(
-				$this->mDb, 'rc_user', User::newFromName( $user->getText(), false ), false
-			)['conds'];
+			$conds['rc_user_text'] = $user->getText();
+			$rcIndexes = 'rc_user_text';
 		} elseif ( User::groupHasPermission( '*', 'createpage' ) &&
 			$this->opts->getValue( 'hideliu' )
 		) {
 			# If anons cannot make new pages, don't "exclude logged in users"!
-			$conds[] = ActorMigration::newMigration()->isAnon( $rcQuery['fields']['rc_user'] );
+			$conds['rc_user'] = 0;
 		}
 
 		# If this user cannot see patrolled edits or they are off, don't do dumb queries!
 		if ( $this->opts->getValue( 'hidepatrolled' ) && $this->getUser()->useNPPatrol() ) {
-			$conds['rc_patrolled'] = RecentChange::PRC_UNPATROLLED;
+			$conds['rc_patrolled'] = 0;
 		}
 
 		if ( $this->opts->getValue( 'hidebots' ) ) {
@@ -93,12 +90,17 @@ class NewPagesPager extends ReverseChronologicalPager {
 			$conds['page_is_redirect'] = 0;
 		}
 
+		$commentQuery = CommentStore::newKey( 'rc_comment' )->getJoin();
+
 		// Allow changes to the New Pages query
-		$tables = array_merge( $rcQuery['tables'], [ 'page' ] );
-		$fields = array_merge( $rcQuery['fields'], [
-			'length' => 'page_len', 'rev_id' => 'page_latest', 'page_namespace', 'page_title'
-		] );
-		$join_conds = [ 'page' => [ 'INNER JOIN', 'page_id=rc_cur_id' ] ] + $rcQuery['joins'];
+		$tables = [ 'recentchanges', 'page' ] + $commentQuery['tables'];
+		$fields = [
+			'rc_namespace', 'rc_title', 'rc_cur_id', 'rc_user', 'rc_user_text',
+			'rc_timestamp', 'rc_patrolled', 'rc_id', 'rc_deleted',
+			'length' => 'page_len', 'rev_id' => 'page_latest', 'rc_this_oldid',
+			'page_namespace', 'page_title'
+		] + $commentQuery['fields'];
+		$join_conds = [ 'page' => [ 'INNER JOIN', 'page_id=rc_cur_id' ] ] + $commentQuery['joins'];
 
 		// Avoid PHP 7.1 warning from passing $this by reference
 		$pager = $this;

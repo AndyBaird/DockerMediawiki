@@ -85,8 +85,6 @@ interface ILoadBalancer {
 	const DOMAIN_ANY = '';
 
 	/** @var int DB handle should have DBO_TRX disabled and the caller will leave it as such */
-	const CONN_TRX_AUTOCOMMIT = 1;
-	/** @var int Alias for CONN_TRX_AUTOCOMMIT for b/c; deprecated since 1.31 */
 	const CONN_TRX_AUTO = 1;
 
 	/**
@@ -98,10 +96,9 @@ interface ILoadBalancer {
 	 *  - loadMonitor : Name of a class used to fetch server lag and load.
 	 *  - readOnlyReason : Reason the master DB is read-only if so [optional]
 	 *  - waitTimeout : Maximum time to wait for replicas for consistency [optional]
-	 *  - maxLag: Avoid replica DB servers with more lag than this [optional]
 	 *  - srvCache : BagOStuff object for server cache [optional]
 	 *  - wanCache : WANObjectCache object [optional]
-	 *  - chronologyCallback: Callback to run before the first connection attempt [optional]
+	 *  - chronologyProtector: ChronologyProtector object [optional]
 	 *  - hostname : The name of the current server [optional]
 	 *  - cliMode: Whether the execution context is a CLI script. [optional]
 	 *  - profiler : Class name or instance with profileIn()/profileOut() methods. [optional]
@@ -111,7 +108,6 @@ interface ILoadBalancer {
 	 *  - queryLogger: PSR-3 logger instance. [optional]
 	 *  - perfLogger: PSR-3 logger instance. [optional]
 	 *  - errorLogger : Callback that takes an Exception and logs it. [optional]
-	 *  - deprecationLogger: Callback to log a deprecation warning. [optional]
 	 * @throws InvalidArgumentException
 	 */
 	public function __construct( array $params );
@@ -167,31 +163,20 @@ interface ILoadBalancer {
 	/**
 	 * Get any open connection to a given server index, local or foreign
 	 *
-	 * Use CONN_TRX_AUTOCOMMIT to only look for connections opened with that flag
-	 *
 	 * @param int $i Server index or DB_MASTER/DB_REPLICA
-	 * @param int $flags Bitfield of CONN_* class constants
 	 * @return Database|bool False if no such connection is open
 	 */
-	public function getAnyOpenConnection( $i, $flags = 0 );
+	public function getAnyOpenConnection( $i );
 
 	/**
-	 * Get a connection handle by server index
+	 * Get a connection by index
 	 *
-	 * The CONN_TRX_AUTOCOMMIT flag is ignored for databases with ATTR_DB_LEVEL_LOCKING
-	 * (e.g. sqlite) in order to avoid deadlocks. ILoadBalancer::getServerAttributes()
-	 * can be used to check such flags beforehand.
+	 * Avoid using CONN_TRX_AUTO with sqlite (e.g. check getServerType() first)
 	 *
-	 * If the caller uses $domain or sets CONN_TRX_AUTOCOMMIT in $flags, then it must also
-	 * call ILoadBalancer::reuseConnection() on the handle when finished using it.
-	 * In all other cases, this is not necessary, though not harmful either.
-	 *
-	 * @param int $i Server index (overrides $groups) or DB_MASTER/DB_REPLICA
+	 * @param int $i Server index or DB_MASTER/DB_REPLICA
 	 * @param array|string|bool $groups Query group(s), or false for the generic reader
 	 * @param string|bool $domain Domain ID, or false for the current domain
 	 * @param int $flags Bitfield of CONN_* class constants
-	 *
-	 * @note This method throws DBAccessError if ILoadBalancer::disable() was called
 	 *
 	 * @throws DBError
 	 * @return Database
@@ -207,23 +192,21 @@ interface ILoadBalancer {
 	 * @param IDatabase $conn
 	 * @throws InvalidArgumentException
 	 */
-	public function reuseConnection( IDatabase $conn );
+	public function reuseConnection( $conn );
 
 	/**
 	 * Get a database connection handle reference
 	 *
 	 * The handle's methods simply wrap those of a Database handle
 	 *
-	 * The CONN_TRX_AUTOCOMMIT flag is ignored for databases with ATTR_DB_LEVEL_LOCKING
-	 * (e.g. sqlite) in order to avoid deadlocks. ILoadBalancer::getServerAttributes()
-	 * can be used to check such flags beforehand.
+	 * Avoid using CONN_TRX_AUTO with sqlite (e.g. check getServerType() first)
 	 *
 	 * @see ILoadBalancer::getConnection() for parameter information
 	 *
 	 * @param int $i Server index or DB_MASTER/DB_REPLICA
 	 * @param array|string|bool $groups Query group(s), or false for the generic reader
 	 * @param string|bool $domain Domain ID, or false for the current domain
-	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTOCOMMIT)
+	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTO)
 	 * @return DBConnRef
 	 */
 	public function getConnectionRef( $i, $groups = [], $domain = false, $flags = 0 );
@@ -233,16 +216,14 @@ interface ILoadBalancer {
 	 *
 	 * The handle's methods simply wrap those of a Database handle
 	 *
-	 * The CONN_TRX_AUTOCOMMIT flag is ignored for databases with ATTR_DB_LEVEL_LOCKING
-	 * (e.g. sqlite) in order to avoid deadlocks. ILoadBalancer::getServerAttributes()
-	 * can be used to check such flags beforehand.
+	 * Avoid using CONN_TRX_AUTO with sqlite (e.g. check getServerType() first)
 	 *
 	 * @see ILoadBalancer::getConnection() for parameter information
 	 *
 	 * @param int $i Server index or DB_MASTER/DB_REPLICA
 	 * @param array|string|bool $groups Query group(s), or false for the generic reader
 	 * @param string|bool $domain Domain ID, or false for the current domain
-	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTOCOMMIT)
+	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTO)
 	 * @return DBConnRef
 	 */
 	public function getLazyConnectionRef( $i, $groups = [], $domain = false, $flags = 0 );
@@ -252,16 +233,14 @@ interface ILoadBalancer {
 	 *
 	 * The handle's methods simply wrap those of a Database handle
 	 *
-	 * The CONN_TRX_AUTOCOMMIT flag is ignored for databases with ATTR_DB_LEVEL_LOCKING
-	 * (e.g. sqlite) in order to avoid deadlocks. ILoadBalancer::getServerAttributes()
-	 * can be used to check such flags beforehand.
+	 * Avoid using CONN_TRX_AUTO with sqlite (e.g. check getServerType() first)
 	 *
 	 * @see ILoadBalancer::getConnection() for parameter information
 	 *
 	 * @param int $db Server index or DB_MASTER/DB_REPLICA
 	 * @param array|string|bool $groups Query group(s), or false for the generic reader
 	 * @param string|bool $domain Domain ID, or false for the current domain
-	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTOCOMMIT)
+	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTO)
 	 * @return MaintainableDBConnRef
 	 */
 	public function getMaintenanceConnectionRef( $db, $groups = [], $domain = false, $flags = 0 );
@@ -272,19 +251,13 @@ interface ILoadBalancer {
 	 * The index must be an actual index into the array. If a connection to the server is
 	 * already open and not considered an "in use" foreign connection, this simply returns it.
 	 *
-	 * Avoid using CONN_TRX_AUTOCOMMIT for databases with ATTR_DB_LEVEL_LOCKING (e.g. sqlite) in
-	 * order to avoid deadlocks. ILoadBalancer::getServerAttributes() can be used to check
-	 * such flags beforehand.
+	 * Avoid using CONN_TRX_AUTO with sqlite (e.g. check getServerType() first)
 	 *
-	 * If the caller uses $domain or sets CONN_TRX_AUTOCOMMIT in $flags, then it must also
-	 * call ILoadBalancer::reuseConnection() on the handle when finished using it.
-	 * In all other cases, this is not necessary, though not harmful either.
-	 *
-	 * @note This method throws DBAccessError if ILoadBalancer::disable() was called
+	 * @note If disable() was called on this LoadBalancer, this method will throw a DBAccessError.
 	 *
 	 * @param int $i Server index (does not support DB_MASTER/DB_REPLICA)
 	 * @param string|bool $domain Domain ID, or false for the current domain
-	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTOCOMMIT)
+	 * @param int $flags Bitfield of CONN_* class constants (e.g. CONN_TRX_AUTO)
 	 * @return Database|bool Returns false on errors
 	 * @throws DBAccessError
 	 */
@@ -336,11 +309,23 @@ interface ILoadBalancer {
 	public function getServerType( $i );
 
 	/**
-	 * @param int $i Server index
-	 * @return array (Database::ATTRIBUTE_* constant => value) for all such constants
-	 * @since 1.31
+	 * Return the server info structure for a given index, or false if the index is invalid.
+	 * @param int $i
+	 * @return array|bool
+	 *
+	 * @deprecated Since 1.30, no alternative
 	 */
-	public function getServerAttributes( $i );
+	public function getServerInfo( $i );
+
+	/**
+	 * Sets the server info structure for the given index. Entry at index $i
+	 * is created if it doesn't exist
+	 * @param int $i
+	 * @param array $serverInfo
+	 *
+	 * @deprecated Since 1.30, construct new object
+	 */
+	public function setServerInfo( $i, array $serverInfo );
 
 	/**
 	 * Get the current master position for chronology control purposes
@@ -377,7 +362,8 @@ interface ILoadBalancer {
 	public function commitAll( $fname = __METHOD__ );
 
 	/**
-	 * Run pre-commit callbacks and defer execution of post-commit callbacks
+	 * Perform all pre-commit callbacks that remain part of the atomic transactions
+	 * and disable any post-commit callbacks until runMasterPostTrxCallbacks()
 	 *
 	 * Use this only for mutli-database commits
 	 */
@@ -416,18 +402,14 @@ interface ILoadBalancer {
 	public function commitMasterChanges( $fname = __METHOD__ );
 
 	/**
-	 * Consume and run all pending post-COMMIT/ROLLBACK callbacks
+	 * Issue all pending post-COMMIT/ROLLBACK callbacks
 	 *
+	 * Use this only for mutli-database commits
+	 *
+	 * @param int $type IDatabase::TRIGGER_* constant
 	 * @return Exception|null The first exception or null if there were none
 	 */
-	public function runMasterTransactionIdleCallbacks();
-
-	/**
-	 * Run all recurring post-COMMIT/ROLLBACK listener callbacks
-	 *
-	 * @return Exception|null The first exception or null if there were none
-	 */
-	public function runMasterTransactionListenerCallbacks();
+	public function runMasterPostTrxCallbacks( $type );
 
 	/**
 	 * Issue ROLLBACK only on master, only if queries were done on connection
@@ -435,6 +417,15 @@ interface ILoadBalancer {
 	 * @throws DBExpectedError
 	 */
 	public function rollbackMasterChanges( $fname = __METHOD__ );
+
+	/**
+	 * Suppress all pending post-COMMIT/ROLLBACK callbacks
+	 *
+	 * Use this only for mutli-database commits
+	 *
+	 * @return Exception|null The first exception or null if there were none
+	 */
+	public function suppressTransactionEndCallbacks();
 
 	/**
 	 * Commit all replica DB transactions so as to flush any REPEATABLE-READ or SSI snapshot
@@ -615,19 +606,4 @@ interface ILoadBalancer {
 	 * @param array[] $aliases Map of (table => (dbname, schema, prefix) map)
 	 */
 	public function setTableAliases( array $aliases );
-
-	/**
-	 * Convert certain index names to alternative names before querying the DB
-	 *
-	 * Note that this applies to indexes regardless of the table they belong to.
-	 *
-	 * This can be employed when an index was renamed X => Y in code, but the new Y-named
-	 * indexes were not yet built on all DBs. After all the Y-named ones are added by the DBA,
-	 * the aliases can be removed, and then the old X-named indexes dropped.
-	 *
-	 * @param string[] $aliases
-	 * @return mixed
-	 * @since 1.31
-	 */
-	public function setIndexAliases( array $aliases );
 }

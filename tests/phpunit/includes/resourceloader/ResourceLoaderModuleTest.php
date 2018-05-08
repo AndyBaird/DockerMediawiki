@@ -4,8 +4,6 @@ class ResourceLoaderModuleTest extends ResourceLoaderTestCase {
 
 	/**
 	 * @covers ResourceLoaderModule::getVersionHash
-	 * @covers ResourceLoaderModule::getModifiedTime
-	 * @covers ResourceLoaderModule::getModifiedHash
 	 */
 	public function testGetVersionHash() {
 		$context = $this->getResourceLoaderContext();
@@ -151,9 +149,9 @@ class ResourceLoaderModuleTest extends ResourceLoaderTestCase {
 	 * @covers ResourceLoaderModule::expandRelativePaths
 	 */
 	public function testPlaceholderize() {
-		$getRelativePaths = new ReflectionMethod( ResourceLoaderModule::class, 'getRelativePaths' );
+		$getRelativePaths = new ReflectionMethod( 'ResourceLoaderModule', 'getRelativePaths' );
 		$getRelativePaths->setAccessible( true );
-		$expandRelativePaths = new ReflectionMethod( ResourceLoaderModule::class, 'expandRelativePaths' );
+		$expandRelativePaths = new ReflectionMethod( 'ResourceLoaderModule', 'expandRelativePaths' );
 		$expandRelativePaths->setAccessible( true );
 
 		$this->setMwGlobals( [

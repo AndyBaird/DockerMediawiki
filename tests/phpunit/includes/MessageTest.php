@@ -1,11 +1,7 @@
 <?php
 
-use Wikimedia\ObjectFactory;
 use Wikimedia\TestingAccessWrapper;
 
-/**
- * @group Database
- */
 class MessageTest extends MediaWikiLangTestCase {
 
 	protected function setUp() {
@@ -28,7 +24,7 @@ class MessageTest extends MediaWikiLangTestCase {
 		$this->assertSame( $params, $message->getParams() );
 		$this->assertEquals( $expectedLang, $message->getLanguage() );
 
-		$messageSpecifier = $this->getMockForAbstractClass( MessageSpecifier::class );
+		$messageSpecifier = $this->getMockForAbstractClass( 'MessageSpecifier' );
 		$messageSpecifier->expects( $this->any() )
 			->method( 'getKey' )->will( $this->returnValue( $key ) );
 		$messageSpecifier->expects( $this->any() )
@@ -201,16 +197,16 @@ class MessageTest extends MediaWikiLangTestCase {
 	 * @covers ::wfMessage
 	 */
 	public function testWfMessage() {
-		$this->assertInstanceOf( Message::class, wfMessage( 'mainpage' ) );
-		$this->assertInstanceOf( Message::class, wfMessage( 'i-dont-exist-evar' ) );
+		$this->assertInstanceOf( 'Message', wfMessage( 'mainpage' ) );
+		$this->assertInstanceOf( 'Message', wfMessage( 'i-dont-exist-evar' ) );
 	}
 
 	/**
 	 * @covers Message::newFromKey
 	 */
 	public function testNewFromKey() {
-		$this->assertInstanceOf( Message::class, Message::newFromKey( 'mainpage' ) );
-		$this->assertInstanceOf( Message::class, Message::newFromKey( 'i-dont-exist-evar' ) );
+		$this->assertInstanceOf( 'Message', Message::newFromKey( 'mainpage' ) );
+		$this->assertInstanceOf( 'Message', Message::newFromKey( 'i-dont-exist-evar' ) );
 	}
 
 	/**
@@ -471,6 +467,7 @@ class MessageTest extends MediaWikiLangTestCase {
 
 	/**
 	 * FIXME: This should not need database, but Language#formatExpiry does (T57912)
+	 * @group Database
 	 * @covers Message::expiryParam
 	 * @covers Message::expiryParams
 	 */
@@ -813,7 +810,7 @@ class MessageTest extends MediaWikiLangTestCase {
 		$msg = unserialize( serialize( $msg ) );
 		$this->assertSame( '(<a>foo</a>)', $msg->parse() );
 		$title = TestingAccessWrapper::newFromObject( $msg )->title;
-		$this->assertInstanceOf( Title::class, $title );
+		$this->assertInstanceOf( 'Title', $title );
 		$this->assertSame( 'Testing', $title->getFullText() );
 
 		$msg = new Message( 'mainpage' );

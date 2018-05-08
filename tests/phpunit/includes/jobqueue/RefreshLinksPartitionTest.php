@@ -16,7 +16,6 @@ class RefreshLinksPartitionTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provider_backlinks
-	 * @covers BacklinkJobUtils::partitionBacklinkJob
 	 */
 	public function testRefreshLinks( $ns, $dbKey, $pages ) {
 		$title = Title::makeTitle( $ns, $dbKey );

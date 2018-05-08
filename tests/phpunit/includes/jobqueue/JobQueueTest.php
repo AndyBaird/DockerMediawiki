@@ -1,7 +1,5 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
-
 /**
  * @group JobQueue
  * @group medium
@@ -28,7 +26,7 @@ class JobQueueTest extends MediaWikiTestCase {
 			}
 			$baseConfig = $wgJobTypeConf[$name];
 		} else {
-			$baseConfig = [ 'class' => JobQueueDBSingle::class ];
+			$baseConfig = [ 'class' => 'JobQueueDB' ];
 		}
 		$baseConfig['type'] = 'null';
 		$baseConfig['wiki'] = wfWikiID();
@@ -234,7 +232,7 @@ class JobQueueTest extends MediaWikiTestCase {
 
 		$j = $queue->pop();
 		// Make sure ack() of the twin did not delete the sibling data
-		$this->assertType( NullJob::class, $j );
+		$this->assertType( 'NullJob', $j );
 	}
 
 	/**
@@ -381,13 +379,5 @@ class JobQueueTest extends MediaWikiTestCase {
 	function newDedupedJob( $i = 0, $rootJob = [] ) {
 		return new NullJob( Title::newMainPage(),
 			[ 'lives' => 0, 'usleep' => 0, 'removeDuplicates' => 1, 'i' => $i ] + $rootJob );
-	}
-}
-
-class JobQueueDBSingle extends JobQueueDB {
-	protected function getDB( $index ) {
-		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		// Override to not use CONN_TRX_AUTOCOMMIT so that we see the same temporary `job` table
-		return $lb->getConnection( $index, [], $this->wiki );
 	}
 }

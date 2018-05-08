@@ -126,14 +126,14 @@ class DateFormatter {
 	/**
 	 * Get a DateFormatter object
 	 *
-	 * @param Language|null $lang In which language to format the date
+	 * @param Language|string|null $lang In which language to format the date
 	 *     Defaults to the site content language
 	 * @return DateFormatter
 	 */
-	public static function getInstance( Language $lang = null ) {
+	public static function getInstance( $lang = null ) {
 		global $wgContLang, $wgMainCacheType;
 
-		$lang = $lang ?: $wgContLang;
+		$lang = $lang ? wfGetLangObj( $lang ) : $wgContLang;
 		$cache = ObjectCache::getLocalServerInstance( $wgMainCacheType );
 
 		static $dateFormatter = false;

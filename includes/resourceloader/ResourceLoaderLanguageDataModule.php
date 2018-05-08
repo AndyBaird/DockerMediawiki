@@ -40,7 +40,6 @@ class ResourceLoaderLanguageDataModule extends ResourceLoaderModule {
 		return [
 			'digitTransformTable' => $language->digitTransformTable(),
 			'separatorTransformTable' => $language->separatorTransformTable(),
-			'minimumGroupingDigits' => $language->minimumGroupingDigits(),
 			'grammarForms' => $language->getGrammarForms(),
 			'grammarTransformations' => $language->getGrammarTransformations(),
 			'pluralRules' => $language->getPluralRules(),

@@ -45,9 +45,9 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 		$db = $this->getDB( DB_MASTER );
 
 		if ( !$db->tableExists( 'revision' ) ) {
-			$this->fatalError( "revision table does not exist" );
+			$this->error( "revision table does not exist", true );
 		} elseif ( !$db->tableExists( 'archive' ) ) {
-			$this->fatalError( "archive table does not exist" );
+			$this->error( "archive table does not exist", true );
 		} elseif ( !$db->fieldExists( 'revision', 'rev_sha1', __METHOD__ ) ) {
 			$this->output( "rev_sha1 column does not exist\n\n", true );
 
@@ -55,10 +55,10 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 		}
 
 		$this->output( "Populating rev_sha1 column\n" );
-		$rc = $this->doSha1Updates( 'revision', 'rev_id', Revision::getQueryInfo(), 'rev' );
+		$rc = $this->doSha1Updates( 'revision', 'rev_id', 'rev' );
 
 		$this->output( "Populating ar_sha1 column\n" );
-		$ac = $this->doSha1Updates( 'archive', 'ar_rev_id', Revision::getArchiveQueryInfo(), 'ar' );
+		$ac = $this->doSha1Updates( 'archive', 'ar_rev_id', 'ar' );
 		$this->output( "Populating ar_sha1 column legacy rows\n" );
 		$ac += $this->doSha1LegacyUpdates();
 
@@ -71,15 +71,13 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 	/**
 	 * @param string $table
 	 * @param string $idCol
-	 * @param array $queryInfo
 	 * @param string $prefix
 	 * @return int Rows changed
 	 */
-	protected function doSha1Updates( $table, $idCol, $queryInfo, $prefix ) {
+	protected function doSha1Updates( $table, $idCol, $prefix ) {
 		$db = $this->getDB( DB_MASTER );
-		$batchSize = $this->getBatchSize();
-		$start = $db->selectField( $table, "MIN($idCol)", '', __METHOD__ );
-		$end = $db->selectField( $table, "MAX($idCol)", '', __METHOD__ );
+		$start = $db->selectField( $table, "MIN($idCol)", false, __METHOD__ );
+		$end = $db->selectField( $table, "MAX($idCol)", false, __METHOD__ );
 		if ( !$start || !$end ) {
 			$this->output( "...$table table seems to be empty.\n" );
 
@@ -88,16 +86,14 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 
 		$count = 0;
 		# Do remaining chunk
-		$end += $batchSize - 1;
+		$end += $this->mBatchSize - 1;
 		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
+		$blockEnd = $start + $this->mBatchSize - 1;
 		while ( $blockEnd <= $end ) {
 			$this->output( "...doing $idCol from $blockStart to $blockEnd\n" );
-			$cond = "$idCol BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd .
-				" AND $idCol IS NOT NULL AND {$prefix}_sha1 = ''";
-			$res = $db->select(
-				$queryInfo['tables'], $queryInfo['fields'], $cond, __METHOD__, [], $queryInfo['joins']
-			);
+			$cond = "$idCol BETWEEN $blockStart AND $blockEnd
+				AND $idCol IS NOT NULL AND {$prefix}_sha1 = ''";
+			$res = $db->select( $table, '*', $cond, __METHOD__ );
 
 			$this->beginTransaction( $db, __METHOD__ );
 			foreach ( $res as $row ) {
@@ -107,8 +103,9 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 			}
 			$this->commitTransaction( $db, __METHOD__ );
 
-			$blockStart += $batchSize;
-			$blockEnd += $batchSize;
+			$blockStart += $this->mBatchSize;
+			$blockEnd += $this->mBatchSize;
+			wfWaitForSlaves();
 		}
 
 		return $count;
@@ -120,9 +117,8 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 	protected function doSha1LegacyUpdates() {
 		$count = 0;
 		$db = $this->getDB( DB_MASTER );
-		$arQuery = Revision::getArchiveQueryInfo();
-		$res = $db->select( $arQuery['tables'], $arQuery['fields'],
-			[ 'ar_rev_id IS NULL', 'ar_sha1' => '' ], __METHOD__, [], $arQuery['joins'] );
+		$res = $db->select( 'archive', '*',
+			[ 'ar_rev_id IS NULL', 'ar_sha1' => '' ], __METHOD__ );
 
 		$updateSize = 0;
 		$this->beginTransaction( $db, __METHOD__ );
@@ -134,6 +130,7 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 				$updateSize = 0;
 				$this->commitTransaction( $db, __METHOD__ );
 				$this->output( "Commited row with ar_timestamp={$row->ar_timestamp}\n" );
+				wfWaitForSlaves();
 				$this->beginTransaction( $db, __METHOD__ );
 			}
 		}
@@ -215,5 +212,5 @@ class PopulateRevisionSha1 extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = PopulateRevisionSha1::class;
+$maintClass = "PopulateRevisionSha1";
 require_once RUN_MAINTENANCE_IF_MAIN;

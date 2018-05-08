@@ -11,12 +11,14 @@
 	 * @cfg {string} [type='send_unselected_if_any'] Group type
 	 * @cfg {string} [view='default'] Name of the display group this group
 	 *  is a part of.
-	 * @cfg {boolean} [sticky] This group is 'sticky'. It is synchronized
-	 *  with a preference, does not participate in Saved Queries, and is
-	 *  not shown in the active filters area.
+	 * @cfg {boolean} [isSticky] This group is using a 'sticky' default; meaning
+	 *  that every time a value is changed, it becomes the new default
+	 * @cfg {boolean} [excludedFromSavedQueries] A specific requirement to exclude
+	 *  this filter from saved queries. This is always true if the filter is 'sticky'
+	 *  but can be used for non-sticky filters as an additional requirement. Similarly
+	 *  to 'sticky' it works for the entire group as a whole.
 	 * @cfg {string} [title] Group title
 	 * @cfg {boolean} [hidden] This group is hidden from the regular menu views
-	 *  and the active filters area.
 	 * @cfg {boolean} [allowArbitrary] Allows for an arbitrary value to be added to the
 	 *  group from the URL, even if it wasn't initially set up.
 	 * @cfg {number} [range] An object defining minimum and maximum values for numeric
@@ -34,7 +36,6 @@
 	 * @cfg {string} [whatsThis.body] The body of the whatsThis popup message
 	 * @cfg {string} [whatsThis.url] The url for the link in the whatsThis popup message
 	 * @cfg {string} [whatsThis.linkMessage] The text for the link in the whatsThis popup message
-	 * @cfg {boolean} [visible=true] The visibility of the group
 	 */
 	mw.rcfilters.dm.FilterGroup = function MwRcfiltersDmFilterGroup( name, config ) {
 		config = config || {};
@@ -46,14 +47,14 @@
 		this.name = name;
 		this.type = config.type || 'send_unselected_if_any';
 		this.view = config.view || 'default';
-		this.sticky = !!config.sticky;
+		this.sticky = !!config.isSticky;
+		this.excludedFromSavedQueries = this.sticky || !!config.excludedFromSavedQueries;
 		this.title = config.title || name;
 		this.hidden = !!config.hidden;
 		this.allowArbitrary = !!config.allowArbitrary;
 		this.numericRange = config.range;
 		this.separator = config.separator || '|';
 		this.labelPrefixKey = config.labelPrefixKey;
-		this.visible = config.visible === undefined ? true : !!config.visible;
 
 		this.currSelected = null;
 		this.active = !!config.active;
@@ -105,8 +106,7 @@
 					description: filter.description || '',
 					labelPrefixKey: model.labelPrefixKey,
 					cssClass: filter.cssClass,
-					identifiers: filter.identifiers,
-					defaultHighlightColor: filter.defaultHighlightColor
+					identifiers: filter.identifiers
 				} );
 
 			if ( filter.subset ) {
@@ -152,8 +152,6 @@
 				// For this group type, parameter values are direct
 				// We need to convert from a boolean to a string ('1' and '0')
 				model.defaultParams[ filter.name ] = String( Number( filter.default || 0 ) );
-			} else if ( model.getType() === 'any_value' ) {
-				model.defaultParams[ filter.name ] = filter.default;
 			}
 		} );
 
@@ -190,13 +188,6 @@
 			this.defaultParams[ this.getName() ] = defaultParam;
 		}
 
-		// add highlights to defaultParams
-		this.getItems().forEach( function ( filterItem ) {
-			if ( filterItem.isHighlighted() ) {
-				this.defaultParams[ filterItem.getName() + '_color' ] = filterItem.getHighlightColor();
-			}
-		}.bind( this ) );
-
 		// Store default filter state based on default params
 		this.defaultFilters = this.getFilterRepresentation( this.getDefaultParams() );
 
@@ -210,7 +201,7 @@
 		// Verify that single_option group has at least one item selected
 		if (
 			this.getType() === 'single_option' &&
-			this.findSelectedItems().length === 0
+			this.getSelectedItems().length === 0
 		) {
 			defaultParam = groupDefault !== undefined ?
 				groupDefault : this.getItems()[ 0 ].getParamName();
@@ -237,19 +228,19 @@
 		if ( this.getType() === 'single_option' ) {
 			// This group must have one item selected always
 			// and must never have more than one item selected at a time
-			if ( this.findSelectedItems().length === 0 ) {
+			if ( this.getSelectedItems().length === 0 ) {
 				// Nothing is selected anymore
 				// Select the default or the first item
 				this.currSelected = this.getItemByParamName( this.defaultParams[ this.getName() ] ) ||
 					this.getItems()[ 0 ];
 				this.currSelected.toggleSelected( true );
 				changed = true;
-			} else if ( this.findSelectedItems().length > 1 ) {
+			} else if ( this.getSelectedItems().length > 1 ) {
 				// There is more than one item selected
 				// This should only happen if the item given
 				// is the one that is selected, so unselect
 				// all items that is not it
-				this.findSelectedItems().forEach( function ( itemModel ) {
+				this.getSelectedItems().forEach( function ( itemModel ) {
 					// Note that in case the given item is actually
 					// not selected, this loop will end up unselecting
 					// all items, which would trigger the case above
@@ -266,17 +257,17 @@
 			}
 		}
 
-		if ( this.isSticky() ) {
-			// If this group is sticky, then change the default according to the
-			// current selection.
-			this.defaultParams = this.getParamRepresentation( this.getSelectedState() );
-		}
-
 		if (
 			changed ||
 			this.active !== active ||
 			this.currSelected !== item
 		) {
+			if ( this.isSticky() ) {
+				// If this group is sticky, then change the default according to the
+				// current selection.
+				this.defaultParams = this.getParamRepresentation( this.getSelectedState() );
+			}
+
 			this.active = active;
 			this.currSelected = item;
 
@@ -494,7 +485,7 @@
 	 * @param {mw.rcfilters.dm.FilterItem} [excludeItem] Item to exclude from the list
 	 * @return {mw.rcfilters.dm.FilterItem[]} Selected items
 	 */
-	mw.rcfilters.dm.FilterGroup.prototype.findSelectedItems = function ( excludeItem ) {
+	mw.rcfilters.dm.FilterGroup.prototype.getSelectedItems = function ( excludeItem ) {
 		var excludeName = ( excludeItem && excludeItem.getName() ) || '';
 
 		return this.getItems().filter( function ( item ) {
@@ -509,7 +500,7 @@
 	 * @return {boolean} All selected items are in conflict with this item
 	 */
 	mw.rcfilters.dm.FilterGroup.prototype.areAllSelectedInConflictWith = function ( filterItem ) {
-		var selectedItems = this.findSelectedItems( filterItem );
+		var selectedItems = this.getSelectedItems( filterItem );
 
 		return selectedItems.length > 0 &&
 			(
@@ -529,7 +520,7 @@
 	 * @return {boolean} Any of the selected items are in conflict with this item
 	 */
 	mw.rcfilters.dm.FilterGroup.prototype.areAnySelectedInConflictWith = function ( filterItem ) {
-		var selectedItems = this.findSelectedItems( filterItem );
+		var selectedItems = this.getSelectedItems( filterItem );
 
 		return selectedItems.length > 0 && (
 			// The group as a whole is in conflict with this item
@@ -582,7 +573,7 @@
 			if ( buildFromCurrentState ) {
 				// This means we have not been given a filter representation
 				// so we are building one based on current state
-				filterRepresentation[ item.getName() ] = item.getValue();
+				filterRepresentation[ item.getName() ] = item.isSelected();
 			} else if ( filterRepresentation[ item.getName() ] === undefined ) {
 				// We are given a filter representation, but we have to make
 				// sure that we fill in the missing filters if there are any
@@ -602,8 +593,7 @@
 		// Build result
 		if (
 			this.getType() === 'send_unselected_if_any' ||
-			this.getType() === 'boolean' ||
-			this.getType() === 'any_value'
+			this.getType() === 'boolean'
 		) {
 			// First, check if any of the items are selected at all.
 			// If none is selected, we're treating it as if they are
@@ -620,8 +610,6 @@
 					// Representation is straight-forward and direct from
 					// the parameter value to the filter state
 					result[ filterParamNames[ name ] ] = String( Number( !!value ) );
-				} else if ( model.getType() === 'any_value' ) {
-					result[ filterParamNames[ name ] ] = value;
 				}
 			} );
 		} else if ( this.getType() === 'string_options' ) {
@@ -672,8 +660,7 @@
 		paramRepresentation = paramRepresentation || {};
 		if (
 			this.getType() === 'send_unselected_if_any' ||
-			this.getType() === 'boolean' ||
-			this.getType() === 'any_value'
+			this.getType() === 'boolean'
 		) {
 			// Go over param representation; map and check for selections
 			this.getItems().forEach( function ( filterItem ) {
@@ -702,8 +689,6 @@
 				} else if ( model.getType() === 'boolean' ) {
 					// Straight-forward definition of state
 					result[ filterItem.getName() ] = !!Number( paramRepresentation[ filterItem.getParamName() ] );
-				} else if ( model.getType() === 'any_value' ) {
-					result[ filterItem.getName() ] = paramRepresentation[ filterItem.getParamName() ];
 				}
 			} );
 		} else if ( this.getType() === 'string_options' ) {
@@ -748,9 +733,9 @@
 		// If any filters are missing, they will get a falsey value
 		this.getItems().forEach( function ( filterItem ) {
 			if ( result[ filterItem.getName() ] === undefined ) {
-				result[ filterItem.getName() ] = this.getFalsyValue();
+				result[ filterItem.getName() ] = false;
 			}
-		}.bind( this ) );
+		} );
 
 		// Make sure that at least one option is selected in
 		// single_option groups, no matter what path was taken
@@ -773,13 +758,6 @@
 	};
 
 	/**
-	 * @return {*} The appropriate falsy value for this group type
-	 */
-	mw.rcfilters.dm.FilterGroup.prototype.getFalsyValue = function () {
-		return this.getType() === 'any_value' ? '' : false;
-	};
-
-	/**
 	 * Get current selected state of all filter items in this group
 	 *
 	 * @return {Object} Selected state
@@ -788,7 +766,7 @@
 		var state = {};
 
 		this.getItems().forEach( function ( filterItem ) {
-			state[ filterItem.getName() ] = filterItem.getValue();
+			state[ filterItem.getName() ] = filterItem.isSelected();
 		} );
 
 		return state;
@@ -836,19 +814,6 @@
 	 */
 	mw.rcfilters.dm.FilterGroup.prototype.getType = function () {
 		return this.type;
-	};
-
-	/**
-	 * Check whether this group is represented by a single parameter
-	 * or whether each item is its own parameter
-	 *
-	 * @return {boolean} This group is a single parameter
-	 */
-	mw.rcfilters.dm.FilterGroup.prototype.isPerGroupRequestParameter = function () {
-		return (
-			this.getType() === 'string_options' ||
-			this.getType() === 'single_option'
-		);
 	};
 
 	/**
@@ -917,67 +882,11 @@
 	};
 
 	/**
-	 * Normalize a value given to this group. This is mostly for correcting
-	 * arbitrary values for 'single option' groups, given by the user settings
-	 * or the URL that can go outside the limits that are allowed.
+	 * Check whether the group value is excluded from saved queries
 	 *
-	 * @param  {string} value Given value
-	 * @return {string} Corrected value
+	 * @return {boolean} Group value is excluded from saved queries
 	 */
-	mw.rcfilters.dm.FilterGroup.prototype.normalizeArbitraryValue = function ( value ) {
-		if (
-			this.getType() === 'single_option' &&
-			this.isAllowArbitrary()
-		) {
-			if (
-				this.getMaxValue() !== null &&
-				value > this.getMaxValue()
-			) {
-				// Change the value to the actual max value
-				return String( this.getMaxValue() );
-			} else if (
-				this.getMinValue() !== null &&
-				value < this.getMinValue()
-			) {
-				// Change the value to the actual min value
-				return String( this.getMinValue() );
-			}
-		}
-
-		return value;
-	};
-
-	/**
-	 * Toggle the visibility of this group
-	 *
-	 * @param {boolean} [isVisible] Item is visible
-	 */
-	mw.rcfilters.dm.FilterGroup.prototype.toggleVisible = function ( isVisible ) {
-		isVisible = isVisible === undefined ? !this.visible : isVisible;
-
-		if ( this.visible !== isVisible ) {
-			this.visible = isVisible;
-			this.emit( 'update' );
-		}
-	};
-
-	/**
-	 * Check whether the group is visible
-	 *
-	 * @return {boolean} Group is visible
-	 */
-	mw.rcfilters.dm.FilterGroup.prototype.isVisible = function () {
-		return this.visible;
-	};
-
-	/**
-	 * Set the visibility of the items under this group by the given items array
-	 *
-	 * @param {mw.rcfilters.dm.ItemModel[]} visibleItems An array of visible items
-	 */
-	mw.rcfilters.dm.FilterGroup.prototype.setVisibleItems = function ( visibleItems ) {
-		this.getItems().forEach( function ( itemModel ) {
-			itemModel.toggleVisible( visibleItems.indexOf( itemModel ) !== -1 );
-		} );
+	mw.rcfilters.dm.FilterGroup.prototype.isExcludedFromSavedQueries = function () {
+		return this.excludedFromSavedQueries;
 	};
 }( mediaWiki ) );

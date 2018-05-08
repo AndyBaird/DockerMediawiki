@@ -1,7 +1,6 @@
 <?php
 
 /**
- * @covers LinksUpdate
  * @group LinksUpdate
  * @group Database
  * ^--- make sure temporary tables are used.

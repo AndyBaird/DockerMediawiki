@@ -23,10 +23,6 @@ class ParserTestFileSuite extends PHPUnit_Framework_TestSuite {
 	}
 
 	function setUp() {
-		if ( !$this->ptRunner->meetsRequirements( $this->ptFileInfo['requirements'] ) ) {
-			$this->markTestSuiteSkipped( 'required extension not enabled' );
-		} else {
-			$this->ptRunner->addArticles( $this->ptFileInfo[ 'articles'] );
-		}
+		$this->ptRunner->addArticles( $this->ptFileInfo[ 'articles'] );
 	}
 }

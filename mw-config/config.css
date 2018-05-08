@@ -174,11 +174,6 @@
 	min-width: 20em;
 }
 
-/* Hide empty live-log textarea */
-#config-live-log textarea:empty {
-	display: none;
-}
-
 /* tooltip styles */
 .config-help-field-hint {
 	display: none;

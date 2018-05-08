@@ -6,15 +6,13 @@ use Wikimedia\TestingAccessWrapper;
  * @group Cache
  * @covers MessageBlobStore
  */
-class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class MessageBlobStoreTest extends PHPUnit_Framework_TestCase {
 
 	protected function setUp() {
 		parent::setUp();
 		// MediaWiki tests defaults $wgMainWANCache to CACHE_NONE.
 		// Use hash instead so that caching is observed
-		$this->wanCache = $this->getMockBuilder( WANObjectCache::class )
+		$this->wanCache = $this->getMockBuilder( 'WANObjectCache' )
 			->setConstructorArgs( [ [
 				'cache' => new HashBagOStuff(),
 				'pool' => 'test',
@@ -32,7 +30,7 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 	}
 
 	protected function makeBlobStore( $methods = null, $rl = null ) {
-		$blobStore = $this->getMockBuilder( MessageBlobStore::class )
+		$blobStore = $this->getMockBuilder( 'MessageBlobStore' )
 			->setConstructorArgs( [ $rl ] )
 			->setMethods( $methods )
 			->getMock();
@@ -103,11 +101,6 @@ class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
 		$this->assertEquals( '{"foo":"Example"}', $blob, 'Generated blob' );
 	}
 
-	/**
-	 * Seems to fail sometimes (T176097).
-	 *
-	 * @group Broken
-	 */
 	public function testGetBlobCached() {
 		$module = $this->makeModule( [ 'example' ] );
 		$rl = new ResourceLoader();

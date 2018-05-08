@@ -64,7 +64,7 @@ abstract class Profiler {
 			global $wgProfiler, $wgProfileLimit;
 
 			$params = [
-				'class'     => ProfilerStub::class,
+				'class'     => 'ProfilerStub',
 				'sampling'  => 1,
 				'threshold' => $wgProfileLimit,
 				'output'    => [],
@@ -74,9 +74,8 @@ abstract class Profiler {
 			}
 
 			$inSample = mt_rand( 0, $params['sampling'] - 1 ) === 0;
-			// wfIsCLI() is not available yet
-			if ( PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg' || !$inSample ) {
-				$params['class'] = ProfilerStub::class;
+			if ( PHP_SAPI === 'cli' || !$inSample ) {
+				$params['class'] = 'ProfilerStub';
 			}
 
 			if ( !is_array( $params['output'] ) ) {
@@ -188,7 +187,7 @@ abstract class Profiler {
 	 * Get all usable outputs.
 	 *
 	 * @throws MWException
-	 * @return ProfilerOutput[]
+	 * @return array Array of ProfilerOutput instances.
 	 * @since 1.25
 	 */
 	private function getOutputs() {

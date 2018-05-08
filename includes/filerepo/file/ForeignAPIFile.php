@@ -33,7 +33,7 @@ class ForeignAPIFile extends File {
 	/** @var array */
 	private $mInfo = [];
 
-	protected $repoClass = ForeignApiRepo::class;
+	protected $repoClass = 'ForeignApiRepo';
 
 	/**
 	 * @param Title|string|bool $title
@@ -192,8 +192,8 @@ class ForeignAPIFile extends File {
 	}
 
 	/**
-	 * @param mixed $metadata
-	 * @return mixed
+	 * @param array $metadata
+	 * @return array
 	 */
 	public static function parseMetadata( $metadata ) {
 		if ( !is_array( $metadata ) ) {
@@ -254,7 +254,7 @@ class ForeignAPIFile extends File {
 
 	/**
 	 * @param int $audience
-	 * @param User|null $user
+	 * @param User $user
 	 * @return null|string
 	 */
 	public function getDescription( $audience = self::FOR_PUBLIC, User $user = null ) {
@@ -286,7 +286,7 @@ class ForeignAPIFile extends File {
 	 */
 	function getMimeType() {
 		if ( !isset( $this->mInfo['mime'] ) ) {
-			$magic = MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer();
+			$magic = MimeMagic::singleton();
 			$this->mInfo['mime'] = $magic->guessTypesForExtension( $this->getExtension() );
 		}
 
@@ -300,7 +300,7 @@ class ForeignAPIFile extends File {
 		if ( isset( $this->mInfo['mediatype'] ) ) {
 			return $this->mInfo['mediatype'];
 		}
-		$magic = MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer();
+		$magic = MimeMagic::singleton();
 
 		return $magic->getMediaType( null, $this->getMimeType() );
 	}
@@ -333,17 +333,15 @@ class ForeignAPIFile extends File {
 	}
 
 	/**
-	 * @return string[]
+	 * @return array
 	 */
 	function getThumbnails() {
 		$dir = $this->getThumbPath( $this->getName() );
 		$iter = $this->repo->getBackend()->getFileList( [ 'dir' => $dir ] );
 
 		$files = [];
-		if ( $iter ) {
-			foreach ( $iter as $file ) {
-				$files[] = $file;
-			}
+		foreach ( $iter as $file ) {
+			$files[] = $file;
 		}
 
 		return $files;

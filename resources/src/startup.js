@@ -5,8 +5,11 @@
  * - Beware: Do not call mwNow before the isCompatible() check.
  */
 
-/* global mw, mwNow, isCompatible, $VARS, $CODE */
+/* global mw, mwPerformance, mwNow, isCompatible, $VARS, $CODE */
 
+window.mwPerformance = ( window.performance && performance.mark ) ? performance : {
+	mark: function () {}
+};
 // Define now() here to ensure valid comparison with mediaWikiLoadEnd (T153819).
 window.mwNow = ( function () {
 	var perf = window.performance,
@@ -27,11 +30,11 @@ window.mwNow = ( function () {
  *
  * Browsers we support in our modern run-time (Grade A):
  * - Chrome 13+
- * - IE 11+
+ * - IE 10+
  * - Firefox 4+
  * - Safari 5+
- * - Opera 15+
- * - Mobile Safari 6.0+ (iOS 6+)
+ * - Opera 12.10+
+ * - Mobile Safari 5.1+ (iOS 5+)
  * - Android 4.1+
  *
  * Browsers we support in our no-javascript run-time (Grade C):
@@ -39,7 +42,7 @@ window.mwNow = ( function () {
  * - IE 6+
  * - Firefox 3+
  * - Safari 3+
- * - Opera 15+
+ * - Opera 10+
  * - Mobile Safari 5.0+ (iOS 4+)
  * - Android 2.0+
  * - WebOS < 1.5
@@ -60,30 +63,30 @@ window.mwNow = ( function () {
 window.isCompatible = function ( str ) {
 	var ua = str || navigator.userAgent;
 	return !!(
-		// https://caniuse.com/#feat=es5
-		// https://caniuse.com/#feat=use-strict
-		// https://caniuse.com/#feat=json / https://phabricator.wikimedia.org/T141344#2784065
+		// http://caniuse.com/#feat=es5
+		// http://caniuse.com/#feat=use-strict
+		// http://caniuse.com/#feat=json / https://phabricator.wikimedia.org/T141344#2784065
 		( function () {
 			'use strict';
 			return !this && !!Function.prototype.bind && !!window.JSON;
 		}() ) &&
 
-		// https://caniuse.com/#feat=queryselector
+		// http://caniuse.com/#feat=queryselector
 		'querySelector' in document &&
 
-		// https://caniuse.com/#feat=namevalue-storage
+		// http://caniuse.com/#feat=namevalue-storage
 		// https://developer.blackberry.com/html5/apis/v1_0/localstorage.html
 		// https://blog.whatwg.org/this-week-in-html-5-episode-30
 		'localStorage' in window &&
 
-		// https://caniuse.com/#feat=addeventlistener
+		// http://caniuse.com/#feat=addeventlistener
 		'addEventListener' in window &&
 
 		// Hardcoded exceptions for browsers that pass the requirement but we don't want to
 		// support in the modern run-time.
 		// Note: Please extend the regex instead of adding new ones
 		!(
-			ua.match( /MSIE 10|webOS\/1\.[0-4]|SymbianOS|Series60|NetFront|Opera Mini|S40OviBrowser|MeeGo|Android.+Glass|^Mozilla\/5\.0 .+ Gecko\/$|googleweblight/ ) ||
+			ua.match( /webOS\/1\.[0-4]|SymbianOS|Series60|NetFront|Opera Mini|S40OviBrowser|MeeGo|Android.+Glass|^Mozilla\/5\.0 .+ Gecko\/$|googleweblight/ ) ||
 			ua.match( /PlayStation/i )
 		)
 	);
@@ -148,17 +151,18 @@ window.isCompatible = function ( str ) {
 	}
 
 	window.mediaWikiLoadStart = mwNow();
-	if ( window.performance && performance.mark ) {
-		performance.mark( 'mwStartup' );
-	}
+	mwPerformance.mark( 'mwLoadStart' );
+
 	script = document.createElement( 'script' );
 	script.src = $VARS.baseModulesUri;
-	script.onload = function () {
-		// Clean up
-		script.onload = null;
-		script = null;
-		// Callback
-		startUp();
+	script.onload = script.onreadystatechange = function () {
+		if ( !script.readyState || /loaded|complete/.test( script.readyState ) ) {
+			// Clean up
+			script.onload = script.onreadystatechange = null;
+			script = null;
+			// Callback
+			startUp();
+		}
 	};
-	document.head.appendChild( script );
+	document.getElementsByTagName( 'head' )[ 0 ].appendChild( script );
 }() );

@@ -10,7 +10,6 @@ class MWExceptionTest extends MediaWikiTestCase {
 
 	/**
 	 * @expectedException MWException
-	 * @covers MWException
 	 */
 	public function testMwexceptionThrowing() {
 		throw new MWException();
@@ -44,7 +43,7 @@ class MWExceptionTest extends MediaWikiTestCase {
 	}
 
 	private function getMockLanguage() {
-		return $this->getMockBuilder( Language::class )
+		return $this->getMockBuilder( 'Language' )
 			->disableOriginalConstructor()
 			->getMock();
 	}
@@ -111,8 +110,8 @@ class MWExceptionTest extends MediaWikiTestCase {
 
 	public static function provideExceptionClasses() {
 		return [
-			[ Exception::class ],
-			[ MWException::class ],
+			[ 'Exception' ],
+			[ 'MWException' ],
 		];
 	}
 
@@ -147,7 +146,7 @@ class MWExceptionTest extends MediaWikiTestCase {
 	 */
 	public static function provideJsonSerializedKeys() {
 		$testCases = [];
-		foreach ( [ Exception::class, MWException::class ] as $exClass ) {
+		foreach ( [ 'Exception', 'MWException' ] as $exClass ) {
 			$exTests = [
 				[ 'string', $exClass, 'id' ],
 				[ 'string', $exClass, 'file' ],

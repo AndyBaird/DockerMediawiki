@@ -129,6 +129,14 @@ class MessageBlobStore implements LoggerAwareInterface {
 	}
 
 	/**
+	 * @deprecated since 1.27 Obsolete. Used to populate a cache table in the database.
+	 * @return bool
+	 */
+	public function insertMessageBlob( $name, ResourceLoaderModule $module, $lang ) {
+		return false;
+	}
+
+	/**
 	 * @since 1.27
 	 * @param ResourceLoaderModule $module
 	 * @param string $lang

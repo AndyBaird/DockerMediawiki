@@ -99,6 +99,7 @@ class SpecialBlock extends FormSpecialPage {
 	 * @param HTMLForm $form
 	 */
 	protected function alterForm( HTMLForm $form ) {
+		$form->setWrapperLegendMsg( 'blockip-legend' );
 		$form->setHeaderText( '' );
 		$form->setSubmitDestructive();
 
@@ -120,10 +121,6 @@ class SpecialBlock extends FormSpecialPage {
 		}
 	}
 
-	protected function getDisplayFormat() {
-		return 'ooui';
-	}
-
 	/**
 	 * Get the HTMLForm descriptor array for the block form
 	 * @return array
@@ -135,35 +132,28 @@ class SpecialBlock extends FormSpecialPage {
 
 		$suggestedDurations = self::getSuggestedDurations();
 
-		$conf = $this->getConfig();
-		$oldCommentSchema = $conf->get( 'CommentTableSchemaMigrationStage' ) === MIGRATION_OLD;
-
 		$a = [
 			'Target' => [
-				'type' => 'user',
-				'ipallowed' => true,
-				'iprange' => true,
+				'type' => 'text',
 				'label-message' => 'ipaddressorusername',
 				'id' => 'mw-bi-target',
 				'size' => '45',
 				'autofocus' => true,
 				'required' => true,
 				'validation-callback' => [ __CLASS__, 'validateTargetField' ],
+				'cssclass' => 'mw-autocomplete-user', // used by mediawiki.userSuggest
 			],
 			'Expiry' => [
-				'type' => 'expiry',
+				'type' => !count( $suggestedDurations ) ? 'text' : 'selectorother',
 				'label-message' => 'ipbexpiry',
 				'required' => true,
 				'options' => $suggestedDurations,
+				'other' => $this->msg( 'ipbother' )->text(),
 				'default' => $this->msg( 'ipb-default-expiry' )->inContentLanguage()->text(),
 			],
 			'Reason' => [
 				'type' => 'selectandother',
-				// HTML maxlength uses "UTF-16 code units", which means that characters outside BMP
-				// (e.g. emojis) count for two each. This limit is overridden in JS to instead count
-				// Unicode codepoints (or 255 UTF-8 bytes for old schema).
-				'maxlength' => $oldCommentSchema ? 255 : CommentStore::COMMENT_CHARACTER_LIMIT,
-				'maxlength-unit' => 'codepoints',
+				'maxlength' => 255,
 				'label-message' => 'ipbreason',
 				'options-message' => 'ipbreason-dropdown',
 			],
@@ -230,7 +220,6 @@ class SpecialBlock extends FormSpecialPage {
 			'type' => 'hidden',
 			'default' => '',
 			'label-message' => 'ipb-confirm',
-			'cssclass' => 'mw-block-confirm',
 		];
 
 		$this->maybeAlterFormDefaults( $a );
@@ -334,7 +323,7 @@ class SpecialBlock extends FormSpecialPage {
 	 * @return string
 	 */
 	protected function preText() {
-		$this->getOutput()->addModules( [ 'mediawiki.special.block' ] );
+		$this->getOutput()->addModules( [ 'mediawiki.special.block', 'mediawiki.userSuggest' ] );
 
 		$blockCIDRLimit = $this->getConfig()->get( 'BlockCIDRLimit' );
 		$text = $this->msg( 'blockiptext', $blockCIDRLimit['IPv4'], $blockCIDRLimit['IPv6'] )->parse();
@@ -875,38 +864,29 @@ class SpecialBlock extends FormSpecialPage {
 			$a[$show] = $value;
 		}
 
-		if ( $a ) {
-			// if options exist, add other to the end instead of the begining (which
-			// is what happens by default).
-			$a[ wfMessage( 'ipbother' )->text() ] = 'other';
-		}
-
 		return $a;
 	}
 
 	/**
 	 * Convert a submitted expiry time, which may be relative ("2 weeks", etc) or absolute
 	 * ("24 May 2034", etc), into an absolute timestamp we can put into the database.
-	 *
-	 * @todo strtotime() only accepts English strings. This means the expiry input
-	 *       can only be specified in English.
-	 * @see https://secure.php.net/manual/en/function.strtotime.php
-	 *
 	 * @param string $expiry Whatever was typed into the form
-	 * @return string|bool Timestamp or 'infinity' or false on error.
+	 * @return string Timestamp or 'infinity'
 	 */
 	public static function parseExpiryInput( $expiry ) {
 		if ( wfIsInfinity( $expiry ) ) {
-			return 'infinity';
+			$expiry = 'infinity';
+		} else {
+			$expiry = strtotime( $expiry );
+
+			if ( $expiry < 0 || $expiry === false ) {
+				return false;
+			}
+
+			$expiry = wfTimestamp( TS_MW, $expiry );
 		}
 
-		$expiry = strtotime( $expiry );
-
-		if ( $expiry < 0 || $expiry === false ) {
-			return false;
-		}
-
-		return wfTimestamp( TS_MW, $expiry );
+		return $expiry;
 	}
 
 	/**

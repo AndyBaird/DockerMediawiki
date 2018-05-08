@@ -66,9 +66,6 @@ class DumpRenderer extends Maintenance {
 
 		$importer->setRevisionCallback(
 			[ $this, 'handleRevision' ] );
-		$importer->setNoticeCallback( function ( $msg, $params ) {
-			echo wfMessage( $msg, $params )->text() . "\n";
-		} );
 
 		$importer->doImport();
 
@@ -123,5 +120,5 @@ class DumpRenderer extends Maintenance {
 	}
 }
 
-$maintClass = DumpRenderer::class;
+$maintClass = "DumpRenderer";
 require_once RUN_MAINTENANCE_IF_MAIN;

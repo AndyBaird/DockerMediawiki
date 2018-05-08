@@ -29,7 +29,7 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 			]
 		);
 
-		MWNamespace::clearCaches();
+		MWNamespace::getCanonicalNamespaces( true ); # reset namespace cache
 		$wgContLang->resetNamespaces(); # reset namespace cache
 	}
 
@@ -38,7 +38,7 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 
 		parent::tearDown();
 
-		MWNamespace::clearCaches();
+		MWNamespace::getCanonicalNamespaces( true ); # reset namespace cache
 		$wgContLang->resetNamespaces(); # reset namespace cache
 	}
 
@@ -164,7 +164,7 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 		$this->assertTrue( $title->hasContentModel( $expectedModelId ) );
 	}
 
-	public static function provideIsSiteConfigPage() {
+	public static function provideIsCssOrJsPage() {
 		return [
 			[ 'Help:Foo', false ],
 			[ 'Help:Foo.js', false ],
@@ -172,21 +172,14 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 			[ 'User:Foo', false ],
 			[ 'User:Foo.js', false ],
 			[ 'User:Foo/bar.js', false ],
-			[ 'User:Foo/bar.json', false ],
 			[ 'User:Foo/bar.css', false ],
-			[ 'User:Foo/bar.JS', false ],
-			[ 'User:Foo/bar.JSON', false ],
-			[ 'User:Foo/bar.CSS', false ],
 			[ 'User talk:Foo/bar.css', false ],
 			[ 'User:Foo/bar.js.xxx', false ],
 			[ 'User:Foo/bar.xxx', false ],
 			[ 'MediaWiki:Foo.js', true ],
-			[ 'MediaWiki:Foo.json', true ],
 			[ 'MediaWiki:Foo.css', true ],
 			[ 'MediaWiki:Foo.JS', false ],
-			[ 'MediaWiki:Foo.JSON', false ],
 			[ 'MediaWiki:Foo.CSS', false ],
-			[ 'MediaWiki:Foo/bar.css', true ],
 			[ 'MediaWiki:Foo.css.xxx', false ],
 			[ 'TEST-JS:Foo', false ],
 			[ 'TEST-JS:Foo.js', false ],
@@ -194,15 +187,15 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 	}
 
 	/**
-	 * @dataProvider provideIsSiteConfigPage
-	 * @covers Title::isSiteConfigPage
+	 * @dataProvider provideIsCssOrJsPage
+	 * @covers Title::isCssOrJsPage
 	 */
-	public function testSiteConfigPage( $title, $expectedBool ) {
+	public function testIsCssOrJsPage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
-		$this->assertEquals( $expectedBool, $title->isSiteConfigPage() );
+		$this->assertEquals( $expectedBool, $title->isCssOrJsPage() );
 	}
 
-	public static function provideIsUserConfigPage() {
+	public static function provideIsCssJsSubpage() {
 		return [
 			[ 'Help:Foo', false ],
 			[ 'Help:Foo.js', false ],
@@ -210,79 +203,67 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 			[ 'User:Foo', false ],
 			[ 'User:Foo.js', false ],
 			[ 'User:Foo/bar.js', true ],
-			[ 'User:Foo/bar.JS', false ],
-			[ 'User:Foo/bar.json', true ],
-			[ 'User:Foo/bar.JSON', false ],
 			[ 'User:Foo/bar.css', true ],
-			[ 'User:Foo/bar.CSS', false ],
 			[ 'User talk:Foo/bar.css', false ],
 			[ 'User:Foo/bar.js.xxx', false ],
 			[ 'User:Foo/bar.xxx', false ],
 			[ 'MediaWiki:Foo.js', false ],
-			[ 'MediaWiki:Foo.json', false ],
-			[ 'MediaWiki:Foo.css', false ],
-			[ 'MediaWiki:Foo.JS', false ],
-			[ 'MediaWiki:Foo.JSON', false ],
-			[ 'MediaWiki:Foo.CSS', false ],
-			[ 'MediaWiki:Foo.css.xxx', false ],
+			[ 'User:Foo/bar.JS', false ],
+			[ 'User:Foo/bar.CSS', false ],
 			[ 'TEST-JS:Foo', false ],
 			[ 'TEST-JS:Foo.js', false ],
 		];
 	}
 
 	/**
-	 * @dataProvider provideIsUserConfigPage
-	 * @covers Title::isUserConfigPage
+	 * @dataProvider provideIsCssJsSubpage
+	 * @covers Title::isCssJsSubpage
 	 */
-	public function testIsUserConfigPage( $title, $expectedBool ) {
+	public function testIsCssJsSubpage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
-		$this->assertEquals( $expectedBool, $title->isUserConfigPage() );
+		$this->assertEquals( $expectedBool, $title->isCssJsSubpage() );
 	}
 
-	public static function provideIsUserCssConfigPage() {
+	public static function provideIsCssSubpage() {
 		return [
 			[ 'Help:Foo', false ],
 			[ 'Help:Foo.css', false ],
 			[ 'User:Foo', false ],
 			[ 'User:Foo.js', false ],
-			[ 'User:Foo.json', false ],
 			[ 'User:Foo.css', false ],
 			[ 'User:Foo/bar.js', false ],
-			[ 'User:Foo/bar.json', false ],
 			[ 'User:Foo/bar.css', true ],
 		];
 	}
 
 	/**
-	 * @dataProvider provideIsUserCssConfigPage
-	 * @covers Title::isUserCssConfigPage
+	 * @dataProvider provideIsCssSubpage
+	 * @covers Title::isCssSubpage
 	 */
-	public function testIsUserCssConfigPage( $title, $expectedBool ) {
+	public function testIsCssSubpage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
-		$this->assertEquals( $expectedBool, $title->isUserCssConfigPage() );
+		$this->assertEquals( $expectedBool, $title->isCssSubpage() );
 	}
 
-	public static function provideIsUserJsConfigPage() {
+	public static function provideIsJsSubpage() {
 		return [
 			[ 'Help:Foo', false ],
 			[ 'Help:Foo.css', false ],
 			[ 'User:Foo', false ],
 			[ 'User:Foo.js', false ],
-			[ 'User:Foo.json', false ],
 			[ 'User:Foo.css', false ],
 			[ 'User:Foo/bar.js', true ],
-			[ 'User:Foo/bar.json', false ],
 			[ 'User:Foo/bar.css', false ],
 		];
 	}
 
 	/**
-	 * @dataProvider provideIsUserJsConfigPage
-	 * @covers Title::isUserJsConfigPage
+	 * @dataProvider provideIsJsSubpage
+	 * @covers Title::isJsSubpage
 	 */
-	public function testIsUserJsConfigPage( $title, $expectedBool ) {
+	public function testIsJsSubpage( $title, $expectedBool ) {
 		$title = Title::newFromText( $title );
-		$this->assertEquals( $expectedBool, $title->isUserJsConfigPage() );
+		$this->assertEquals( $expectedBool, $title->isJsSubpage() );
 	}
 
 	public static function provideIsWikitextPage() {
@@ -293,23 +274,18 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 			[ 'User:Foo', true ],
 			[ 'User:Foo.js', true ],
 			[ 'User:Foo/bar.js', false ],
-			[ 'User:Foo/bar.json', false ],
 			[ 'User:Foo/bar.css', false ],
 			[ 'User talk:Foo/bar.css', true ],
 			[ 'User:Foo/bar.js.xxx', true ],
 			[ 'User:Foo/bar.xxx', true ],
 			[ 'MediaWiki:Foo.js', false ],
-			[ 'User:Foo/bar.JS', true ],
-			[ 'User:Foo/bar.JSON', true ],
-			[ 'User:Foo/bar.CSS', true ],
-			[ 'MediaWiki:Foo.json', false ],
 			[ 'MediaWiki:Foo.css', false ],
-			[ 'MediaWiki:Foo.JS', true ],
-			[ 'MediaWiki:Foo.JSON', true ],
-			[ 'MediaWiki:Foo.CSS', true ],
-			[ 'MediaWiki:Foo.css.xxx', true ],
+			[ 'MediaWiki:Foo/bar.css', false ],
+			[ 'User:Foo/bar.JS', true ],
+			[ 'User:Foo/bar.CSS', true ],
 			[ 'TEST-JS:Foo', false ],
 			[ 'TEST-JS:Foo.js', false ],
+			[ 'TEST-JS_TALK:Foo.js', true ],
 		];
 	}
 
@@ -342,16 +318,13 @@ class TitleMethodsTest extends MediaWikiLangTestCase {
 	 */
 	public function testGetOtherPage( $text, $expected ) {
 		if ( $expected === null ) {
-			$this->setExpectedException( MWException::class );
+			$this->setExpectedException( 'MWException' );
 		}
 
 		$title = Title::newFromText( $text );
 		$this->assertEquals( $expected, $title->getOtherPage()->getPrefixedText() );
 	}
 
-	/**
-	 * @covers Title::clearCaches
-	 */
 	public function testClearCaches() {
 		$linkCache = LinkCache::singleton();
 

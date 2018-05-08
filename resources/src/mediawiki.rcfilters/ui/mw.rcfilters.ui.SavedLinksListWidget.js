@@ -34,23 +34,19 @@
 		this.placeholderItem = new OO.ui.DecoratedOptionWidget( {
 			classes: [ 'mw-rcfilters-ui-savedLinksListWidget-placeholder' ],
 			label: $labelNoEntries,
-			icon: 'bookmark'
+			icon: 'unClip'
 		} );
-
-		this.menu = new mw.rcfilters.ui.GroupWidget( {
-			events: {
-				click: 'menuItemClick',
-				'delete': 'menuItemDelete',
-				'default': 'menuItemDefault',
-				edit: 'menuItemEdit'
-			},
+		// The only reason we're using "ButtonGroupWidget" here is that
+		// straight-out "GroupWidget" is a mixin and cannot be initialized
+		// on its own, so we need something to be its widget.
+		this.menu = new OO.ui.ButtonGroupWidget( {
 			classes: [ 'mw-rcfilters-ui-savedLinksListWidget-menu' ],
 			items: [ this.placeholderItem ]
 		} );
 		this.button = new OO.ui.PopupButtonWidget( {
 			classes: [ 'mw-rcfilters-ui-savedLinksListWidget-button' ],
 			label: mw.msg( 'rcfilters-quickfilters' ),
-			icon: 'bookmark',
+			icon: 'unClip',
 			indicator: 'down',
 			$overlay: this.$overlay,
 			popup: {
@@ -60,6 +56,13 @@
 				$autoCloseIgnore: this.$overlay,
 				$content: this.menu.$element
 			}
+		} );
+
+		this.menu.aggregate( {
+			click: 'menuItemClick',
+			'delete': 'menuItemDelete',
+			'default': 'menuItemDefault',
+			edit: 'menuItemEdit'
 		} );
 
 		// Events
@@ -131,7 +134,7 @@
 	 * @param {mw.rcfilters.ui.SavedLinksListItemWidget} item Menu item
 	 */
 	mw.rcfilters.ui.SavedLinksListWidget.prototype.onModelAddItem = function ( item ) {
-		if ( this.menu.findItemFromData( item.getID() ) ) {
+		if ( this.menu.getItemFromData( item.getID() ) ) {
 			return;
 		}
 
@@ -147,7 +150,7 @@
 	 * @param {mw.rcfilters.ui.SavedLinksListItemWidget} item Menu item
 	 */
 	mw.rcfilters.ui.SavedLinksListWidget.prototype.onModelRemoveItem = function ( item ) {
-		this.menu.removeItems( [ this.menu.findItemFromData( item.getID() ) ] );
+		this.menu.removeItems( [ this.menu.getItemFromData( item.getID() ) ] );
 		this.placeholderItem.toggle( this.model.isEmpty() );
 	};
 }( mediaWiki ) );

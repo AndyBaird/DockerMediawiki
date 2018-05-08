@@ -13,7 +13,7 @@ class ConvertExtensionToRegistration extends Maintenance {
 		'ResourceModuleSkinStyles' => 'handleResourceModules',
 		'Hooks' => 'handleHooks',
 		'ExtensionFunctions' => 'handleExtensionFunctions',
-		'ParserTestFiles' => 'removeAutodiscoveredParserTestFiles',
+		'ParserTestFiles' => 'removeAbsolutePath',
 	];
 
 	/**
@@ -63,7 +63,7 @@ class ConvertExtensionToRegistration extends Maintenance {
 	}
 
 	protected function getAllGlobals() {
-		$processor = new ReflectionClass( ExtensionProcessor::class );
+		$processor = new ReflectionClass( 'ExtensionProcessor' );
 		$settings = $processor->getProperty( 'globalSettings' );
 		$settings->setAccessible( true );
 		return array_merge( $settings->getValue(), $this->formerGlobals );
@@ -82,7 +82,7 @@ class ConvertExtensionToRegistration extends Maintenance {
 		unset( $var );
 		$arg = $this->getArg( 0 );
 		if ( !is_file( $arg ) ) {
-			$this->fatalError( "$arg is not a file." );
+			$this->error( "$arg is not a file.", true );
 		}
 		require $arg;
 		unset( $arg );
@@ -144,11 +144,6 @@ class ConvertExtensionToRegistration extends Maintenance {
 				unset( $this->json[$key] );
 			}
 		}
-		// Set a requirement on the MediaWiki version that the current MANIFEST_VERSION
-		// was introduced in.
-		$out['requires'] = [
-			ExtensionRegistry::MEDIAWIKI_CORE => ExtensionRegistry::MANIFEST_VERSION_MW_VERSION
-		];
 		$out += $this->json;
 		// Put this at the bottom
 		$out['manifest_version'] = ExtensionRegistry::MANIFEST_VERSION;
@@ -165,14 +160,14 @@ class ConvertExtensionToRegistration extends Maintenance {
 	protected function handleExtensionFunctions( $realName, $value ) {
 		foreach ( $value as $func ) {
 			if ( $func instanceof Closure ) {
-				$this->fatalError( "Error: Closures cannot be converted to JSON. " .
-					"Please move your extension function somewhere else."
+				$this->error( "Error: Closures cannot be converted to JSON. " .
+					"Please move your extension function somewhere else.", 1
 				);
 			}
 			// check if $func exists in the global scope
 			if ( function_exists( $func ) ) {
-				$this->fatalError( "Error: Global functions cannot be converted to JSON. " .
-					"Please move your extension function ($func) into a class."
+				$this->error( "Error: Global functions cannot be converted to JSON. " .
+					"Please move your extension function ($func) into a class.", 1
 				);
 			}
 		}
@@ -222,22 +217,6 @@ class ConvertExtensionToRegistration extends Maintenance {
 		$this->json[$realName] = $out;
 	}
 
-	protected function removeAutodiscoveredParserTestFiles( $realName, $value ) {
-		$out = [];
-		foreach ( $value as $key => $val ) {
-			$path = $this->stripPath( $val, $this->dir );
-			// When path starts with tests/parser/ the file would be autodiscovered with
-			// extension registry, so no need to add it to extension.json
-			if ( substr( $path, 0, 13 ) !== 'tests/parser/' || substr( $path, -4 ) !== '.txt' ) {
-				$out[$key] = $path;
-			}
-		}
-		// in the best case all entries are filtered out
-		if ( $out ) {
-			$this->json[$realName] = $out;
-		}
-	}
-
 	protected function handleCredits( $realName, $value ) {
 		$keys = array_keys( $value );
 		$this->json['type'] = $keys[0];
@@ -260,14 +239,14 @@ class ConvertExtensionToRegistration extends Maintenance {
 			}
 			foreach ( $handlers as $func ) {
 				if ( $func instanceof Closure ) {
-					$this->fatalError( "Error: Closures cannot be converted to JSON. " .
-						"Please move the handler for $hookName somewhere else."
+					$this->error( "Error: Closures cannot be converted to JSON. " .
+						"Please move the handler for $hookName somewhere else.", 1
 					);
 				}
 				// Check if $func exists in the global scope
 				if ( function_exists( $func ) ) {
-					$this->fatalError( "Error: Global functions cannot be converted to JSON. " .
-						"Please move the handler for $hookName inside a class."
+					$this->error( "Error: Global functions cannot be converted to JSON. " .
+						"Please move the handler for $hookName inside a class.", 1
 					);
 				}
 			}
@@ -324,5 +303,5 @@ class ConvertExtensionToRegistration extends Maintenance {
 	}
 }
 
-$maintClass = ConvertExtensionToRegistration::class;
+$maintClass = 'ConvertExtensionToRegistration';
 require_once RUN_MAINTENANCE_IF_MAIN;

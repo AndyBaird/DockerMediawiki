@@ -1,9 +1,9 @@
 /*!
  * JavaScript for Special:Preferences: Check for successbox to replace with notifications.
  */
-( function ( $ ) {
+( function ( mw, $ ) {
 	$( function () {
 		var convertmessagebox = require( 'mediawiki.notification.convertmessagebox' );
 		convertmessagebox();
 	} );
-}( jQuery ) );
+}( mediaWiki, jQuery ) );

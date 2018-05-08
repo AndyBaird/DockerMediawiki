@@ -283,12 +283,12 @@ class SiteTest extends MediaWikiTestCase {
 	 * @covers Site::unserialize
 	 */
 	public function testSerialization( Site $site ) {
-		$this->assertInstanceOf( Serializable::class, $site );
+		$this->assertInstanceOf( 'Serializable', $site );
 
 		$serialization = serialize( $site );
 		$newInstance = unserialize( $serialization );
 
-		$this->assertInstanceOf( Site::class, $newInstance );
+		$this->assertInstanceOf( 'Site', $newInstance );
 
 		$this->assertEquals( $serialization, serialize( $newInstance ) );
 	}

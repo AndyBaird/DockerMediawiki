@@ -24,7 +24,6 @@
 
 require_once __DIR__ . '/Maintenance.php';
 
-use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\ResultWrapper;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\DBQueryError;
@@ -41,7 +40,6 @@ class MwSql extends Maintenance {
 			'Takes a file name containing SQL as argument or runs interactively.' );
 		$this->addOption( 'query',
 			'Run a single query instead of running interactively', false, true );
-		$this->addOption( 'json', 'Output the results as JSON instead of PHP objects' );
 		$this->addOption( 'cluster', 'Use an external cluster by name', false, true );
 		$this->addOption( 'wikidb',
 			'The database wiki ID to use if not the current one', false, true );
@@ -55,11 +53,10 @@ class MwSql extends Maintenance {
 		// We wan't to allow "" for the wikidb, meaning don't call select_db()
 		$wiki = $this->hasOption( 'wikidb' ) ? $this->getOption( 'wikidb' ) : false;
 		// Get the appropriate load balancer (for this wiki)
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 		if ( $this->hasOption( 'cluster' ) ) {
-			$lb = $lbFactory->getExternalLB( $this->getOption( 'cluster' ) );
+			$lb = wfGetLBFactory()->getExternalLB( $this->getOption( 'cluster' ) );
 		} else {
-			$lb = $lbFactory->getMainLB( $wiki );
+			$lb = wfGetLB( $wiki );
 		}
 		// Figure out which server to use
 		$replicaDB = $this->getOption( 'replicadb', $this->getOption( 'slave', '' ) );
@@ -75,7 +72,7 @@ class MwSql extends Maintenance {
 				}
 			}
 			if ( $index === null ) {
-				$this->fatalError( "No replica DB server configured with the name '$replicaDB'." );
+				$this->error( "No replica DB server configured with the name '$replicaDB'.", 1 );
 			}
 		} else {
 			$index = DB_MASTER;
@@ -84,7 +81,7 @@ class MwSql extends Maintenance {
 		/** @var IDatabase $db DB handle for the appropriate cluster/wiki */
 		$db = $lb->getConnection( $index, [], $wiki );
 		if ( $replicaDB != '' && $db->getLBInfo( 'master' ) !== null ) {
-			$this->fatalError( "The server selected ({$db->getServer()}) is not a replica DB." );
+			$this->error( "The server selected ({$db->getServer()}) is not a replica DB.", 1 );
 		}
 
 		if ( $index === DB_MASTER ) {
@@ -95,12 +92,12 @@ class MwSql extends Maintenance {
 		if ( $this->hasArg( 0 ) ) {
 			$file = fopen( $this->getArg( 0 ), 'r' );
 			if ( !$file ) {
-				$this->fatalError( "Unable to open input file" );
+				$this->error( "Unable to open input file", true );
 			}
 
 			$error = $db->sourceStream( $file, null, [ $this, 'sqlPrintResult' ] );
 			if ( $error !== true ) {
-				$this->fatalError( $error );
+				$this->error( $error, true );
 			} else {
 				exit( 0 );
 			}
@@ -160,17 +157,13 @@ class MwSql extends Maintenance {
 			$res = $db->query( $line );
 			$this->sqlPrintResult( $res, $db );
 		} catch ( DBQueryError $e ) {
-			if ( $dieOnError ) {
-				$this->fatalError( $e );
-			} else {
-				$this->error( $e );
-			}
+			$this->error( $e, $dieOnError );
 		}
 	}
 
 	/**
 	 * Print the results, callback for $db->sourceStream()
-	 * @param ResultWrapper|bool $res
+	 * @param ResultWrapper|bool $res The results object
 	 * @param IDatabase $db
 	 */
 	public function sqlPrintResult( $res, $db ) {
@@ -178,15 +171,9 @@ class MwSql extends Maintenance {
 			// Do nothing
 			return;
 		} elseif ( is_object( $res ) && $res->numRows() ) {
-			$out = '';
 			foreach ( $res as $row ) {
-				$out .= print_r( $row, true );
-				$rows[] = $row;
+				$this->output( print_r( $row, true ) );
 			}
-			if ( $this->hasOption( 'json' ) ) {
-				$out = json_encode( $rows, JSON_PRETTY_PRINT );
-			}
-			$this->output( $out . "\n" );
 		} else {
 			$affected = $db->affectedRows();
 			$this->output( "Query OK, $affected row(s) affected\n" );
@@ -201,5 +188,5 @@ class MwSql extends Maintenance {
 	}
 }
 
-$maintClass = MwSql::class;
+$maintClass = "MwSql";
 require_once RUN_MAINTENANCE_IF_MAIN;

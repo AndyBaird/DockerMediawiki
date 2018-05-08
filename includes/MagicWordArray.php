@@ -203,9 +203,7 @@ class MagicWordArray {
 	 */
 	public function parseMatch( $m ) {
 		reset( $m );
-		while ( ( $key = key( $m ) ) !== null ) {
-			$value = current( $m );
-			next( $m );
+		while ( list( $key, $value ) = each( $m ) ) {
 			if ( $key === 0 || $value === '' ) {
 				continue;
 			}

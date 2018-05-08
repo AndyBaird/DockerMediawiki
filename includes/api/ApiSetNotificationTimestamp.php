@@ -3,6 +3,8 @@
 /**
  * API for MediaWiki 1.14+
  *
+ * Created on Jun 18, 2012
+ *
  * Copyright © 2012 Wikimedia Foundation and contributors
  *
  * This program is free software; you can redistribute it and/or modify
@@ -30,7 +32,7 @@ use MediaWiki\MediaWikiServices;
  */
 class ApiSetNotificationTimestamp extends ApiBase {
 
-	private $mPageSet = null;
+	private $mPageSet;
 
 	public function execute() {
 		$user = $this->getUser();
@@ -187,7 +189,7 @@ class ApiSetNotificationTimestamp extends ApiBase {
 	 * @return ApiPageSet
 	 */
 	private function getPageSet() {
-		if ( $this->mPageSet === null ) {
+		if ( !isset( $this->mPageSet ) ) {
 			$this->mPageSet = new ApiPageSet( $this );
 		}
 

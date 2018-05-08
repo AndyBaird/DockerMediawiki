@@ -109,7 +109,7 @@ class PHPSessionHandlerTest extends MediaWikiTestCase {
 		$reset[] = $this->getResetter( $rProp );
 
 		$this->setMwGlobals( [
-			'wgSessionProviders' => [ [ 'class' => \DummySessionProvider::class ] ],
+			'wgSessionProviders' => [ [ 'class' => 'DummySessionProvider' ] ],
 			'wgObjectCacheSessionExpiry' => 2,
 		] );
 
@@ -130,9 +130,9 @@ class PHPSessionHandlerTest extends MediaWikiTestCase {
 		);
 		$wrap->setEnableFlags( 'warn' );
 
-		\Wikimedia\suppressWarnings();
+		\MediaWiki\suppressWarnings();
 		ini_set( 'session.serialize_handler', $handler );
-		\Wikimedia\restoreWarnings();
+		\MediaWiki\restoreWarnings();
 		if ( ini_get( 'session.serialize_handler' ) !== $handler ) {
 			$this->markTestSkipped( "Cannot set session.serialize_handler to \"$handler\"" );
 		}

@@ -38,12 +38,7 @@
 		data = data || {};
 
 		if ( data.message === undefined ) {
-			data.message = $.parseHTML( mw.message(
-				mw.config.get( 'wgEditSubmitButtonLabelPublish' ) ?
-					'postedit-confirmation-published' :
-					'postedit-confirmation-saved',
-				data.user || mw.user
-			).escaped() );
+			data.message = $.parseHTML( mw.message( 'postedit-confirmation-saved', data.user || mw.user ).escaped() );
 		}
 
 		$content = $( '<div>' ).addClass( 'postedit-icon postedit-icon-checkmark postedit-content' );

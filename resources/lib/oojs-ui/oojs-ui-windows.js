@@ -1,12 +1,12 @@
 /*!
- * OOUI v0.26.5
- * https://www.mediawiki.org/wiki/OOUI
+ * OOjs UI v0.23.0
+ * https://www.mediawiki.org/wiki/OOjs_UI
  *
- * Copyright 2011–2018 OOUI Team and other contributors.
+ * Copyright 2011–2017 OOjs UI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2018-04-24T23:29:01Z
+ * Date: 2017-09-05T21:23:58Z
  */
 ( function ( OO ) {
 
@@ -18,10 +18,10 @@
  * of the actions.
  *
  * Both actions and action sets are primarily used with {@link OO.ui.Dialog Dialogs}.
- * Please see the [OOUI documentation on MediaWiki] [1] for more information
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information
  * and examples.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Process_Dialogs#Action_sets
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs#Action_sets
  *
  * @class
  * @extends OO.ui.ButtonWidget
@@ -105,7 +105,7 @@ OO.ui.ActionWidget.prototype.getModes = function () {
  * - Special: Special actions are the first visible actions with special flags, such as 'safe' and 'primary', the default special flags. Additional special flags can be configured in subclasses with the static #specialFlags property.
  * - Other: Other actions include all non-special visible actions.
  *
- * See the [OOUI documentation on MediaWiki][1] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information.
  *
  *     @example
  *     // Example: An action set used in a process dialog
@@ -117,7 +117,7 @@ OO.ui.ActionWidget.prototype.getModes = function () {
  *     MyProcessDialog.static.name = 'myProcessDialog';
  *     // An action set that uses modes ('edit' and 'help' mode, in this example).
  *     MyProcessDialog.static.actions = [
- *         { action: 'continue', modes: 'edit', label: 'Continue', flags: [ 'primary', 'progressive' ] },
+ *         { action: 'continue', modes: 'edit', label: 'Continue', flags: [ 'primary', 'constructive' ] },
  *         { action: 'help', modes: 'edit', label: 'Help' },
  *         { modes: 'edit', label: 'Cancel', flags: 'safe' },
  *         { action: 'back', modes: 'help', label: 'Back', flags: 'safe' }
@@ -166,7 +166,7 @@ OO.ui.ActionWidget.prototype.getModes = function () {
  *     windowManager.addWindows( [ dialog ] );
  *     windowManager.openWindow( dialog );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Process_Dialogs#Action_sets
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs#Action_sets
  *
  * @abstract
  * @class
@@ -207,9 +207,9 @@ OO.mixinClass( OO.ui.ActionSet, OO.EventEmitter );
 /**
  * Symbolic name of the flags used to identify special actions. Special actions are displayed in the
  *  header of a {@link OO.ui.ProcessDialog process dialog}.
- *  See the [OOUI documentation on MediaWiki][2] for more information and examples.
+ *  See the [OOjs UI documentation on MediaWiki][2] for more information and examples.
  *
- *  [2]:https://www.mediawiki.org/wiki/OOUI/Windows/Process_Dialogs
+ *  [2]:https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs
  *
  * @abstract
  * @static
@@ -605,9 +605,9 @@ OO.ui.ActionSet.prototype.organize = function () {
  * If the error is a warning, the error interface will include a 'Dismiss' and a 'Continue' button, which will try the
  * process again.
  *
- * For an example of error interfaces, please see the [OOUI documentation on MediaWiki][1].
+ * For an example of error interfaces, please see the [OOjs UI documentation on MediaWiki][1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Process_Dialogs#Processes_and_errors
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs#Processes_and_errors
  *
  * @class
  *
@@ -858,9 +858,9 @@ OO.ui.Process.prototype.next = function ( step, context ) {
  * While OO.ui.WindowManager will reuse OO.ui.Window objects, each time a window is
  * opened, a new lifecycle starts.
  *
- * For more information, please see the [OOUI documentation on MediaWiki] [1].
+ * For more information, please see the [OOjs UI documentation on MediaWiki] [1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows
  *
  * @class
  *
@@ -989,9 +989,9 @@ OO.ui.WindowInstance.prototype.isClosed = function () {
  * - a `teardown` progress notification is emitted from the `closing` promise
  * - the `closing` promise is resolved. The window is now closed
  *
- * See the [OOUI documentation on MediaWiki][1] for more information.
+ * See the [OOjs UI documentation on MediaWiki][1] for more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Window_managers
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Window_managers
  *
  * @class
  * @extends OO.ui.Element
@@ -1034,7 +1034,6 @@ OO.ui.WindowManager = function OoUiWindowManager( config ) {
 	// Initialization
 	this.$element
 		.addClass( 'oo-ui-windowManager' )
-		.attr( 'aria-hidden', true )
 		.toggleClass( 'oo-ui-windowManager-modal', this.modal );
 };
 
@@ -1134,16 +1133,8 @@ OO.ui.WindowManager.prototype.onWindowResize = function () {
  * @param {jQuery.Event} e Window resize event
  */
 OO.ui.WindowManager.prototype.afterWindowResize = function () {
-	var currentFocusedElement = document.activeElement;
 	if ( this.currentWindow ) {
 		this.updateWindowSize( this.currentWindow );
-
-		// Restore focus to the original element if it has changed.
-		// When a layout change is made on resize inputs lose focus
-		// on Android (Chrome and Firefox). See T162127.
-		if ( currentFocusedElement !== document.activeElement ) {
-			currentFocusedElement.focus();
-		}
 	}
 };
 
@@ -1247,9 +1238,9 @@ OO.ui.WindowManager.prototype.getTeardownDelay = function () {
  * Get a window by its symbolic name.
  *
  * If the window is not yet instantiated and its symbolic name is recognized by a factory, it will be
- * instantiated and added to the window manager automatically. Please see the [OOUI documentation on MediaWiki][3]
+ * instantiated and added to the window manager automatically. Please see the [OOjs UI documentation on MediaWiki][3]
  * for more information about using factories.
- * [3]: https://www.mediawiki.org/wiki/OOUI/Windows/Window_managers
+ * [3]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Window_managers
  *
  * @param {string} name Symbolic name of the window
  * @return {jQuery.Promise} Promise resolved with matching window, or rejected with an OO.ui.Error
@@ -1501,8 +1492,8 @@ OO.ui.WindowManager.prototype.closeWindow = function ( win, data ) {
  * Add windows to the window manager.
  *
  * Windows can be added by reference, symbolic name, or explicitly defined symbolic names.
- * See the [OOUI documentation on MediaWiki] [2] for examples.
- * [2]: https://www.mediawiki.org/wiki/OOUI/Windows/Window_managers
+ * See the [OOjs ui documentation on MediaWiki] [2] for examples.
+ * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Window_managers
  *
  * This function can be called in two manners:
  *
@@ -1703,33 +1694,20 @@ OO.ui.WindowManager.prototype.toggleGlobalEvents = function ( on ) {
  * @chainable
  */
 OO.ui.WindowManager.prototype.toggleAriaIsolation = function ( isolate ) {
-	var $topLevelElement;
 	isolate = isolate === undefined ? !this.$ariaHidden : !!isolate;
 
 	if ( isolate ) {
 		if ( !this.$ariaHidden ) {
-			// Find the top level element containing the window manager or the
-			// window manager's element itself in case its a direct child of body
-			$topLevelElement = this.$element.parentsUntil( 'body' ).last();
-			$topLevelElement = $topLevelElement.length === 0 ? this.$element : $topLevelElement;
-
-			// In case previously set by another window manager
-			this.$element.removeAttr( 'aria-hidden' );
-
 			// Hide everything other than the window manager from screen readers
 			this.$ariaHidden = $( 'body' )
 				.children()
-				.not( 'script' )
-				.not( $topLevelElement )
-				.attr( 'aria-hidden', true );
+				.not( this.$element.parentsUntil( 'body' ).last() )
+				.attr( 'aria-hidden', '' );
 		}
 	} else if ( this.$ariaHidden ) {
 		// Restore screen reader visibility
 		this.$ariaHidden.removeAttr( 'aria-hidden' );
 		this.$ariaHidden = null;
-
-		// and hide the window manager
-		this.$element.attr( 'aria-hidden', true );
 	}
 
 	return this;
@@ -1780,9 +1758,9 @@ OO.ui.WindowManager.prototype.destroy = function () {
  * methods. Note that each {@link OO.ui.Process process} is executed in series, so asynchronous
  * processing can complete. Always assume window processes are executed asynchronously.
  *
- * For more information, please see the [OOUI documentation on MediaWiki] [1].
+ * For more information, please see the [OOjs UI documentation on MediaWiki] [1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows
  *
  * @abstract
  * @class
@@ -1811,7 +1789,7 @@ OO.ui.Window = function OoUiWindow( config ) {
 	/**
 	 * Overlay element to use for the `$overlay` configuration option of widgets that support it.
 	 * Things put inside of it are overlaid on top of the window and are not bound to its dimensions.
-	 * See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
+	 * See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
 	 *
 	 *     MyDialog.prototype.initialize = function () {
 	 *       ...
@@ -2439,7 +2417,7 @@ OO.ui.Window.prototype.teardown = function ( data ) {
  * Unless extended to include controls, the rendered dialog box is a simple window
  * that users can close by hitting the ‘Esc’ key. Dialog windows are used with OO.ui.WindowManager,
  * which opens, closes, and controls the presentation of the window. See the
- * [OOUI documentation on MediaWiki] [1] for more information.
+ * [OOjs UI documentation on MediaWiki] [1] for more information.
  *
  *     @example
  *     // A simple dialog window.
@@ -2467,7 +2445,7 @@ OO.ui.Window.prototype.teardown = function ( data ) {
  *     // Open the window!
  *     windowManager.openWindow( myDialog );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Dialogs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Dialogs
  *
  * @abstract
  * @class
@@ -2513,9 +2491,9 @@ OO.mixinClass( OO.ui.Dialog, OO.ui.mixin.PendingElement );
  * Symbolic name of dialog.
  *
  * The dialog class must have a symbolic name in order to be registered with OO.Factory.
- * Please see the [OOUI documentation on MediaWiki] [3] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki] [3] for more information.
  *
- * [3]: https://www.mediawiki.org/wiki/OOUI/Windows/Window_managers
+ * [3]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Window_managers
  *
  * @abstract
  * @static
@@ -2544,7 +2522,7 @@ OO.ui.Dialog.static.title = '';
  * Actions can also be specified with data passed to the constructor (see #getSetupProcess). In this case, the static
  * value will be overridden.
  *
- * [2]: https://www.mediawiki.org/wiki/OOUI/Windows/Process_Dialogs#Action_sets
+ * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs#Action_sets
  *
  * @static
  * @inheritable
@@ -2768,7 +2746,7 @@ OO.ui.Dialog.prototype.executeAction = function ( action ) {
  * action (e.g., ‘ok’) and ‘reject,’ the safe action (e.g., ‘cancel’). Both will close the window,
  * passing along the selected action.
  *
- * For more information and examples, please see the [OOUI documentation on MediaWiki][1].
+ * For more information and examples, please see the [OOjs UI documentation on MediaWiki][1].
  *
  *     @example
  *     // Example: Creating and opening a message dialog window.
@@ -2784,7 +2762,7 @@ OO.ui.Dialog.prototype.executeAction = function ( action ) {
  *         message: 'This is the message'
  *     } );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Message_Dialogs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Message_Dialogs
  *
  * @class
  * @extends OO.ui.Dialog
@@ -3118,7 +3096,7 @@ OO.ui.MessageDialog.prototype.fitActions = function () {
  * a ‘primary’ action on the right (e.g., ‘Done’).
  *
  * Like other windows, the process dialog is managed by a {@link OO.ui.WindowManager window manager}.
- * Please see the [OOUI documentation on MediaWiki][1] for more information and examples.
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information and examples.
  *
  *     @example
  *     // Example: Creating and opening a process dialog window.
@@ -3157,7 +3135,7 @@ OO.ui.MessageDialog.prototype.fitActions = function () {
  *     windowManager.addWindows( [ dialog ] );
  *     windowManager.openWindow( dialog );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Windows/Process_Dialogs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Windows/Process_Dialogs
  *
  * @abstract
  * @class

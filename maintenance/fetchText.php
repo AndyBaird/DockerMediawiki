@@ -92,5 +92,5 @@ class FetchText extends Maintenance {
 	}
 }
 
-$maintClass = FetchText::class;
+$maintClass = "FetchText";
 require_once RUN_MAINTENANCE_IF_MAIN;

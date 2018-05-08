@@ -136,7 +136,7 @@ abstract class DatabaseUpdater {
 			$wgExtPGAlteredFields, $wgExtNewIndexes, $wgExtModifiedFields;
 
 		# For extensions only, should be populated via hooks
-		# $wgDBtype should be checked to specify the proper file
+		# $wgDBtype should be checked to specifiy the proper file
 		$wgExtNewTables = []; // table, dir
 		$wgExtNewFields = []; // table, column, dir
 		$wgExtPGNewFields = []; // table, column, column attributes; for PostgreSQL
@@ -150,7 +150,7 @@ abstract class DatabaseUpdater {
 	 * LoadExtensionSchemaUpdates hook.
 	 */
 	private function loadExtensions() {
-		if ( !defined( 'MEDIAWIKI_INSTALL' ) || defined( 'MW_EXTENSIONS_LOADED' ) ) {
+		if ( !defined( 'MEDIAWIKI_INSTALL' ) ) {
 			return; // already loaded
 		}
 		$vars = Installer::getExistingLocalSettings();
@@ -162,7 +162,7 @@ abstract class DatabaseUpdater {
 
 		// This will automatically add "AutoloadClasses" to $wgAutoloadClasses
 		$data = $registry->readFromQueue( $queue );
-		$hooks = [];
+		$hooks = [ 'wgHooks' => [ 'LoadExtensionSchemaUpdates' => [] ] ];
 		if ( isset( $data['globals']['wgHooks']['LoadExtensionSchemaUpdates'] ) ) {
 			$hooks = $data['globals']['wgHooks']['LoadExtensionSchemaUpdates'];
 		}
@@ -179,12 +179,12 @@ abstract class DatabaseUpdater {
 	/**
 	 * @param Database $db
 	 * @param bool $shared
-	 * @param Maintenance|null $maintenance
+	 * @param Maintenance $maintenance
 	 *
 	 * @throws MWException
 	 * @return DatabaseUpdater
 	 */
-	public static function newForDB( Database $db, $shared = false, Maintenance $maintenance = null ) {
+	public static function newForDB( Database $db, $shared = false, $maintenance = null ) {
 		$type = $db->getType();
 		if ( in_array( $type, Installer::getDBTypes() ) ) {
 			$class = ucfirst( $type ) . 'Updater';
@@ -340,20 +340,10 @@ abstract class DatabaseUpdater {
 	 *
 	 * @param string $tableName The table name
 	 * @param string $fieldName The field to be modified
-	 * @param string $sqlPath The path to the SQL patch
+	 * @param string $sqlPath The path to the SQL change path
 	 */
 	public function modifyExtensionField( $tableName, $fieldName, $sqlPath ) {
 		$this->extensionUpdates[] = [ 'modifyField', $tableName, $fieldName, $sqlPath, true ];
-	}
-
-	/**
-	 * @since 1.31
-	 *
-	 * @param string $tableName The table name
-	 * @param string $sqlPath The path to the SQL patch
-	 */
-	public function modifyExtensionTable( $tableName, $sqlPath ) {
-		$this->extensionUpdates[] = [ 'modifyTable', $tableName, $sqlPath, true ];
 	}
 
 	/**
@@ -616,7 +606,7 @@ abstract class DatabaseUpdater {
 	 * 1.13...) with the values being arrays of updates, identical to how
 	 * updaters.inc did it (for now)
 	 *
-	 * @return array[]
+	 * @return array
 	 */
 	abstract protected function getCoreUpdateList();
 
@@ -998,27 +988,19 @@ abstract class DatabaseUpdater {
 	}
 
 	/**
-	 * Purge various database caches
+	 * Purge the objectcache table
 	 */
 	public function purgeCache() {
 		global $wgLocalisationCacheConf;
-		// We can't guarantee that the user will be able to use TRUNCATE,
-		// but we know that DELETE is available to us
+		# We can't guarantee that the user will be able to use TRUNCATE,
+		# but we know that DELETE is available to us
 		$this->output( "Purging caches..." );
-
-		// ObjectCache
 		$this->db->delete( 'objectcache', '*', __METHOD__ );
-
-		// LocalisationCache
 		if ( $wgLocalisationCacheConf['manualRecache'] ) {
 			$this->rebuildLocalisationCache();
 		}
-
-		// ResourceLoader: Message cache
 		$blobStore = new MessageBlobStore();
 		$blobStore->clear();
-
-		// ResourceLoader: File-dependency cache
 		$this->db->delete( 'module_deps', '*', __METHOD__ );
 		$this->output( "done.\n" );
 	}
@@ -1047,7 +1029,7 @@ abstract class DatabaseUpdater {
 	 * Sets the number of active users in the site_stats table
 	 */
 	protected function doActiveUsersInit() {
-		$activeUsers = $this->db->selectField( 'site_stats', 'ss_active_users', '', __METHOD__ );
+		$activeUsers = $this->db->selectField( 'site_stats', 'ss_active_users', false, __METHOD__ );
 		if ( $activeUsers == -1 ) {
 			$activeUsers = $this->db->selectField( 'recentchanges',
 				'COUNT( DISTINCT rc_user_text )',
@@ -1072,7 +1054,7 @@ abstract class DatabaseUpdater {
 				"maintenance/populateLogUsertext.php.\n"
 			);
 
-			$task = $this->maintenance->runChild( PopulateLogUsertext::class );
+			$task = $this->maintenance->runChild( 'PopulateLogUsertext' );
 			$task->execute();
 			$this->output( "done.\n" );
 		}
@@ -1088,7 +1070,7 @@ abstract class DatabaseUpdater {
 				"databases, you may want to hit Ctrl-C and do this manually with\n" .
 				"maintenance/populateLogSearch.php.\n" );
 
-			$task = $this->maintenance->runChild( PopulateLogSearch::class );
+			$task = $this->maintenance->runChild( 'PopulateLogSearch' );
 			$task->execute();
 			$this->output( "done.\n" );
 		}
@@ -1128,7 +1110,7 @@ abstract class DatabaseUpdater {
 			}
 
 			$this->output( "Updating category collations..." );
-			$task = $this->maintenance->runChild( UpdateCollation::class );
+			$task = $this->maintenance->runChild( 'UpdateCollation' );
 			$task->execute();
 			$this->output( "...done.\n" );
 		}
@@ -1139,7 +1121,7 @@ abstract class DatabaseUpdater {
 	 */
 	protected function doMigrateUserOptions() {
 		if ( $this->db->tableExists( 'user_properties' ) ) {
-			$cl = $this->maintenance->runChild( ConvertUserOptions::class, 'convertUserOptions.php' );
+			$cl = $this->maintenance->runChild( 'ConvertUserOptions', 'convertUserOptions.php' );
 			$cl->execute();
 			$this->output( "done.\n" );
 		}
@@ -1177,9 +1159,7 @@ abstract class DatabaseUpdater {
 		/**
 		 * @var $cl RebuildLocalisationCache
 		 */
-		$cl = $this->maintenance->runChild(
-			RebuildLocalisationCache::class, 'rebuildLocalisationCache.php'
-		);
+		$cl = $this->maintenance->runChild( 'RebuildLocalisationCache', 'rebuildLocalisationCache.php' );
 		$this->output( "Rebuilding localisation cache...\n" );
 		$cl->setForce();
 		$cl->execute();
@@ -1226,65 +1206,10 @@ abstract class DatabaseUpdater {
 				"databases, you may want to hit Ctrl-C and do this manually with\n" .
 				"maintenance/migrateComments.php.\n"
 			);
-			$task = $this->maintenance->runChild( MigrateComments::class, 'migrateComments.php' );
-			$ok = $task->execute();
-			$this->output( $ok ? "done.\n" : "errors were encountered.\n" );
+			$task = $this->maintenance->runChild( 'MigrateComments', 'migrateComments.php' );
+			$task->execute();
+			$this->output( "done.\n" );
 		}
 	}
-
-	/**
-	 * Migrate actors to the new 'actor' table
-	 * @since 1.31
-	 */
-	protected function migrateActors() {
-		global $wgActorTableSchemaMigrationStage;
-		if ( $wgActorTableSchemaMigrationStage >= MIGRATION_WRITE_NEW &&
-			!$this->updateRowExists( 'MigrateActors' )
-		) {
-			$this->output(
-				"Migrating actors to the 'actor' table, printing progress markers. For large\n" .
-				"databases, you may want to hit Ctrl-C and do this manually with\n" .
-				"maintenance/migrateActors.php.\n"
-			);
-			$task = $this->maintenance->runChild( 'MigrateActors', 'migrateActors.php' );
-			$ok = $task->execute();
-			$this->output( $ok ? "done.\n" : "errors were encountered.\n" );
-		}
-	}
-
-	/**
-	 * Migrate ar_text to modern storage
-	 * @since 1.31
-	 */
-	protected function migrateArchiveText() {
-		if ( $this->db->fieldExists( 'archive', 'ar_text', __METHOD__ ) ) {
-			$this->output( "Migrating archive ar_text to modern storage.\n" );
-			$task = $this->maintenance->runChild( MigrateArchiveText::class, 'migrateArchiveText.php' );
-			$task->setForce();
-			if ( $task->execute() ) {
-				$this->applyPatch( 'patch-drop-ar_text.sql', false,
-					'Dropping ar_text and ar_flags columns' );
-			}
-		}
-	}
-
-	/**
-	 * Populate ar_rev_id, then make it not nullable
-	 * @since 1.31
-	 */
-	 protected function populateArchiveRevId() {
-		 $info = $this->db->fieldInfo( 'archive', 'ar_rev_id', __METHOD__ );
-		 if ( !$info ) {
-			 throw new MWException( 'Missing ar_rev_id field of archive table. Should not happen.' );
-		 }
-		 if ( $info->isNullable() ) {
-			 $this->output( "Populating ar_rev_id.\n" );
-			 $task = $this->maintenance->runChild( 'PopulateArchiveRevId', 'populateArchiveRevId.php' );
-			 if ( $task->execute() ) {
-				 $this->applyPatch( 'patch-ar_rev_id-not-null.sql', false,
-					 'Making ar_rev_id not nullable' );
-			 }
-		 }
-	 }
 
 }

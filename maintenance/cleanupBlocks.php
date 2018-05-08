@@ -39,14 +39,12 @@ class CleanupBlocks extends Maintenance {
 
 	public function execute() {
 		$db = $this->getDB( DB_MASTER );
-		$blockQuery = Block::getQueryInfo();
 
 		$max = $db->selectField( 'ipblocks', 'MAX(ipb_user)' );
 
 		// Step 1: Clean up any duplicate user blocks
-		$batchSize = $this->getBatchSize();
-		for ( $from = 1; $from <= $max; $from += $batchSize ) {
-			$to = min( $max, $from + $batchSize - 1 );
+		for ( $from = 1; $from <= $max; $from += $this->mBatchSize ) {
+			$to = min( $max, $from + $this->mBatchSize - 1 );
 			$this->output( "Cleaning up duplicate ipb_user ($from-$to of $max)\n" );
 
 			$delete = [];
@@ -55,8 +53,8 @@ class CleanupBlocks extends Maintenance {
 				'ipblocks',
 				[ 'ipb_user' ],
 				[
-					"ipb_user >= " . (int)$from,
-					"ipb_user <= " . (int)$to,
+					"ipb_user >= $from",
+					"ipb_user <= $to",
 				],
 				__METHOD__,
 				[
@@ -67,14 +65,11 @@ class CleanupBlocks extends Maintenance {
 			foreach ( $res as $row ) {
 				$bestBlock = null;
 				$res2 = $db->select(
-					$blockQuery['tables'],
-					$blockQuery['fields'],
+					'ipblocks',
+					'*',
 					[
 						'ipb_user' => $row->ipb_user,
-					],
-					__METHOD__,
-					[],
-					$blockQuery['joins']
+					]
 				);
 				foreach ( $res2 as $row2 ) {
 					$block = Block::newFromRow( $row2 );
@@ -119,8 +114,8 @@ class CleanupBlocks extends Maintenance {
 		}
 
 		// Step 2: Update the user name in any blocks where it doesn't match
-		for ( $from = 1; $from <= $max; $from += $batchSize ) {
-			$to = min( $max, $from + $batchSize - 1 );
+		for ( $from = 1; $from <= $max; $from += $this->mBatchSize ) {
+			$to = min( $max, $from + $this->mBatchSize - 1 );
 			$this->output( "Cleaning up mismatched user name ($from-$to of $max)\n" );
 
 			$res = $db->select(
@@ -128,8 +123,8 @@ class CleanupBlocks extends Maintenance {
 				[ 'ipb_id', 'user_name' ],
 				[
 					'ipb_user = user_id',
-					"ipb_user >= " . (int)$from,
-					"ipb_user <= " . (int)$to,
+					"ipb_user >= $from",
+					"ipb_user <= $to",
 					'ipb_address != user_name',
 				],
 				__METHOD__
@@ -148,5 +143,5 @@ class CleanupBlocks extends Maintenance {
 	}
 }
 
-$maintClass = CleanupBlocks::class;
+$maintClass = "CleanupBlocks";
 require_once RUN_MAINTENANCE_IF_MAIN;

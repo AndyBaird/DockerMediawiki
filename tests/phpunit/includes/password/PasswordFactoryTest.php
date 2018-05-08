@@ -6,14 +6,14 @@
 class PasswordFactoryTest extends MediaWikiTestCase {
 	public function testRegister() {
 		$pf = new PasswordFactory;
-		$pf->register( 'foo', [ 'class' => InvalidPassword::class ] );
+		$pf->register( 'foo', [ 'class' => 'InvalidPassword' ] );
 		$this->assertArrayHasKey( 'foo', $pf->getTypes() );
 	}
 
 	public function testSetDefaultType() {
 		$pf = new PasswordFactory;
-		$pf->register( '1', [ 'class' => InvalidPassword::class ] );
-		$pf->register( '2', [ 'class' => InvalidPassword::class ] );
+		$pf->register( '1', [ 'class' => 'InvalidPassword' ] );
+		$pf->register( '2', [ 'class' => 'InvalidPassword' ] );
 		$pf->setDefaultType( '1' );
 		$this->assertSame( '1', $pf->getDefaultType() );
 		$pf->setDefaultType( '2' );
@@ -31,7 +31,7 @@ class PasswordFactoryTest extends MediaWikiTestCase {
 	public function testInit() {
 		$config = new HashConfig( [
 			'PasswordConfig' => [
-				'foo' => [ 'class' => InvalidPassword::class ],
+				'foo' => [ 'class' => 'InvalidPassword' ],
 			],
 			'PasswordDefault' => 'foo'
 		] );
@@ -43,7 +43,7 @@ class PasswordFactoryTest extends MediaWikiTestCase {
 
 	public function testNewFromCiphertext() {
 		$pf = new PasswordFactory;
-		$pf->register( 'B', [ 'class' => MWSaltedPassword::class ] );
+		$pf->register( 'B', [ 'class' => 'MWSaltedPassword' ] );
 		$pw = $pf->newFromCiphertext( ':B:salt:d529e941509eb9e9b9cfaeae1fe7ca23' );
 		$this->assertInstanceOf( MWSaltedPassword::class, $pw );
 	}
@@ -58,13 +58,13 @@ class PasswordFactoryTest extends MediaWikiTestCase {
 	 */
 	public function testNewFromCiphertextErrors( $hash ) {
 		$pf = new PasswordFactory;
-		$pf->register( 'B', [ 'class' => MWSaltedPassword::class ] );
+		$pf->register( 'B', [ 'class' => 'MWSaltedPassword' ] );
 		$pf->newFromCiphertext( $hash );
 	}
 
 	public function testNewFromType() {
 		$pf = new PasswordFactory;
-		$pf->register( 'B', [ 'class' => MWSaltedPassword::class ] );
+		$pf->register( 'B', [ 'class' => 'MWSaltedPassword' ] );
 		$pw = $pf->newFromType( 'B' );
 		$this->assertInstanceOf( MWSaltedPassword::class, $pw );
 	}
@@ -74,26 +74,26 @@ class PasswordFactoryTest extends MediaWikiTestCase {
 	 */
 	public function testNewFromTypeError() {
 		$pf = new PasswordFactory;
-		$pf->register( 'B', [ 'class' => MWSaltedPassword::class ] );
+		$pf->register( 'B', [ 'class' => 'MWSaltedPassword' ] );
 		$pf->newFromType( 'bogus' );
 	}
 
 	public function testNewFromPlaintext() {
 		$pf = new PasswordFactory;
-		$pf->register( 'A', [ 'class' => MWOldPassword::class ] );
-		$pf->register( 'B', [ 'class' => MWSaltedPassword::class ] );
+		$pf->register( 'A', [ 'class' => 'MWOldPassword' ] );
+		$pf->register( 'B', [ 'class' => 'MWSaltedPassword' ] );
 		$pf->setDefaultType( 'A' );
 
-		$this->assertInstanceOf( InvalidPassword::class, $pf->newFromPlaintext( null ) );
-		$this->assertInstanceOf( MWOldPassword::class, $pf->newFromPlaintext( 'password' ) );
-		$this->assertInstanceOf( MWSaltedPassword::class,
+		$this->assertInstanceOf( 'InvalidPassword', $pf->newFromPlaintext( null ) );
+		$this->assertInstanceOf( 'MWOldPassword', $pf->newFromPlaintext( 'password' ) );
+		$this->assertInstanceOf( 'MWSaltedPassword',
 			$pf->newFromPlaintext( 'password', $pf->newFromType( 'B' ) ) );
 	}
 
 	public function testNeedsUpdate() {
 		$pf = new PasswordFactory;
-		$pf->register( 'A', [ 'class' => MWOldPassword::class ] );
-		$pf->register( 'B', [ 'class' => MWSaltedPassword::class ] );
+		$pf->register( 'A', [ 'class' => 'MWOldPassword' ] );
+		$pf->register( 'B', [ 'class' => 'MWSaltedPassword' ] );
 		$pf->setDefaultType( 'A' );
 
 		$this->assertFalse( $pf->needsUpdate( $pf->newFromType( 'A' ) ) );
@@ -105,6 +105,6 @@ class PasswordFactoryTest extends MediaWikiTestCase {
 	}
 
 	public function testNewInvalidPassword() {
-		$this->assertInstanceOf( InvalidPassword::class, PasswordFactory::newInvalidPassword() );
+		$this->assertInstanceOf( 'InvalidPassword', PasswordFactory::newInvalidPassword() );
 	}
 }

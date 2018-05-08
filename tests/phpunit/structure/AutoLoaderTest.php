@@ -58,9 +58,9 @@ class AutoLoaderTest extends MediaWikiTestCase {
 				continue;
 			}
 
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$contents = file_get_contents( $filePath );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 
 			if ( $contents === false ) {
 				$actual[$class] = "[couldn't read file '$filePath']";
@@ -161,7 +161,6 @@ class AutoLoaderTest extends MediaWikiTestCase {
 		$path = realpath( __DIR__ . '/../../..' );
 		$oldAutoload = file_get_contents( $path . '/autoload.php' );
 		$generator = new AutoloadGenerator( $path, 'local' );
-		$generator->setExcludePaths( array_values( AutoLoader::getAutoloadNamespaces() ) );
 		$generator->initMediaWikiDefault();
 		$newAutoload = $generator->getAutoload( 'maintenance/generateLocalAutoload.php' );
 

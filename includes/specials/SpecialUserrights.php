@@ -325,8 +325,8 @@ class UserrightsPage extends SpecialPage {
 	 *   containing only those groups that are to have new expiry values set
 	 * @return array Tuple of added, then removed groups
 	 */
-	function doSaveUserGroups( $user, array $add, array $remove, $reason = '',
-		array $tags = [], array $groupExpiries = []
+	function doSaveUserGroups( $user, $add, $remove, $reason = '', $tags = [],
+		$groupExpiries = []
 	) {
 		// Validate input set...
 		$isself = $user->getName() == $this->getUser()->getName();
@@ -427,13 +427,13 @@ class UserrightsPage extends SpecialPage {
 	 * @param User|UserRightsProxy $user
 	 * @param array $oldGroups
 	 * @param array $newGroups
-	 * @param string $reason
+	 * @param array $reason
 	 * @param array $tags Change tags for the log entry
 	 * @param array $oldUGMs Associative array of (group name => UserGroupMembership)
 	 * @param array $newUGMs Associative array of (group name => UserGroupMembership)
 	 */
-	protected function addLogEntry( $user, array $oldGroups, array $newGroups, $reason,
-		array $tags, array $oldUGMs, array $newUGMs
+	protected function addLogEntry( $user, $oldGroups, $newGroups, $reason, $tags,
+		$oldUGMs, $newUGMs
 	) {
 		// make sure $oldUGMs and $newUGMs are in the same order, and serialise
 		// each UGM object to a simplified array
@@ -716,8 +716,6 @@ class UserrightsPage extends SpecialPage {
 				->rawParams( $userToolLinks )->parse()
 		);
 		if ( $canChangeAny ) {
-			$conf = $this->getConfig();
-			$oldCommentSchema = $conf->get( 'CommentTableSchemaMigrationStage' ) === MIGRATION_OLD;
 			$this->getOutput()->addHTML(
 				$this->msg( 'userrights-groups-help', $user->getName() )->parse() .
 				$grouplist .
@@ -728,13 +726,8 @@ class UserrightsPage extends SpecialPage {
 							Xml::label( $this->msg( 'userrights-reason' )->text(), 'wpReason' ) .
 						"</td>
 						<td class='mw-input'>" .
-							Xml::input( 'user-reason', 60, $this->getRequest()->getVal( 'user-reason', false ), [
-								'id' => 'wpReason',
-								// HTML maxlength uses "UTF-16 code units", which means that characters outside BMP
-								// (e.g. emojis) count for two each. This limit is overridden in JS to instead count
-								// Unicode codepoints (or 255 UTF-8 bytes for old schema).
-								'maxlength' => $oldCommentSchema ? 255 : CommentStore::COMMENT_CHARACTER_LIMIT,
-							] ) .
+							Xml::input( 'user-reason', 60, $this->getRequest()->getVal( 'user-reason', false ),
+								[ 'id' => 'wpReason', 'maxlength' => 255 ] ) .
 						"</td>
 					</tr>
 					<tr>
@@ -768,7 +761,7 @@ class UserrightsPage extends SpecialPage {
 	/**
 	 * Adds a table with checkboxes where you can select what groups to add/remove
 	 *
-	 * @param UserGroupMembership[] $usergroups Associative array of (group name as string =>
+	 * @param array $usergroups Associative array of (group name as string =>
 	 *   UserGroupMembership object) for groups the user belongs to
 	 * @param User $user
 	 * @return Array with 2 elements: the XHTML table element with checkxboes, and
@@ -842,10 +835,7 @@ class UserrightsPage extends SpecialPage {
 			}
 			$ret .= "\t<td style='vertical-align:top;'>\n";
 			foreach ( $column as $group => $checkbox ) {
-				$attr = [ 'class' => 'mw-userrights-groupcheckbox' ];
-				if ( $checkbox['disabled'] ) {
-					$attr['disabled'] = 'disabled';
-				}
+				$attr = $checkbox['disabled'] ? [ 'disabled' => 'disabled' ] : [];
 
 				$member = UserGroupMembership::getGroupMemberName( $group, $user->getName() );
 				if ( $checkbox['irreversible'] ) {
@@ -857,6 +847,10 @@ class UserrightsPage extends SpecialPage {
 				}
 				$checkboxHtml = Xml::checkLabel( $text, "wpGroup-" . $group,
 					"wpGroup-" . $group, $checkbox['set'], $attr );
+				$ret .= "\t\t" . ( ( $checkbox['disabled'] && $checkbox['disabled-expiry'] )
+					? Xml::tags( 'div', [ 'class' => 'mw-userrights-disabled' ], $checkboxHtml )
+					: Xml::tags( 'div', [], $checkboxHtml )
+				) . "\n";
 
 				if ( $this->canProcessExpiries() ) {
 					$uiUser = $this->getUser();
@@ -880,10 +874,6 @@ class UserrightsPage extends SpecialPage {
 						} else {
 							$expiryHtml = $this->msg( 'userrights-expiry-none' )->text();
 						}
-						// T171345: Add a hidden form element so that other groups can still be manipulated,
-						// otherwise saving errors out with an invalid expiry time for this group.
-						$expiryHtml .= Html::Hidden( "wpExpiry-$group",
-							$currentExpiry ? 'existing' : 'infinite' );
 						$expiryHtml .= "<br />\n";
 					} else {
 						$expiryHtml = Xml::element( 'span', null,
@@ -930,10 +920,7 @@ class UserrightsPage extends SpecialPage {
 						$expiryHtml .= $expiryFormOptions->getHTML() . '<br />';
 
 						// Add custom expiry field
-						$attribs = [
-							'id' => "mw-input-wpExpiry-$group-other",
-							'class' => 'mw-userrights-expiryfield',
-						];
+						$attribs = [ 'id' => "mw-input-wpExpiry-$group-other" ];
 						if ( $checkbox['disabled-expiry'] ) {
 							$attribs['disabled'] = 'disabled';
 						}
@@ -952,12 +939,8 @@ class UserrightsPage extends SpecialPage {
 						'id' => "mw-userrights-nested-wpGroup-$group",
 						'class' => 'mw-userrights-nested',
 					];
-					$checkboxHtml .= "\t\t\t" . Xml::tags( 'div', $divAttribs, $expiryHtml ) . "\n";
+					$ret .= "\t\t\t" . Xml::tags( 'div', $divAttribs, $expiryHtml ) . "\n";
 				}
-				$ret .= "\t\t" . ( ( $checkbox['disabled'] && $checkbox['disabled-expiry'] )
-					? Xml::tags( 'div', [ 'class' => 'mw-userrights-disabled' ], $checkboxHtml )
-					: Xml::tags( 'div', [], $checkboxHtml )
-				) . "\n";
 			}
 			$ret .= "\t</td>\n";
 		}

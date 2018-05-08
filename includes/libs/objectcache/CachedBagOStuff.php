@@ -86,11 +86,11 @@ class CachedBagOStuff extends HashBagOStuff {
 		return $this->backend->deleteObjectsExpiringBefore( $date, $progressCallback );
 	}
 
-	public function makeKey( $class, $component = null ) {
+	public function makeKey() {
 		return call_user_func_array( [ $this->backend, __FUNCTION__ ], func_get_args() );
 	}
 
-	public function makeGlobalKey( $class, $component = null ) {
+	public function makeGlobalKey() {
 		return call_user_func_array( [ $this->backend, __FUNCTION__ ], func_get_args() );
 	}
 

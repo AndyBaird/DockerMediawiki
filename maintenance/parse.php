@@ -140,5 +140,5 @@ class CLIParser extends Maintenance {
 	}
 }
 
-$maintClass = CLIParser::class;
+$maintClass = "CLIParser";
 require_once RUN_MAINTENANCE_IF_MAIN;

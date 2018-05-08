@@ -50,5 +50,5 @@ class ImportSites extends Maintenance {
 	}
 }
 
-$maintClass = ImportSites::class;
+$maintClass = 'ImportSites';
 require_once RUN_MAINTENANCE_IF_MAIN;

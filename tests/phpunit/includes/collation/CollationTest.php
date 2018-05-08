@@ -21,7 +21,7 @@ class CollationTest extends MediaWikiLangTestCase {
 	 * code makes this assumption.
 	 *
 	 * @param string $lang Language code for collator
-	 * @param string $base
+	 * @param string $base Base string
 	 * @param string $extended String containing base as a prefix.
 	 *
 	 * @dataProvider prefixDataProvider

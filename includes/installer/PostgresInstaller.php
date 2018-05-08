@@ -46,7 +46,7 @@ class PostgresInstaller extends DatabaseInstaller {
 		'_InstallUser' => 'postgres',
 	];
 
-	public static $minimumVersion = '9.2';
+	public static $minimumVersion = '8.3';
 	protected static $notMiniumumVerisonMessage = 'config-postgres-old';
 	public $maxRoleSearchDepth = 5;
 
@@ -152,7 +152,7 @@ class PostgresInstaller extends DatabaseInstaller {
 	/**
 	 * Open a PG connection with given parameters
 	 * @param string $user User name
-	 * @param string $password
+	 * @param string $password Password
 	 * @param string $dbName Database name
 	 * @param string $schema Database schema
 	 * @return Status
@@ -639,7 +639,7 @@ class PostgresInstaller extends DatabaseInstaller {
 
 	public function setupPLpgSQL() {
 		// Connect as the install user, since it owns the database and so is
-		// the user that needs to run "CREATE LANGUAGE"
+		// the user that needs to run "CREATE LANGAUGE"
 		$status = $this->getPgConnection( 'create-schema' );
 		if ( !$status->isOK() ) {
 			return $status;

@@ -121,7 +121,7 @@ class ThrottlePreAuthenticationProviderTest extends \MediaWikiTestCase {
 		$user = \User::newFromName( 'RandomUser' );
 		$creator = \User::newFromName( $creatorname );
 		if ( $hook ) {
-			$mock = $this->getMockBuilder( stdClass::class )
+			$mock = $this->getMockBuilder( 'stdClass' )
 				->setMethods( [ 'onExemptFromAccountCreationThrottle' ] )
 				->getMock();
 			$mock->expects( $this->any() )->method( 'onExemptFromAccountCreationThrottle' )

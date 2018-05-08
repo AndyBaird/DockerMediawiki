@@ -365,12 +365,16 @@ class SpecialSearch extends SpecialPage {
 		if ( $hasErrors ) {
 			list( $error, $warning ) = $textStatus->splitByErrorType();
 			if ( $error->getErrors() ) {
-				$out->addHTML( Html::errorBox(
+				$out->addHTML( Html::rawElement(
+					'div',
+					[ 'class' => 'errorbox' ],
 					$error->getHTML( 'search-error' )
 				) );
 			}
 			if ( $warning->getErrors() ) {
-				$out->addHTML( Html::warningBox(
+				$out->addHTML( Html::rawElement(
+					'div',
+					[ 'class' => 'warningbox' ],
 					$warning->getHTML( 'search-warning' )
 				) );
 			}
@@ -394,8 +398,7 @@ class SpecialSearch extends SpecialPage {
 		$linkRenderer = $this->getLinkRenderer();
 		$mainResultWidget = new FullSearchResultWidget( $this, $linkRenderer );
 
-		// Default (null) on. Can be explicitly disabled.
-		if ( $search->getFeatureData( 'enable-new-crossproject-page' ) !== false ) {
+		if ( $search->getFeatureData( 'enable-new-crossproject-page' ) ) {
 			$sidebarResultWidget = new InterwikiSearchResultWidget( $this, $linkRenderer );
 			$sidebarResultsWidget = new InterwikiSearchResultSetWidget(
 				$this,
@@ -526,7 +529,7 @@ class SpecialSearch extends SpecialPage {
 		if ( strval( $term ) !== '' ) {
 			$out->setPageTitle( $this->msg( 'searchresults' ) );
 			$out->setHTMLTitle( $this->msg( 'pagetitle' )
-				->plaintextParams( $this->msg( 'searchresults-title' )->plaintextParams( $term )->text() )
+				->rawParams( $this->msg( 'searchresults-title' )->rawParams( $term )->text() )
 				->inContentLanguage()->text()
 			);
 		}

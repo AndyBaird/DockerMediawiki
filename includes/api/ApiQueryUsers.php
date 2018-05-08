@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on July 30, 2007
+ *
  * Copyright © 2007 Roan Kattouw "<Firstname>.<Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -73,7 +77,7 @@ class ApiQueryUsers extends ApiQueryBase {
 		}
 
 		$this->tokenFunctions = [
-			'userrights' => [ self::class, 'getUserrightsToken' ],
+			'userrights' => [ 'ApiQueryUsers', 'getUserrightsToken' ],
 		];
 		Hooks::run( 'APIQueryUsersTokens', [ &$this->tokenFunctions ] );
 
@@ -95,7 +99,7 @@ class ApiQueryUsers extends ApiQueryBase {
 
 	public function execute() {
 		$db = $this->getDB();
-		$commentStore = CommentStore::getStore();
+		$commentStore = new CommentStore( 'ipb_reason' );
 
 		$params = $this->extractRequestParams();
 		$this->requireMaxOneParameter( $params, 'userids', 'users' );
@@ -140,10 +144,8 @@ class ApiQueryUsers extends ApiQueryBase {
 		$result = $this->getResult();
 
 		if ( count( $parameters ) ) {
-			$userQuery = User::getQueryInfo();
-			$this->addTables( $userQuery['tables'] );
-			$this->addFields( $userQuery['fields'] );
-			$this->addJoinConds( $userQuery['joins'] );
+			$this->addTables( 'user' );
+			$this->addFields( User::selectFields() );
 			if ( $useNames ) {
 				$this->addWhereFld( 'user_name', $goodNames );
 			} else {
@@ -235,8 +237,7 @@ class ApiQueryUsers extends ApiQueryBase {
 					$data[$key]['blockedby'] = $row->ipb_by_text;
 					$data[$key]['blockedbyid'] = (int)$row->ipb_by;
 					$data[$key]['blockedtimestamp'] = wfTimestamp( TS_ISO_8601, $row->ipb_timestamp );
-					$data[$key]['blockreason'] = $commentStore->getComment( 'ipb_reason', $row )
-						->text;
+					$data[$key]['blockreason'] = $commentStore->getComment( $row )->text;
 					$data[$key]['blockexpiry'] = $row->ipb_expiry;
 				}
 

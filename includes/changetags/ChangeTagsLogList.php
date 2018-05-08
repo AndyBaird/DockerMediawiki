@@ -72,8 +72,9 @@ class ChangeTagsLogList extends ChangeTagsList {
 	 * @return Status
 	 */
 	public function updateChangeTagsOnAll( $tagsToAdd, $tagsToRemove, $params, $reason, $user ) {
-		// phpcs:ignore Generic.CodeAnalysis.ForLoopWithTestFunctionCall
+		// @codingStandardsIgnoreStart Generic.CodeAnalysis.ForLoopWithTestFunctionCall.NotAllowed
 		for ( $this->reset(); $this->current(); $this->next() ) {
+			// @codingStandardsIgnoreEnd
 			$item = $this->current();
 			$status = ChangeTags::updateTagsWithChecks( $tagsToAdd, $tagsToRemove,
 				null, null, $item->getId(), $params, $reason, $user );

@@ -103,8 +103,8 @@ class CompressOld extends Maintenance {
 	public function execute() {
 		global $wgDBname;
 		if ( !function_exists( "gzdeflate" ) ) {
-			$this->fatalError( "You must enable zlib support in PHP to compress old revisions!\n" .
-				"Please see http://www.php.net/manual/en/ref.zlib.php\n" );
+			$this->error( "You must enable zlib support in PHP to compress old revisions!\n" .
+				"Please see http://www.php.net/manual/en/ref.zlib.php\n", true );
 		}
 
 		$type = $this->getOption( 'type', 'concat' );
@@ -361,9 +361,10 @@ class CompressOld extends Maintenance {
 				$usedChunk = false;
 				$primaryOldid = $revs[$i]->rev_text_id;
 
+				// @codingStandardsIgnoreStart Ignore avoid function calls in a FOR loop test part warning
 				# Get the text of each revision and add it to the object
-				// phpcs:ignore Generic.CodeAnalysis.ForLoopWithTestFunctionCall
 				for ( $j = 0; $j < $thisChunkSize && $chunk->isHappy(); $j++ ) {
+					// @codingStandardsIgnoreEnd
 					$oldid = $revs[$i + $j]->rev_text_id;
 
 					# Get text
@@ -462,6 +463,7 @@ class CompressOld extends Maintenance {
 				$this->output( "/" );
 				$this->commitTransaction( $dbw, __METHOD__ );
 				$i += $thisChunkSize;
+				wfWaitForSlaves();
 			}
 			$this->output( "\n" );
 		}
@@ -470,5 +472,5 @@ class CompressOld extends Maintenance {
 	}
 }
 
-$maintClass = CompressOld::class;
+$maintClass = 'CompressOld';
 require_once RUN_MAINTENANCE_IF_MAIN;

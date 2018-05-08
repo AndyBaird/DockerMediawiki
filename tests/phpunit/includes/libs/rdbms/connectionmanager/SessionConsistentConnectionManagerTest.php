@@ -2,7 +2,7 @@
 
 namespace Wikimedia\Tests\Rdbms;
 
-use Wikimedia\Rdbms\IDatabase;
+use IDatabase;
 use Wikimedia\Rdbms\LoadBalancer;
 use PHPUnit_Framework_MockObject_MockObject;
 use Wikimedia\Rdbms\SessionConsistentConnectionManager;
@@ -10,9 +10,10 @@ use Wikimedia\Rdbms\SessionConsistentConnectionManager;
 /**
  * @covers Wikimedia\Rdbms\SessionConsistentConnectionManager
  *
+ * @license GPL-2.0+
  * @author Daniel Kinzler
  */
-class SessionConsistentConnectionManagerTest extends \PHPUnit\Framework\TestCase {
+class SessionConsistentConnectionManagerTest extends \PHPUnit_Framework_TestCase {
 
 	/**
 	 * @return IDatabase|PHPUnit_Framework_MockObject_MockObject

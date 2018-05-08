@@ -194,7 +194,7 @@ class SpecialSearchTest extends MediaWikiTestCase {
 		);
 
 		$mockSearchEngine = $this->mockSearchEngine( $searchResults );
-		$search = $this->getMockBuilder( SpecialSearch::class )
+		$search = $this->getMockBuilder( 'SpecialSearch' )
 			->setMethods( [ 'getSearchEngine' ] )
 			->getMock();
 		$search->expects( $this->any() )
@@ -213,7 +213,7 @@ class SpecialSearchTest extends MediaWikiTestCase {
 	}
 
 	protected function mockSearchEngine( $results ) {
-		$mock = $this->getMockBuilder( SearchEngine::class )
+		$mock = $this->getMockBuilder( 'SearchEngine' )
 			->setMethods( [ 'searchText', 'searchTitle' ] )
 			->getMock();
 

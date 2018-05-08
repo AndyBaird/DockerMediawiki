@@ -8,6 +8,7 @@
  * @class jQuery.plugin.makeCollapsible
  */
 ( function ( $, mw ) {
+
 	/**
 	 * Handler for a click on a collapsible toggler.
 	 *
@@ -263,12 +264,14 @@
 			buildDefaultToggleLink = function () {
 				return $( '<a class="mw-collapsible-text"></a>' )
 					.text( collapseText )
-					.wrap( '<span class="mw-collapsible-toggle mw-collapsible-toggle-default"></span>' )
+					.wrap( '<span class="mw-collapsible-toggle"></span>' )
 					.parent()
 					.attr( {
 						role: 'button',
 						tabindex: 0
 					} )
+					.prepend( '<span>[</span>' )
+					.append( '<span>]</span>' )
 					.on( 'click.mw-collapsible keypress.mw-collapsible', actionHandler );
 			};
 

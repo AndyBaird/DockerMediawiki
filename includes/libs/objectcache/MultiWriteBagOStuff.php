@@ -20,7 +20,6 @@
  * @file
  * @ingroup Cache
  */
-use Wikimedia\ObjectFactory;
 
 /**
  * A cache class that replicates all writes to multiple child caches. Reads
@@ -234,11 +233,11 @@ class MultiWriteBagOStuff extends BagOStuff {
 		return $ret;
 	}
 
-	public function makeKey( $class, $component = null ) {
+	public function makeKey() {
 		return call_user_func_array( [ $this->caches[0], __FUNCTION__ ], func_get_args() );
 	}
 
-	public function makeGlobalKey( $class, $component = null ) {
+	public function makeGlobalKey() {
 		return call_user_func_array( [ $this->caches[0], __FUNCTION__ ], func_get_args() );
 	}
 }

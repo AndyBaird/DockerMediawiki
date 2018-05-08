@@ -138,7 +138,7 @@ class RepoGroup {
 		$dbkey = $title->getDBkey();
 		if ( empty( $options['ignoreRedirect'] )
 			&& empty( $options['private'] )
-			&& empty( $options['latest'] )
+			&& empty( $options['bypassCache'] )
 		) {
 			$time = isset( $options['time'] ) ? $options['time'] : '';
 			if ( $this->cache->has( $dbkey, $time, 60 ) ) {
@@ -423,7 +423,7 @@ class RepoGroup {
 	 * Split a virtual URL into repo, zone and rel parts
 	 * @param string $url
 	 * @throws MWException
-	 * @return string[] Containing repo, zone and rel
+	 * @return array Containing repo, zone and rel
 	 */
 	function splitVirtualUrl( $url ) {
 		if ( substr( $url, 0, 9 ) != 'mwrepo://' ) {
@@ -452,7 +452,7 @@ class RepoGroup {
 
 			return $repo->getFileProps( $fileName );
 		} else {
-			$mwProps = new MWFileProps( MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer() );
+			$mwProps = new MWFileProps( MimeMagic::singleton() );
 
 			return $mwProps->getPropsFromPath( $fileName, true );
 		}

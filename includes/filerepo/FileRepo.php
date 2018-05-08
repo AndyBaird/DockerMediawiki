@@ -78,6 +78,10 @@ class FileRepo {
 	 */
 	protected $scriptDirUrl;
 
+	/** @var string Script extension of the MediaWiki installation, equivalent
+	 *    to the old $wgScriptExtension, e.g. .php5 defaults to .php */
+	protected $scriptExtension;
+
 	/** @var string Equivalent to $wgArticlePath, e.g. https://en.wikipedia.org/wiki/$1 */
 	protected $articleUrl;
 
@@ -120,20 +124,13 @@ class FileRepo {
 	protected $isPrivate;
 
 	/** @var array callable Override these in the base class */
-	protected $fileFactory = [ UnregisteredLocalFile::class, 'newFromTitle' ];
+	protected $fileFactory = [ 'UnregisteredLocalFile', 'newFromTitle' ];
 	/** @var array callable|bool Override these in the base class */
 	protected $oldFileFactory = false;
 	/** @var array callable|bool Override these in the base class */
 	protected $fileFactoryKey = false;
 	/** @var array callable|bool Override these in the base class */
 	protected $oldFileFactoryKey = false;
-
-	/** @var string URL of where to proxy thumb.php requests to.
-	 *    Example: http://127.0.0.1:8888/wiki/dev/thumb/
-	 */
-	protected $thumbProxyUrl;
-	/** @var string Secret key to pass as an X-Swift-Secret header to the proxied thumb service */
-	protected $thumbProxySecret;
 
 	/**
 	 * @param array|null $info
@@ -162,7 +159,7 @@ class FileRepo {
 		$optionalSettings = [
 			'descBaseUrl', 'scriptDirUrl', 'articleUrl', 'fetchDescription',
 			'thumbScriptUrl', 'pathDisclosureProtection', 'descriptionCacheExpiry',
-			'favicon', 'thumbProxyUrl', 'thumbProxySecret',
+			'scriptExtension', 'favicon'
 		];
 		foreach ( $optionalSettings as $var ) {
 			if ( isset( $info[$var] ) ) {
@@ -578,8 +575,8 @@ class FileRepo {
 	 * Get an array of arrays or iterators of file objects for files that
 	 * have the given SHA-1 content hashes.
 	 *
-	 * @param string[] $hashes An array of hashes
-	 * @return array[] An Array of arrays or iterators of file objects and the hash as key
+	 * @param array $hashes An array of hashes
+	 * @return array An Array of arrays or iterators of file objects and the hash as key
 	 */
 	public function findBySha1s( array $hashes ) {
 		$result = [];
@@ -599,7 +596,7 @@ class FileRepo {
 	 * STUB
 	 * @param string $prefix The prefix to search for
 	 * @param int $limit The maximum amount of files to return
-	 * @return LocalFile[]
+	 * @return array
 	 */
 	public function findFilesByPrefix( $prefix, $limit ) {
 		return [];
@@ -612,24 +609,6 @@ class FileRepo {
 	 */
 	public function getThumbScriptUrl() {
 		return $this->thumbScriptUrl;
-	}
-
-	/**
-	 * Get the URL thumb.php requests are being proxied to
-	 *
-	 * @return string
-	 */
-	public function getThumbProxyUrl() {
-		return $this->thumbProxyUrl;
-	}
-
-	/**
-	 * Get the secret key for the proxied thumb service
-	 *
-	 * @return string
-	 */
-	public function getThumbProxySecret() {
-		return $this->thumbProxySecret;
 	}
 
 	/**
@@ -740,7 +719,9 @@ class FileRepo {
 	 */
 	public function makeUrl( $query = '', $entry = 'index' ) {
 		if ( isset( $this->scriptDirUrl ) ) {
-			return wfAppendQuery( "{$this->scriptDirUrl}/{$entry}.php", $query );
+			$ext = isset( $this->scriptExtension ) ? $this->scriptExtension : '.php';
+
+			return wfAppendQuery( "{$this->scriptDirUrl}/{$entry}{$ext}", $query );
 		}
 
 		return false;
@@ -789,7 +770,7 @@ class FileRepo {
 	 * should use File::getDescriptionText().
 	 *
 	 * @param string $name Name of image to fetch
-	 * @param string|null $lang Language to fetch it in, if any.
+	 * @param string $lang Language to fetch it in, if any.
 	 * @return string|false
 	 */
 	public function getDescriptionRenderUrl( $name, $lang = null ) {
@@ -928,7 +909,7 @@ class FileRepo {
 	 * Each file can be a (zone, rel) pair, virtual url, storage path.
 	 * It will try to delete each file, but ignores any errors that may occur.
 	 *
-	 * @param string[] $files List of files to delete
+	 * @param array $files List of files to delete
 	 * @param int $flags Bitwise combination of the following flags:
 	 *   self::SKIP_LOCKING      Skip any file locking when doing the deletions
 	 * @return Status
@@ -1312,9 +1293,9 @@ class FileRepo {
 		}
 		// Cleanup for disk source files...
 		foreach ( $sourceFSFilesToDelete as $file ) {
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			unlink( $file ); // FS cleanup
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 		}
 
 		return $status;
@@ -1378,7 +1359,7 @@ class FileRepo {
 	/**
 	 * Checks existence of an array of files.
 	 *
-	 * @param string[] $files Virtual URLs (or storage paths) of files to check
+	 * @param array $files Virtual URLs (or storage paths) of files to check
 	 * @return array Map of files and existence flags, or false
 	 */
 	public function fileExistsBatch( array $files ) {
@@ -1484,7 +1465,7 @@ class FileRepo {
 	 * Delete files in the deleted directory if they are not referenced in the filearchive table
 	 *
 	 * STUB
-	 * @param string[] $storageKeys
+	 * @param array $storageKeys
 	 */
 	public function cleanupDeletedBatch( array $storageKeys ) {
 		$this->assertWritableRepo();
@@ -1562,7 +1543,7 @@ class FileRepo {
 	 */
 	public function getFileProps( $virtualUrl ) {
 		$fsFile = $this->getLocalReference( $virtualUrl );
-		$mwProps = new MWFileProps( MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer() );
+		$mwProps = new MWFileProps( MimeMagic::singleton() );
 		if ( $fsFile ) {
 			$props = $mwProps->getPropsFromPath( $fsFile->getPath(), true );
 		} else {
@@ -1628,11 +1609,7 @@ class FileRepo {
 		$status = $this->newGood();
 		$status->merge( $this->backend->streamFile( $params ) );
 
-		// T186565: Close the buffer, unless it has already been closed
-		// in HTTPFileStreamer::resetOutputBuffers().
-		if ( ob_get_status() ) {
-			ob_end_flush();
-		}
+		ob_end_flush();
 
 		return $status;
 	}
@@ -1704,7 +1681,7 @@ class FileRepo {
 	/**
 	 * Get a callback function to use for cleaning error message parameters
 	 *
-	 * @return string[]
+	 * @return array
 	 */
 	function getErrorCleanupFunction() {
 		switch ( $this->pathDisclosureProtection ) {
@@ -1745,7 +1722,7 @@ class FileRepo {
 	 * @return Status
 	 */
 	public function newFatal( $message /*, parameters...*/ ) {
-		$status = call_user_func_array( [ Status::class, 'newFatal' ], func_get_args() );
+		$status = call_user_func_array( [ 'Status', 'newFatal' ], func_get_args() );
 		$status->cleanCallback = $this->getErrorCleanupFunction();
 
 		return $status;
@@ -1893,7 +1870,7 @@ class FileRepo {
 	/**
 	 * Get an UploadStash associated with this repo.
 	 *
-	 * @param User|null $user
+	 * @param User $user
 	 * @return UploadStash
 	 */
 	public function getUploadStash( User $user = null ) {
@@ -1926,7 +1903,7 @@ class FileRepo {
 
 		$optionalSettings = [
 			'url', 'thumbUrl', 'initialCapital', 'descBaseUrl', 'scriptDirUrl', 'articleUrl',
-			'fetchDescription', 'descriptionCacheExpiry', 'favicon'
+			'fetchDescription', 'descriptionCacheExpiry', 'scriptExtension', 'favicon'
 		];
 		foreach ( $optionalSettings as $k ) {
 			if ( isset( $this->$k ) ) {

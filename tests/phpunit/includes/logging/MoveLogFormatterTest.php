@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @covers MoveLogFormatter
- */
 class MoveLogFormatterTest extends LogFormatterTestCase {
 
 	/**

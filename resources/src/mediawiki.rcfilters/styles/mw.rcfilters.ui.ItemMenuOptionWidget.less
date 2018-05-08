@@ -1,6 +1,4 @@
 @import 'mediawiki.mixins';
-@import 'mediawiki.ui/variables';
-@import 'mw.rcfilters.variables';
 
 .mw-rcfilters-ui-itemMenuOptionWidget {
 	min-height: 3.5em;
@@ -8,11 +6,11 @@
 	.box-sizing( border-box );
 
 	&:not( :last-child ) {
-		border-bottom: 1px solid @colorGray14;
+		border-bottom: 1px solid #eaecf0; // Base80 AAA
 	}
 
 	&-view-namespaces {
-		border-top: 4px solid @colorGray12;
+		border-top: 5px solid #c8ccd1;
 
 		&:first-child,
 		&.mw-rcfilters-ui-itemMenuOptionWidget-identifier-subject + &.mw-rcfilters-ui-itemMenuOptionWidget-identifier-talk {
@@ -21,35 +19,30 @@
 	}
 
 	&:hover {
-		background-color: @colorGray15;
+		background-color: #f8f9fa;
 	}
 
 	.mw-rcfilters-ui-table {
-		padding-top: 6 / @font-size-system-ui / @font-size-vector;
-		padding-bottom: 6 / @font-size-system-ui / @font-size-vector;
+		padding-top: 0.5em;
 	}
 
 	&.oo-ui-optionWidget-selected {
-		background-color: @background-color-primary;
+		background-color: #eaf3ff; // Accent90 AAA
 	}
 
 	&-label {
 		&-title {
 			font-weight: bold;
 			font-size: 1.15em;
-			color: @colorGray2;
+			color: #222;
 		}
 		&-desc {
-			color: @colorGray5;
+			color: #54595d;
 			white-space: normal;
 		}
 	}
 
 	&-itemCheckbox {
-		.oo-ui-fieldLayout-body > .oo-ui-fieldLayout-header {
-			padding-left: 12 / @font-size-system-ui / @font-size-vector;
-		}
-
 		.oo-ui-fieldLayout.oo-ui-fieldLayout-align-inline {
 			// Override margin-top and -bottom rules from FieldLayout
 			margin: 0 !important; /* stylelint-disable-line declaration-no-important */
@@ -68,7 +61,7 @@
 	&-excludeLabel {
 		width: 5em;
 		padding-left: 1em;
-		color: @colorGray5;
+		color: #54595d; // Base20 AAA
 	}
 
 	&-highlightButton {

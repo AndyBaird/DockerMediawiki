@@ -190,13 +190,13 @@ class JobQueueDB extends JobQueue {
 		// If the connection is busy with a transaction, then defer the job writes
 		// until right before the main round commit step. Any errors that bubble
 		// up will rollback the main commit round.
-		// b) mysql/postgres; DB connection is generally a separate CONN_TRX_AUTOCOMMIT handle.
+		// b) mysql/postgres; DB connection is generally a separate CONN_TRX_AUTO handle.
 		// No transaction is active nor will be started by writes, so enqueue the jobs
 		// now so that any errors will show up immediately as the interface expects. Any
 		// errors that bubble up will rollback the main commit round.
 		$fname = __METHOD__;
 		$dbw->onTransactionPreCommitOrIdle(
-			function ( IDatabase $dbw ) use ( $jobs, $flags, $fname ) {
+			function () use ( $dbw, $jobs, $flags, $fname ) {
 				$this->doBatchPushInternal( $dbw, $jobs, $flags, $fname );
 			},
 			$fname
@@ -508,7 +508,7 @@ class JobQueueDB extends JobQueue {
 		$dbw = $this->getMasterDB();
 		$cache = $this->dupCache;
 		$dbw->onTransactionIdle(
-			function () use ( $cache, $params, $key ) {
+			function () use ( $cache, $params, $key, $dbw ) {
 				$timestamp = $cache->get( $key ); // current last timestamp of this job
 				if ( $timestamp && $timestamp >= $params['rootJobTimestamp'] ) {
 					return true; // a newer version of this root job was enqueued
@@ -780,7 +780,7 @@ class JobQueueDB extends JobQueue {
 		return ( $lb->getServerType( $lb->getWriterIndex() ) !== 'sqlite' )
 			// Keep a separate connection to avoid contention and deadlocks;
 			// However, SQLite has the opposite behavior due to DB-level locking.
-			? $lb->getConnectionRef( $index, [], $this->wiki, $lb::CONN_TRX_AUTOCOMMIT )
+			? $lb->getConnectionRef( $index, [], $this->wiki, $lb::CONN_TRX_AUTO )
 			// Jobs insertion will be defered until the PRESEND stage to reduce contention.
 			: $lb->getConnectionRef( $index, [], $this->wiki );
 	}

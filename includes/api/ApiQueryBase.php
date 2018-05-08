@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Sep 7, 2006
+ *
  * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -255,10 +259,12 @@ abstract class ApiQueryBase extends ApiBase {
 	/**
 	 * Equivalent to addWhere(array($field => $value))
 	 * @param string $field Field name
-	 * @param string|string[] $value Value; ignored if null or empty array
+	 * @param string|string[] $value Value; ignored if null or empty array;
 	 */
 	protected function addWhereFld( $field, $value ) {
-		if ( $value !== null && !( is_array( $value ) && !$value ) ) {
+		// Use count() to its full documented capabilities to simultaneously
+		// test for null, empty array or empty countable object
+		if ( count( $value ) ) {
 			$this->where[$field] = $value;
 		}
 	}
@@ -446,14 +452,12 @@ abstract class ApiQueryBase extends ApiBase {
 		if ( $showBlockInfo ) {
 			$this->addFields( [
 				'ipb_id',
+				'ipb_by',
+				'ipb_by_text',
 				'ipb_expiry',
 				'ipb_timestamp'
 			] );
-			$actorQuery = ActorMigration::newMigration()->getJoin( 'ipb_by' );
-			$this->addTables( $actorQuery['tables'] );
-			$this->addFields( $actorQuery['fields'] );
-			$this->addJoinConds( $actorQuery['joins'] );
-			$commentQuery = CommentStore::getStore()->getJoin( 'ipb_reason' );
+			$commentQuery = CommentStore::newKey( 'ipb_reason' )->getJoin();
 			$this->addTables( $commentQuery['tables'] );
 			$this->addFields( $commentQuery['fields'] );
 			$this->addJoinConds( $commentQuery['joins'] );

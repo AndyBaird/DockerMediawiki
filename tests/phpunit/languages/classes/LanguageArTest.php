@@ -4,9 +4,7 @@
  * @file
  */
 
-/**
- * @covers LanguageAr
- */
+/** Tests for MediaWiki languages/LanguageAr.php */
 class LanguageArTest extends LanguageClassesTestCase {
 	/**
 	 * @covers Language::formatNum

@@ -63,7 +63,6 @@ class ChangesListBooleanFilterGroupTest extends MediaWikiTestCase {
 						'cssClass' => null,
 						'conflicts' => [],
 						'subset' => [],
-						'defaultHighlightColor' => null,
 					],
 					[
 						'name' => 'hidefoo',
@@ -74,7 +73,6 @@ class ChangesListBooleanFilterGroupTest extends MediaWikiTestCase {
 						'cssClass' => null,
 						'conflicts' => [],
 						'subset' => [],
-						'defaultHighlightColor' => null,
 					],
 				],
 				'conflicts' => [],

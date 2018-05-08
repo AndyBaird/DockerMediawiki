@@ -233,7 +233,7 @@ class WebInstallerOutput {
 	public function getHeadAttribs() {
 		return [
 			'dir' => $this->getDir(),
-			'lang' => LanguageCode::bcp47( $this->getLanguageCode() ),
+			'lang' => wfBCP47( $this->getLanguageCode() ),
 		];
 	}
 

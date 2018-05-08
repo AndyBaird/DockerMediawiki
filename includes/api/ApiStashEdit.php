@@ -181,14 +181,9 @@ class ApiStashEdit extends ApiBase {
 		$title = $page->getTitle();
 		$key = self::getStashKey( $title, self::getContentHash( $content ), $user );
 
-		// Use the master DB to allow for fast blocking locks on the "save path" where this
-		// value might actually be used to complete a page edit. If the edit submission request
-		// happens before this edit stash requests finishes, then the submission will block until
-		// the stash request finishes parsing. For the lock acquisition below, there is not much
-		// need to duplicate parsing of the same content/user/summary bundle, so try to avoid
-		// blocking at all here.
+		// Use the master DB for fast blocking locks
 		$dbw = wfGetDB( DB_MASTER );
-		if ( !$dbw->lock( $key, __METHOD__, 0 ) ) {
+		if ( !$dbw->lock( $key, __METHOD__, 1 ) ) {
 			// De-duplicate requests on the same key
 			return self::ERROR_BUSY;
 		}
@@ -214,10 +209,8 @@ class ApiStashEdit extends ApiBase {
 			Hooks::run( 'ParserOutputStashForEdit',
 				[ $page, $content, $editInfo->output, $summary, $user ] );
 
-			$titleStr = (string)$title;
 			if ( $alreadyCached ) {
-				$logger->debug( "Already cached parser output for key '{cachekey}' ('{title}').",
-					[ 'cachekey' => $key, 'title' => $titleStr ] );
+				$logger->debug( "Already cached parser output for key '$key' ('$title')." );
 				return self::ERROR_NONE;
 			}
 
@@ -231,17 +224,14 @@ class ApiStashEdit extends ApiBase {
 			if ( $stashInfo ) {
 				$ok = $cache->set( $key, $stashInfo, $ttl );
 				if ( $ok ) {
-					$logger->debug( "Cached parser output for key '{cachekey}' ('{title}').",
-						[ 'cachekey' => $key, 'title' => $titleStr ] );
+					$logger->debug( "Cached parser output for key '$key' ('$title')." );
 					return self::ERROR_NONE;
 				} else {
-					$logger->error( "Failed to cache parser output for key '{cachekey}' ('{title}').",
-						[ 'cachekey' => $key, 'title' => $titleStr ] );
+					$logger->error( "Failed to cache parser output for key '$key' ('$title')." );
 					return self::ERROR_CACHE;
 				}
 			} else {
-				$logger->info( "Uncacheable parser output for key '{cachekey}' ('{title}') [{code}].",
-					[ 'cachekey' => $key, 'title' => $titleStr, 'code' => $code ] );
+				$logger->info( "Uncacheable parser output for key '$key' ('$title') [$code]." );
 				return self::ERROR_UNCACHEABLE;
 			}
 		}
@@ -340,15 +330,11 @@ class ApiStashEdit extends ApiBase {
 	 * @return string|null TS_MW timestamp or null
 	 */
 	private static function lastEditTime( User $user ) {
-		$db = wfGetDB( DB_REPLICA );
-		$actorQuery = ActorMigration::newMigration()->getWhere( $db, 'rc_user', $user, false );
-		$time = $db->selectField(
-			[ 'recentchanges' ] + $actorQuery['tables'],
+		$time = wfGetDB( DB_REPLICA )->selectField(
+			'recentchanges',
 			'MAX(rc_timestamp)',
-			[ $actorQuery['conds'] ],
-			__METHOD__,
-			[],
-			$actorQuery['joins']
+			[ 'rc_user_text' => $user->getName() ],
+			__METHOD__
 		);
 
 		return wfTimestampOrNull( TS_MW, $time );

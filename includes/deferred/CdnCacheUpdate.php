@@ -18,6 +18,7 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
+ * @ingroup Cache
  */
 
 use Wikimedia\Assert\Assert;

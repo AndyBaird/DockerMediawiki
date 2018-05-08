@@ -60,17 +60,15 @@ class RevDelFileList extends RevDelList {
 			$archiveNames[] = $timestamp . '!' . $this->title->getDBkey();
 		}
 
-		$oiQuery = OldLocalFile::getQueryInfo();
 		return $db->select(
-			$oiQuery['tables'],
-			$oiQuery['fields'],
+			'oldimage',
+			OldLocalFile::selectFields(),
 			[
 				'oi_name' => $this->title->getDBkey(),
 				'oi_archive_name' => $archiveNames
 			],
 			__METHOD__,
-			[ 'ORDER BY' => 'oi_timestamp DESC' ],
-			$oiQuery['joins']
+			[ 'ORDER BY' => 'oi_timestamp DESC' ]
 		);
 	}
 

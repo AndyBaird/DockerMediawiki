@@ -11,7 +11,7 @@ class SkinFactoryTest extends MediaWikiTestCase {
 			return new SkinFallback();
 		} );
 		$this->assertTrue( true ); // No exception thrown
-		$this->setExpectedException( InvalidArgumentException::class );
+		$this->setExpectedException( 'InvalidArgumentException' );
 		$factory->register( 'invalid', 'Invalid', 'Invalid callback' );
 	}
 
@@ -20,7 +20,7 @@ class SkinFactoryTest extends MediaWikiTestCase {
 	 */
 	public function testMakeSkinWithNoBuilders() {
 		$factory = new SkinFactory();
-		$this->setExpectedException( SkinException::class );
+		$this->setExpectedException( 'SkinException' );
 		$factory->makeSkin( 'nobuilderregistered' );
 	}
 
@@ -32,7 +32,7 @@ class SkinFactoryTest extends MediaWikiTestCase {
 		$factory->register( 'unittest', 'Unittest', function () {
 			return true; // Not a Skin object
 		} );
-		$this->setExpectedException( UnexpectedValueException::class );
+		$this->setExpectedException( 'UnexpectedValueException' );
 		$factory->makeSkin( 'unittest' );
 	}
 
@@ -46,20 +46,8 @@ class SkinFactoryTest extends MediaWikiTestCase {
 		} );
 
 		$skin = $factory->makeSkin( 'testfallback' );
-		$this->assertInstanceOf( Skin::class, $skin );
-		$this->assertInstanceOf( SkinFallback::class, $skin );
-		$this->assertEquals( 'fallback', $skin->getSkinName() );
-	}
-
-	/**
-	 * @covers Skin::__construct
-	 * @covers Skin::getSkinName
-	 */
-	public function testGetSkinName() {
-		$skin = new SkinFallback();
-		$this->assertEquals( 'fallback', $skin->getSkinName(), 'Default' );
-		$skin = new SkinFallback( 'testname' );
-		$this->assertEquals( 'testname', $skin->getSkinName(), 'Constructor argument' );
+		$this->assertInstanceOf( 'Skin', $skin );
+		$this->assertInstanceOf( 'SkinFallback', $skin );
 	}
 
 	/**

@@ -23,8 +23,6 @@
  * @file
  * @ingroup SpecialPage
  */
-use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
 
 /**
  * Represents a revision, log entry or upload during the import process.
@@ -34,7 +32,7 @@ use MediaWiki\MediaWikiServices;
  *
  * @ingroup SpecialPage
  */
-class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
+class WikiRevision {
 
 	/**
 	 * @since 1.17
@@ -172,9 +170,9 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 
 	/**
 	 * @since 1.12.2
-	 * @var string|null
+	 * @var mixed
 	 */
-	protected $src = null;
+	protected $src;
 
 	/**
 	 * @since 1.18
@@ -300,7 +298,7 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 
 	/**
 	 * @since 1.12.2
-	 * @param string|null $src
+	 * @param mixed $src
 	 */
 	public function setSrc( $src ) {
 		$this->src = $src;
@@ -496,7 +494,7 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 
 	/**
 	 * @since 1.12.2
-	 * @return string|null
+	 * @return mixed
 	 */
 	public function getSrc() {
 		return $this->src;
@@ -509,17 +507,6 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 	public function getSha1() {
 		if ( $this->sha1base36 ) {
 			return Wikimedia\base_convert( $this->sha1base36, 36, 16 );
-		}
-		return false;
-	}
-
-	/**
-	 * @since 1.31
-	 * @return bool|string
-	 */
-	public function getSha1Base36() {
-		if ( $this->sha1base36 ) {
-			return $this->sha1base36;
 		}
 		return false;
 	}
@@ -590,16 +577,106 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 
 	/**
 	 * @since 1.4.1
-	 * @deprecated in 1.31. Use OldRevisionImporter::import
 	 * @return bool
 	 */
 	public function importOldRevision() {
-		if ( $this->mNoUpdates ) {
-			$importer = MediaWikiServices::getInstance()->getWikiRevisionOldRevisionImporterNoUpdates();
+		$dbw = wfGetDB( DB_MASTER );
+
+		# Sneak a single revision into place
+		$user = $this->getUserObj() ?: User::newFromName( $this->getUser() );
+		if ( $user ) {
+			$userId = intval( $user->getId() );
+			$userText = $user->getName();
 		} else {
-			$importer = MediaWikiServices::getInstance()->getWikiRevisionOldRevisionImporter();
+			$userId = 0;
+			$userText = $this->getUser();
+			$user = new User;
 		}
-		return $importer->import( $this );
+
+		// avoid memory leak...?
+		Title::clearCaches();
+
+		$page = WikiPage::factory( $this->title );
+		$page->loadPageData( 'fromdbmaster' );
+		if ( !$page->exists() ) {
+			// must create the page...
+			$pageId = $page->insertOn( $dbw );
+			$created = true;
+			$oldcountable = null;
+		} else {
+			$pageId = $page->getId();
+			$created = false;
+
+			// Note: sha1 has been in XML dumps since 2012. If you have an
+			// older dump, the duplicate detection here won't work.
+			$prior = $dbw->selectField( 'revision', '1',
+				[ 'rev_page' => $pageId,
+					'rev_timestamp' => $dbw->timestamp( $this->timestamp ),
+					'rev_sha1' => $this->sha1base36 ],
+				__METHOD__
+			);
+			if ( $prior ) {
+				// @todo FIXME: This could fail slightly for multiple matches :P
+				wfDebug( __METHOD__ . ": skipping existing revision for [[" .
+					$this->title->getPrefixedText() . "]], timestamp " . $this->timestamp . "\n" );
+				return false;
+			}
+		}
+
+		if ( !$pageId ) {
+			// This seems to happen if two clients simultaneously try to import the
+			// same page
+			wfDebug( __METHOD__ . ': got invalid $pageId when importing revision of [[' .
+				$this->title->getPrefixedText() . ']], timestamp ' . $this->timestamp . "\n" );
+			return false;
+		}
+
+		// Select previous version to make size diffs correct
+		// @todo This assumes that multiple revisions of the same page are imported
+		// in order from oldest to newest.
+		$prevId = $dbw->selectField( 'revision', 'rev_id',
+			[
+				'rev_page' => $pageId,
+				'rev_timestamp <= ' . $dbw->addQuotes( $dbw->timestamp( $this->timestamp ) ),
+			],
+			__METHOD__,
+			[ 'ORDER BY' => [
+					'rev_timestamp DESC',
+					'rev_id DESC', // timestamp is not unique per page
+				]
+			]
+		);
+
+		# @todo FIXME: Use original rev_id optionally (better for backups)
+		# Insert the row
+		$revision = new Revision( [
+			'title' => $this->title,
+			'page' => $pageId,
+			'content_model' => $this->getModel(),
+			'content_format' => $this->getFormat(),
+			// XXX: just set 'content' => $this->getContent()?
+			'text' => $this->getContent()->serialize( $this->getFormat() ),
+			'comment' => $this->getComment(),
+			'user' => $userId,
+			'user_text' => $userText,
+			'timestamp' => $this->timestamp,
+			'minor_edit' => $this->minor,
+			'parent_id' => $prevId,
+			] );
+		$revision->insertOn( $dbw );
+		$changed = $page->updateIfNewerOn( $dbw, $revision );
+
+		if ( $changed !== false && !$this->mNoUpdates ) {
+			wfDebug( __METHOD__ . ": running updates\n" );
+			// countable/oldcountable stuff is handled in WikiImporter::finishImportPage
+			$page->doEditUpdates(
+				$revision,
+				$user,
+				[ 'created' => $created, 'oldcountable' => 'no-change' ]
+			);
+		}
+
+		return true;
 	}
 
 	/**
@@ -609,7 +686,14 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 	public function importLogItem() {
 		$dbw = wfGetDB( DB_MASTER );
 
-		$user = $this->getUserObj() ?: User::newFromName( $this->getUser(), false );
+		$user = $this->getUserObj() ?: User::newFromName( $this->getUser() );
+		if ( $user ) {
+			$userId = intval( $user->getId() );
+			$userText = $user->getName();
+		} else {
+			$userId = 0;
+			$userText = $this->getUser();
+		}
 
 		# @todo FIXME: This will not record autoblocks
 		if ( !$this->getTitle() ) {
@@ -625,6 +709,7 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 				'log_timestamp' => $dbw->timestamp( $this->timestamp ),
 				'log_namespace' => $this->getTitle()->getNamespace(),
 				'log_title' => $this->getTitle()->getDBkey(),
+				# 'log_user_text' => $this->user_text,
 				'log_params' => $this->params ],
 			__METHOD__
 		);
@@ -639,11 +724,12 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 			'log_type' => $this->type,
 			'log_action' => $this->action,
 			'log_timestamp' => $dbw->timestamp( $this->timestamp ),
+			'log_user' => $userId,
+			'log_user_text' => $userText,
 			'log_namespace' => $this->getTitle()->getNamespace(),
 			'log_title' => $this->getTitle()->getDBkey(),
 			'log_params' => $this->params
-		] + CommentStore::getStore()->insert( $dbw, 'log_comment', $this->getComment() )
-			+ ActorMigration::newMigration()->getInsertValues( $dbw, 'log_user', $user );
+		] + CommentStore::newKey( 'log_comment' )->insert( $dbw, $this->getComment() );
 		$dbw->insert( 'logging', $data, __METHOD__ );
 
 		return true;
@@ -651,26 +737,106 @@ class WikiRevision implements ImportableUploadRevision, ImportableOldRevision {
 
 	/**
 	 * @since 1.12.2
-	 * @deprecated in 1.31. Use UploadImporter::import
 	 * @return bool
 	 */
 	public function importUpload() {
-		$importer = MediaWikiServices::getInstance()->getWikiRevisionUploadImporter();
-		$statusValue = $importer->import( $this );
-		return $statusValue->isGood();
+		# Construct a file
+		$archiveName = $this->getArchiveName();
+		if ( $archiveName ) {
+			wfDebug( __METHOD__ . "Importing archived file as $archiveName\n" );
+			$file = OldLocalFile::newFromArchiveName( $this->getTitle(),
+				RepoGroup::singleton()->getLocalRepo(), $archiveName );
+		} else {
+			$file = wfLocalFile( $this->getTitle() );
+			$file->load( File::READ_LATEST );
+			wfDebug( __METHOD__ . 'Importing new file as ' . $file->getName() . "\n" );
+			if ( $file->exists() && $file->getTimestamp() > $this->getTimestamp() ) {
+				$archiveName = $file->getTimestamp() . '!' . $file->getName();
+				$file = OldLocalFile::newFromArchiveName( $this->getTitle(),
+					RepoGroup::singleton()->getLocalRepo(), $archiveName );
+				wfDebug( __METHOD__ . "File already exists; importing as $archiveName\n" );
+			}
+		}
+		if ( !$file ) {
+			wfDebug( __METHOD__ . ': Bad file for ' . $this->getTitle() . "\n" );
+			return false;
+		}
+
+		# Get the file source or download if necessary
+		$source = $this->getFileSrc();
+		$autoDeleteSource = $this->isTempSrc();
+		if ( !strlen( $source ) ) {
+			$source = $this->downloadSource();
+			$autoDeleteSource = true;
+		}
+		if ( !strlen( $source ) ) {
+			wfDebug( __METHOD__ . ": Could not fetch remote file.\n" );
+			return false;
+		}
+
+		$tmpFile = new TempFSFile( $source );
+		if ( $autoDeleteSource ) {
+			$tmpFile->autocollect();
+		}
+
+		$sha1File = ltrim( sha1_file( $source ), '0' );
+		$sha1 = $this->getSha1();
+		if ( $sha1 && ( $sha1 !== $sha1File ) ) {
+			wfDebug( __METHOD__ . ": Corrupt file $source.\n" );
+			return false;
+		}
+
+		$user = $this->getUserObj() ?: User::newFromName( $this->getUser() );
+
+		# Do the actual upload
+		if ( $archiveName ) {
+			$status = $file->uploadOld( $source, $archiveName,
+				$this->getTimestamp(), $this->getComment(), $user );
+		} else {
+			$flags = 0;
+			$status = $file->upload( $source, $this->getComment(), $this->getComment(),
+				$flags, false, $this->getTimestamp(), $user );
+		}
+
+		if ( $status->isGood() ) {
+			wfDebug( __METHOD__ . ": Successful\n" );
+			return true;
+		} else {
+			wfDebug( __METHOD__ . ': failed: ' . $status->getHTML() . "\n" );
+			return false;
+		}
 	}
 
 	/**
 	 * @since 1.12.2
-	 * @deprecated in 1.31. Use UploadImporter::downloadSource
 	 * @return bool|string
 	 */
 	public function downloadSource() {
-		$importer = new ImportableUploadRevisionImporter(
-			$this->config->get( 'EnableUploads' ),
-			LoggerFactory::getInstance( 'UploadRevisionImporter' )
-		);
-		return $importer->downloadSource( $this );
+		if ( !$this->config->get( 'EnableUploads' ) ) {
+			return false;
+		}
+
+		$tempo = tempnam( wfTempDir(), 'download' );
+		$f = fopen( $tempo, 'wb' );
+		if ( !$f ) {
+			wfDebug( "IMPORT: couldn't write to temp file $tempo\n" );
+			return false;
+		}
+
+		// @todo FIXME!
+		$src = $this->getSrc();
+		$data = Http::get( $src, [], __METHOD__ );
+		if ( !$data ) {
+			wfDebug( "IMPORT: couldn't fetch source $src\n" );
+			fclose( $f );
+			unlink( $tempo );
+			return false;
+		}
+
+		fwrite( $f, $data );
+		fclose( $f );
+
+		return $tempo;
 	}
 
 }

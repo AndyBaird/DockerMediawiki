@@ -46,7 +46,7 @@ class ApiQueryContinue2Test extends ApiQueryContinueTestBase {
 	}
 
 	/**
-	 * @group medium
+	 * @medium
 	 */
 	public function testA() {
 		$this->mVerbose = false;

@@ -109,8 +109,7 @@ class LocalisationCache {
 	static public $allKeys = [
 		'fallback', 'namespaceNames', 'bookstoreList',
 		'magicWords', 'messages', 'rtl', 'capitalizeAllNouns', 'digitTransformTable',
-		'separatorTransformTable', 'minimumGroupingDigits',
-		'fallback8bitEncoding', 'linkPrefixExtension',
+		'separatorTransformTable', 'fallback8bitEncoding', 'linkPrefixExtension',
 		'linkTrail', 'linkPrefixCharset', 'namespaceAliases',
 		'dateFormats', 'datePreferences', 'datePreferenceMigrationMap',
 		'defaultDateFormat', 'extraUserToggles', 'specialPageAliases',
@@ -199,22 +198,22 @@ class LocalisationCache {
 			switch ( $conf['store'] ) {
 				case 'files':
 				case 'file':
-					$storeClass = LCStoreCDB::class;
+					$storeClass = 'LCStoreCDB';
 					break;
 				case 'db':
-					$storeClass = LCStoreDB::class;
+					$storeClass = 'LCStoreDB';
 					break;
 				case 'array':
-					$storeClass = LCStoreStaticArray::class;
+					$storeClass = 'LCStoreStaticArray';
 					break;
 				case 'detect':
 					if ( !empty( $conf['storeDirectory'] ) ) {
-						$storeClass = LCStoreCDB::class;
+						$storeClass = 'LCStoreCDB';
 					} elseif ( $wgCacheDirectory ) {
 						$storeConf['directory'] = $wgCacheDirectory;
-						$storeClass = LCStoreCDB::class;
+						$storeClass = 'LCStoreCDB';
 					} else {
-						$storeClass = LCStoreDB::class;
+						$storeClass = 'LCStoreDB';
 					}
 					break;
 				default:
@@ -517,15 +516,15 @@ class LocalisationCache {
 	 */
 	protected function readPHPFile( $_fileName, $_fileType ) {
 		// Disable APC caching
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$_apcEnabled = ini_set( 'apc.cache_by_default', '0' );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		include $_fileName;
 
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		ini_set( 'apc.cache_by_default', $_apcEnabled );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( $_fileType == 'core' || $_fileType == 'extension' ) {
 			$data = compact( self::$allKeys );

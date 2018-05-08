@@ -70,7 +70,7 @@ class RefreshLinks extends Maintenance {
 		if ( ( $category = $this->getOption( 'category', false ) ) !== false ) {
 			$title = Title::makeTitleSafe( NS_CATEGORY, $category );
 			if ( !$title ) {
-				$this->fatalError( "'$category' is an invalid category name!\n" );
+				$this->error( "'$category' is an invalid category name!\n", true );
 			}
 			$this->refreshCategory( $title );
 		} elseif ( ( $category = $this->getOption( 'tracking-category', false ) ) !== false ) {
@@ -80,9 +80,9 @@ class RefreshLinks extends Maintenance {
 			$redir = $this->hasOption( 'redirects-only' );
 			$oldRedir = $this->hasOption( 'old-redirects-only' );
 			$this->doRefreshLinks( $start, $new, $end, $redir, $oldRedir );
-			$this->deleteLinksFromNonexistent( null, null, $this->getBatchSize(), $dfnChunkSize );
+			$this->deleteLinksFromNonexistent( null, null, $this->mBatchSize, $dfnChunkSize );
 		} else {
-			$this->deleteLinksFromNonexistent( $start, $end, $this->getBatchSize(), $dfnChunkSize );
+			$this->deleteLinksFromNonexistent( $start, $end, $this->mBatchSize, $dfnChunkSize );
 		}
 	}
 
@@ -170,8 +170,8 @@ class RefreshLinks extends Maintenance {
 			}
 		} else {
 			if ( !$end ) {
-				$maxPage = $dbr->selectField( 'page', 'max(page_id)', '', __METHOD__ );
-				$maxRD = $dbr->selectField( 'redirect', 'max(rd_from)', '', __METHOD__ );
+				$maxPage = $dbr->selectField( 'page', 'max(page_id)', false );
+				$maxRD = $dbr->selectField( 'redirect', 'max(rd_from)', false );
 				$end = max( $maxPage, $maxRD );
 			}
 			$this->output( "Refreshing redirects table.\n" );
@@ -456,7 +456,7 @@ class RefreshLinks extends Maintenance {
 				__METHOD__,
 				[
 					'ORDER BY' => [ 'cl_timestamp', 'cl_from' ],
-					'LIMIT' => $this->getBatchSize(),
+					'LIMIT' => $this->mBatchSize,
 				]
 			);
 
@@ -470,7 +470,7 @@ class RefreshLinks extends Maintenance {
 				self::fixLinksFromArticle( $row->page_id );
 			}
 
-		} while ( $res->numRows() == $this->getBatchSize() );
+		} while ( $res->numRows() == $this->mBatchSize );
 	}
 
 	/**
@@ -485,9 +485,9 @@ class RefreshLinks extends Maintenance {
 		if ( isset( $cats[$categoryKey] ) ) {
 			return $cats[$categoryKey]['cats'];
 		}
-		$this->fatalError( "Unknown tracking category {$categoryKey}\n" );
+		$this->error( "Unknown tracking category {$categoryKey}\n", true );
 	}
 }
 
-$maintClass = RefreshLinks::class;
+$maintClass = 'RefreshLinks';
 require_once RUN_MAINTENANCE_IF_MAIN;

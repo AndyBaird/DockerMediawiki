@@ -23,6 +23,8 @@
 
 require_once __DIR__ . '/Maintenance.php';
 
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * Usage:
  *  populatePPSortKey.php
@@ -57,7 +59,7 @@ class PopulatePPSortKey extends LoggedUpdateMaintenance {
 				__METHOD__,
 				[
 					'ORDER BY' => 'pp_page, pp_propname',
-					'LIMIT' => $this->getBatchSize()
+					'LIMIT' => $this->mBatchSize
 				]
 			);
 
@@ -100,5 +102,5 @@ class PopulatePPSortKey extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = PopulatePPSortKey::class;
+$maintClass = 'PopulatePPSortKey';
 require_once RUN_MAINTENANCE_IF_MAIN;

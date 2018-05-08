@@ -1,15 +1,13 @@
 <?php
 
 /**
- * @covers PageProps
- *
  * @group Database
  *	^--- tell jenkins this test needs the database
  *
  * @group medium
  *	^--- tell phpunit that these test cases may take longer than 2 seconds.
  */
-class PagePropsTest extends MediaWikiLangTestCase {
+class TestPageProps extends MediaWikiLangTestCase {
 
 	/**
 	 * @var Title $title1
@@ -37,7 +35,7 @@ class PagePropsTest extends MediaWikiLangTestCase {
 		$wgNamespaceContentModels[12312] = 'DUMMY';
 		$wgContentHandlers['DUMMY'] = 'DummyContentHandlerForTesting';
 
-		MWNamespace::clearCaches();
+		MWNamespace::getCanonicalNamespaces( true ); # reset namespace cache
 		$wgContLang->resetNamespaces(); # reset namespace cache
 
 		if ( !$this->the_properties ) {
@@ -83,7 +81,7 @@ class PagePropsTest extends MediaWikiLangTestCase {
 		unset( $wgNamespaceContentModels[12312] );
 		unset( $wgContentHandlers['DUMMY'] );
 
-		MWNamespace::clearCaches();
+		MWNamespace::getCanonicalNamespaces( true ); # reset namespace cache
 		$wgContLang->resetNamespaces(); # reset namespace cache
 	}
 

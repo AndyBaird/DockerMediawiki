@@ -14,7 +14,7 @@
 class SkinFallback extends SkinTemplate {
 
 	public $skinname = 'fallback';
-	public $template = SkinFallbackTemplate::class;
+	public $template = 'SkinFallbackTemplate';
 
 	/**
 	 * Add CSS via ResourceLoader

@@ -94,11 +94,11 @@ $specialPageAliases = [
 	'MyLanguage'                => [ 'MiIdioma', 'Mi_idioma' ],
 	'Mypage'                    => [ 'MiPágina', 'Mi_página' ],
 	'Mytalk'                    => [ 'MiDiscusión', 'Mi_discusión' ],
-	'Myuploads'                 => [ 'MisArchivosSubidos', 'Mis_archivos_subidos' ],
+	'Myuploads'                 => [ 'MisArchivosSubidos' ],
 	'Newimages'                 => [ 'NuevasImágenes', 'Nuevas_imágenes' ],
 	'Newpages'                  => [ 'PáginasNuevas', 'Páginas_nuevas' ],
-	'PasswordReset'             => [ 'RestablecerContraseña', 'Restablecer_contraseña' ],
-	'PermanentLink'             => [ 'EnlacePermanente', 'Enlace_permanente' ],
+	'PasswordReset'             => [ 'RestablecerContraseña' ],
+	'PermanentLink'             => [ 'EnlacePermanente' ],
 	'Preferences'               => [ 'Preferencias' ],
 	'Prefixindex'               => [ 'PáginasPorPrefijo', 'Páginas_por_prefijo' ],
 	'Protectedpages'            => [ 'PáginasProtegidas', 'Páginas_protegidas' ],
@@ -116,7 +116,7 @@ $specialPageAliases = [
 	'Specialpages'              => [ 'PáginasEspeciales', 'Páginas_especiales' ],
 	'Statistics'                => [ 'Estadísticas' ],
 	'Tags'                      => [ 'Etiquetas' ],
-	'TrackingCategories'        => [ 'CategoríasDeSeguimiento', 'Categorías_de_seguimiento' ],
+	'TrackingCategories'        => [ 'CategoríasDeSeguimiento' ],
 	'Unblock'                   => [ 'Desbloquear' ],
 	'Uncategorizedcategories'   => [ 'CategoríasSinCategorizar', 'Categorías_sin_categorizar' ],
 	'Uncategorizedimages'       => [ 'ImágenesSinCategorizar', 'Imágenes_sin_categorizar' ],
@@ -299,6 +299,4 @@ $dateFormats = [
 ];
 
 $separatorTransformTable = [ ',' => "\xc2\xa0", '.' => ',' ];
-$minimumGroupingDigits = 2;
-
 $linkTrail = '/^([a-záéíóúñ]+)(.*)$/sDu';

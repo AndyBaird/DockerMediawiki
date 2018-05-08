@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Apr 15, 2012
+ *
  * Copyright © 2012 Szymon Świerkosz beau@adres.pl
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,8 +23,6 @@
  *
  * @file
  */
-
-use MediaWiki\MediaWikiServices;
 
 /**
  * API module that facilitates the changing of user's preferences.
@@ -62,7 +64,7 @@ class ApiOptions extends ApiBase {
 		}
 
 		$changes = [];
-		if ( $params['change'] ) {
+		if ( count( $params['change'] ) ) {
 			foreach ( $params['change'] as $entry ) {
 				$array = explode( '=', $entry, 2 );
 				$changes[$array[0]] = isset( $array[1] ) ? $array[1] : null;
@@ -76,8 +78,7 @@ class ApiOptions extends ApiBase {
 			$this->dieWithError( 'apierror-nochanges' );
 		}
 
-		$preferencesFactory = MediaWikiServices::getInstance()->getPreferencesFactory();
-		$prefs = $preferencesFactory->getFormDescriptor( $user, $this->getContext() );
+		$prefs = Preferences::getPreferences( $user, $this->getContext() );
 		$prefsKinds = $user->getOptionKinds( $this->getContext(), $changes );
 
 		$htmlForm = null;
@@ -120,7 +121,7 @@ class ApiOptions extends ApiBase {
 				$user->setOption( $key, $value );
 				$changed = true;
 			} else {
-				$this->addWarning( [ 'apiwarn-validationfailed', wfEscapeWikiText( $key ), $validation ] );
+				$this->addWarning( [ 'apiwarn-validationfailed', wfEscapeWikitext( $key ), $validation ] );
 			}
 		}
 

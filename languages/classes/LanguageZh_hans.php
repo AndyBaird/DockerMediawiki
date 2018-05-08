@@ -26,8 +26,9 @@
  *
  * @ingroup Language
  */
-// phpcs:ignore Squiz.Classes.ValidClassName.NotCamelCaps
+// @codingStandardsIgnoreStart Ignore class name is not in camel caps format error
 class LanguageZh_hans extends Language {
+	// @codingStandardsIgnoreEnd
 	/**
 	 * @return bool
 	 */

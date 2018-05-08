@@ -108,12 +108,7 @@ class Title implements LinkTarget {
 	/** @var array Array of groups allowed to edit this article */
 	public $mRestrictions = [];
 
-	/**
-	 * @var string|bool Comma-separated set of permission keys
-	 * indicating who can move or edit the page from the page table, (pre 1.10) rows.
-	 * Edit and move sections are separated by a colon
-	 * Example: "edit=autoconfirmed,sysop:move=sysop"
-	 */
+	/** @var string|bool */
 	protected $mOldRestrictions = false;
 
 	/** @var bool Cascade restrictions on this page to included templates and images? */
@@ -626,6 +621,20 @@ class Title implements LinkTarget {
 	}
 
 	/**
+	 * Returns a simple regex that will match on characters and sequences invalid in titles.
+	 * Note that this doesn't pick up many things that could be wrong with titles, but that
+	 * replacing this regex with something valid will make many titles valid.
+	 *
+	 * @deprecated since 1.25, use MediaWikiTitleCodec::getTitleInvalidRegex() instead
+	 *
+	 * @return string Regex string
+	 */
+	static function getTitleInvalidRegex() {
+		wfDeprecated( __METHOD__, '1.25' );
+		return MediaWikiTitleCodec::getTitleInvalidRegex();
+	}
+
+	/**
 	 * Utility method for converting a character sequence from bytes to Unicode.
 	 *
 	 * Primary usecase being converting $wgLegalTitleChars to a sequence usable in
@@ -767,7 +776,6 @@ class Title implements LinkTarget {
 	 * @return string Escaped string
 	 */
 	static function escapeFragmentForURL( $fragment ) {
-		wfDeprecated( __METHOD__, '1.30' );
 		# Note that we don't urlencode the fragment.  urlencoded Unicode
 		# fragments appear not to work in IE (at least up to 7) or in at least
 		# one version of Opera 9.x.  The W3C validator, for one, doesn't seem
@@ -1027,11 +1035,12 @@ class Title implements LinkTarget {
 	 */
 	public function getNsText() {
 		if ( $this->isExternal() ) {
-			// This probably shouldn't even happen, except for interwiki transclusion.
-			// If possible, use the canonical name for the foreign namespace.
-			$nsText = MWNamespace::getCanonicalName( $this->mNamespace );
-			if ( $nsText !== false ) {
-				return $nsText;
+			// This probably shouldn't even happen,
+			// but for interwiki transclusion it sometimes does.
+			// Use the canonical namespaces if possible to try to
+			// resolve a foreign namespace.
+			if ( MWNamespace::exists( $this->mNamespace ) ) {
+				return MWNamespace::getCanonicalName( $this->mNamespace );
 			}
 		}
 
@@ -1277,153 +1286,71 @@ class Title implements LinkTarget {
 	}
 
 	/**
-	 * Could this MediaWiki namespace page contain custom CSS, JSON, or JavaScript for the
-	 * global UI. This is generally true for pages in the MediaWiki namespace having
-	 * CONTENT_MODEL_CSS, CONTENT_MODEL_JSON, or CONTENT_MODEL_JAVASCRIPT.
+	 * Could this page contain custom CSS or JavaScript for the global UI.
+	 * This is generally true for pages in the MediaWiki namespace having CONTENT_MODEL_CSS
+	 * or CONTENT_MODEL_JAVASCRIPT.
 	 *
-	 * This method does *not* return true for per-user JS/JSON/CSS. Use isUserConfigPage()
+	 * This method does *not* return true for per-user JS/CSS. Use isCssJsSubpage()
 	 * for that!
 	 *
-	 * Note that this method should not return true for pages that contain and show
-	 * "inactive" CSS, JSON, or JS.
+	 * Note that this method should not return true for pages that contain and
+	 * show "inactive" CSS or JS.
 	 *
 	 * @return bool
-	 * @since 1.31
-	 */
-	public function isSiteConfigPage() {
-		return (
-			NS_MEDIAWIKI == $this->mNamespace
-			&& (
-				$this->hasContentModel( CONTENT_MODEL_CSS )
-				|| $this->hasContentModel( CONTENT_MODEL_JSON )
-				|| $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT )
-			)
-		);
-	}
-
-	/**
-	 * @return bool
-	 * @deprecated Since 1.31; use ::isSiteConfigPage() instead (which also checks for JSON pages)
+	 * @todo FIXME: Rename to isSiteConfigPage() and remove deprecated hook
 	 */
 	public function isCssOrJsPage() {
-		wfDeprecated( __METHOD__, '1.31' );
-		return ( NS_MEDIAWIKI == $this->mNamespace
-				&& ( $this->hasContentModel( CONTENT_MODEL_CSS )
-					|| $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT ) ) );
+		$isCssOrJsPage = NS_MEDIAWIKI == $this->mNamespace
+			&& ( $this->hasContentModel( CONTENT_MODEL_CSS )
+				|| $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT ) );
+
+		return $isCssOrJsPage;
 	}
 
 	/**
-	 * Is this a "config" (.css, .json, or .js) sub-page of a user page?
-	 *
+	 * Is this a .css or .js subpage of a user page?
 	 * @return bool
-	 * @since 1.31
-	 */
-	public function isUserConfigPage() {
-		return (
-			NS_USER == $this->mNamespace
-			&& $this->isSubpage()
-			&& (
-				$this->hasContentModel( CONTENT_MODEL_CSS )
-				|| $this->hasContentModel( CONTENT_MODEL_JSON )
-				|| $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT )
-			)
-		);
-	}
-
-	/**
-	 * @return bool
-	 * @deprecated Since 1.31; use ::isUserConfigPage() instead (which also checks for JSON pages)
+	 * @todo FIXME: Rename to isUserConfigPage()
 	 */
 	public function isCssJsSubpage() {
-		wfDeprecated( __METHOD__, '1.31' );
 		return ( NS_USER == $this->mNamespace && $this->isSubpage()
 				&& ( $this->hasContentModel( CONTENT_MODEL_CSS )
 					|| $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT ) ) );
 	}
 
 	/**
-	 * Trim down a .css, .json, or .js subpage title to get the corresponding skin name
+	 * Trim down a .css or .js subpage title to get the corresponding skin name
 	 *
-	 * @return string Containing skin name from .css, .json, or .js subpage title
-	 * @since 1.31
+	 * @return string Containing skin name from .css or .js subpage title
 	 */
-	public function getSkinFromConfigSubpage() {
+	public function getSkinFromCssJsSubpage() {
 		$subpage = explode( '/', $this->mTextform );
 		$subpage = $subpage[count( $subpage ) - 1];
 		$lastdot = strrpos( $subpage, '.' );
 		if ( $lastdot === false ) {
-			return $subpage; # Never happens: only called for names ending in '.css'/'.json'/'.js'
+			return $subpage; # Never happens: only called for names ending in '.css' or '.js'
 		}
 		return substr( $subpage, 0, $lastdot );
 	}
 
 	/**
-	 * @deprecated Since 1.31; use ::getSkinFromConfigSubpage() instead
-	 * @return string Containing skin name from .css, .json, or .js subpage title
-	 */
-	public function getSkinFromCssJsSubpage() {
-		wfDeprecated( __METHOD__, '1.31' );
-		return $this->getSkinFromConfigSubpage();
-	}
-
-	/**
-	 * Is this a CSS "config" sub-page of a user page?
+	 * Is this a .css subpage of a user page?
 	 *
-	 * @return bool
-	 * @since 1.31
-	 */
-	public function isUserCssConfigPage() {
-		return (
-			NS_USER == $this->mNamespace
-			&& $this->isSubpage()
-			&& $this->hasContentModel( CONTENT_MODEL_CSS )
-		);
-	}
-
-	/**
-	 * @deprecated Since 1.31; use ::isUserCssConfigPage()
 	 * @return bool
 	 */
 	public function isCssSubpage() {
-		wfDeprecated( __METHOD__, '1.31' );
-		return $this->isUserCssConfigPage();
+		return ( NS_USER == $this->mNamespace && $this->isSubpage()
+			&& $this->hasContentModel( CONTENT_MODEL_CSS ) );
 	}
 
 	/**
-	 * Is this a JSON "config" sub-page of a user page?
+	 * Is this a .js subpage of a user page?
 	 *
-	 * @return bool
-	 * @since 1.31
-	 */
-	public function isUserJsonConfigPage() {
-		return (
-			NS_USER == $this->mNamespace
-			&& $this->isSubpage()
-			&& $this->hasContentModel( CONTENT_MODEL_JSON )
-		);
-	}
-
-	/**
-	 * Is this a JS "config" sub-page of a user page?
-	 *
-	 * @return bool
-	 * @since 1.31
-	 */
-	public function isUserJsConfigPage() {
-		return (
-			NS_USER == $this->mNamespace
-			&& $this->isSubpage()
-			&& $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT )
-		);
-	}
-
-	/**
-	 * @deprecated Since 1.31; use ::isUserJsConfigPage()
 	 * @return bool
 	 */
 	public function isJsSubpage() {
-		wfDeprecated( __METHOD__, '1.31' );
-		return $this->isUserJsConfigPage();
+		return ( NS_USER == $this->mNamespace && $this->isSubpage()
+			&& $this->hasContentModel( CONTENT_MODEL_JAVASCRIPT ) );
 	}
 
 	/**
@@ -1536,9 +1463,7 @@ class Title implements LinkTarget {
 	public function getFragmentForURL() {
 		if ( !$this->hasFragment() ) {
 			return '';
-		} elseif ( $this->isExternal()
-			&& !self::getInterwikiLookup()->fetch( $this->mInterwiki )->isLocal()
-		) {
+		} elseif ( $this->isExternal() && !$this->getTransWikiID() ) {
 			return '#' . Sanitizer::escapeIdForExternalInterwiki( $this->getFragment() );
 		}
 		return '#' . Sanitizer::escapeIdForLink( $this->getFragment() );
@@ -1836,7 +1761,7 @@ class Title implements LinkTarget {
 	 * @see wfExpandUrl
 	 * @param string|string[] $query
 	 * @param string|string[]|bool $query2
-	 * @param string|int|null $proto Protocol type to use in URL
+	 * @param string $proto Protocol type to use in URL
 	 * @return string The URL
 	 */
 	public function getFullURL( $query = '', $query2 = false, $proto = PROTO_RELATIVE ) {
@@ -1879,10 +1804,10 @@ class Title implements LinkTarget {
 		if ( $this->isExternal() ) {
 			$target = SpecialPage::getTitleFor(
 				'GoToInterwiki',
-				$this->getPrefixedDBkey()
+				$this->getPrefixedDBKey()
 			);
 		}
-		return $target->getFullURL( $query, false, $proto );
+		return $target->getFullUrl( $query, false, $proto );
 	}
 
 	/**
@@ -2317,7 +2242,7 @@ class Title implements LinkTarget {
 	}
 
 	/**
-	 * Check CSS/JSON/JS sub-page permissions
+	 * Check CSS/JS sub-page permissions
 	 *
 	 * @param string $action The action to check
 	 * @param User $user User to check
@@ -2327,43 +2252,20 @@ class Title implements LinkTarget {
 	 *
 	 * @return array List of errors
 	 */
-	private function checkUserConfigPermissions( $action, $user, $errors, $rigor, $short ) {
-		# Protect css/json/js subpages of user pages
+	private function checkCSSandJSPermissions( $action, $user, $errors, $rigor, $short ) {
+		# Protect css/js subpages of user pages
 		# XXX: this might be better using restrictions
-
 		if ( $action != 'patrol' ) {
 			if ( preg_match( '/^' . preg_quote( $user->getName(), '/' ) . '\//', $this->mTextform ) ) {
-				if (
-					$this->isUserCssConfigPage()
-					&& !$user->isAllowedAny( 'editmyusercss', 'editusercss' )
-				) {
+				if ( $this->isCssSubpage() && !$user->isAllowedAny( 'editmyusercss', 'editusercss' ) ) {
 					$errors[] = [ 'mycustomcssprotected', $action ];
-				} elseif (
-					$this->isUserJsonConfigPage()
-					&& !$user->isAllowedAny( 'editmyuserjson', 'edituserjson' )
-				) {
-					$errors[] = [ 'mycustomjsonprotected', $action ];
-				} elseif (
-					$this->isUserJsConfigPage()
-					&& !$user->isAllowedAny( 'editmyuserjs', 'edituserjs' )
-				) {
+				} elseif ( $this->isJsSubpage() && !$user->isAllowedAny( 'editmyuserjs', 'edituserjs' ) ) {
 					$errors[] = [ 'mycustomjsprotected', $action ];
 				}
 			} else {
-				if (
-					$this->isUserCssConfigPage()
-					&& !$user->isAllowed( 'editusercss' )
-				) {
+				if ( $this->isCssSubpage() && !$user->isAllowed( 'editusercss' ) ) {
 					$errors[] = [ 'customcssprotected', $action ];
-				} elseif (
-					$this->isUserJsonConfigPage()
-					&& !$user->isAllowed( 'edituserjson' )
-				) {
-					$errors[] = [ 'customjsonprotected', $action ];
-				} elseif (
-					$this->isUserJsConfigPage()
-					&& !$user->isAllowed( 'edituserjs' )
-				) {
+				} elseif ( $this->isJsSubpage() && !$user->isAllowed( 'edituserjs' ) ) {
 					$errors[] = [ 'customjsprotected', $action ];
 				}
 			}
@@ -2420,7 +2322,7 @@ class Title implements LinkTarget {
 	 * @return array List of errors
 	 */
 	private function checkCascadingSourcesRestrictions( $action, $user, $errors, $rigor, $short ) {
-		if ( $rigor !== 'quick' && !$this->isUserConfigPage() ) {
+		if ( $rigor !== 'quick' && !$this->isCssJsSubpage() ) {
 			# We /could/ use the protection level on the source page, but it's
 			# fairly ugly as we have to establish a precedence hierarchy for pages
 			# included by multiple cascade-protected pages. So just restrict
@@ -2701,7 +2603,7 @@ class Title implements LinkTarget {
 				'checkReadPermissions',
 				'checkUserBlock', // for wgBlockDisablesLogin
 			];
-		# Don't call checkSpecialsAndNSPermissions or checkUserConfigPermissions
+		# Don't call checkSpecialsAndNSPermissions or checkCSSandJSPermissions
 		# here as it will lead to duplicate error messages. This is okay to do
 		# since anywhere that checks for create will also check for edit, and
 		# those checks are called for edit.
@@ -2719,7 +2621,7 @@ class Title implements LinkTarget {
 				'checkQuickPermissions',
 				'checkPermissionHooks',
 				'checkSpecialsAndNSPermissions',
-				'checkUserConfigPermissions',
+				'checkCSSandJSPermissions',
 				'checkPageRestrictions',
 				'checkCascadingSourcesRestrictions',
 				'checkActionPermissions',
@@ -2825,8 +2727,8 @@ class Title implements LinkTarget {
 
 		if ( $this->mTitleProtection === null ) {
 			$dbr = wfGetDB( DB_REPLICA );
-			$commentStore = CommentStore::getStore();
-			$commentQuery = $commentStore->getJoin( 'pt_reason' );
+			$commentStore = new CommentStore( 'pt_reason' );
+			$commentQuery = $commentStore->getJoin();
 			$res = $dbr->select(
 				[ 'protected_titles' ] + $commentQuery['tables'],
 				[
@@ -2847,7 +2749,7 @@ class Title implements LinkTarget {
 					'user' => $row['user'],
 					'expiry' => $dbr->decodeExpiry( $row['expiry'] ),
 					'permission' => $row['permission'],
-					'reason' => $commentStore->getComment( 'pt_reason', $row )->text,
+					'reason' => $commentStore->getComment( $row )->text,
 				];
 			} else {
 				$this->mTitleProtection = false;
@@ -3141,10 +3043,8 @@ class Title implements LinkTarget {
 	 * Public for usage by LiquidThreads.
 	 *
 	 * @param array $rows Array of db result objects
-	 * @param string $oldFashionedRestrictions Comma-separated set of permission keys
-	 * indicating who can move or edit the page from the page table, (pre 1.10) rows.
-	 * Edit and move sections are separated by a colon
-	 * Example: "edit=autoconfirmed,sysop:move=sysop"
+	 * @param string $oldFashionedRestrictions Comma-separated list of page
+	 *   restrictions from page table (pre 1.10)
 	 */
 	public function loadRestrictionsFromRows( $rows, $oldFashionedRestrictions = null ) {
 		$dbr = wfGetDB( DB_REPLICA );
@@ -3213,10 +3113,8 @@ class Title implements LinkTarget {
 	/**
 	 * Load restrictions from the page_restrictions table
 	 *
-	 * @param string $oldFashionedRestrictions Comma-separated set of permission keys
-	 * indicating who can move or edit the page from the page table, (pre 1.10) rows.
-	 * Edit and move sections are separated by a colon
-	 * Example: "edit=autoconfirmed,sysop:move=sysop"
+	 * @param string $oldFashionedRestrictions Comma-separated list of page
+	 *   restrictions from page table (pre 1.10)
 	 */
 	public function loadRestrictions( $oldFashionedRestrictions = null ) {
 		if ( $this->mRestrictionsLoaded ) {
@@ -3729,20 +3627,19 @@ class Title implements LinkTarget {
 		$blNamespace = "{$prefix}_namespace";
 		$blTitle = "{$prefix}_title";
 
-		$pageQuery = WikiPage::getQueryInfo();
 		$res = $db->select(
-			[ $table, 'nestpage' => $pageQuery['tables'] ],
+			[ $table, 'page' ],
 			array_merge(
 				[ $blNamespace, $blTitle ],
-				$pageQuery['fields']
+				WikiPage::selectFields()
 			),
 			[ "{$prefix}_from" => $id ],
 			__METHOD__,
 			$options,
-			[ 'nestpage' => [
+			[ 'page' => [
 				'LEFT JOIN',
 				[ "page_namespace=$blNamespace", "page_title=$blTitle" ]
-			] ] + $pageQuery['joins']
+			] ]
 		);
 
 		$retVal = [];
@@ -3833,11 +3730,9 @@ class Title implements LinkTarget {
 		}
 
 		// If we are looking at a css/js user subpage, purge the action=raw.
-		if ( $this->isUserJsConfigPage() ) {
+		if ( $this->isJsSubpage() ) {
 			$urls[] = $this->getInternalURL( 'action=raw&ctype=text/javascript' );
-		} elseif ( $this->isUserJsonConfigPage() ) {
-			$urls[] = $this->getInternalURL( 'action=raw&ctype=application/json' );
-		} elseif ( $this->isUserCssConfigPage() ) {
+		} elseif ( $this->isCssSubpage() ) {
 			$urls[] = $this->getInternalURL( 'action=raw&ctype=text/css' );
 		}
 
@@ -4297,15 +4192,13 @@ class Title implements LinkTarget {
 		$pageId = $this->getArticleID( $flags );
 		if ( $pageId ) {
 			$db = ( $flags & self::GAID_FOR_UPDATE ) ? wfGetDB( DB_MASTER ) : wfGetDB( DB_REPLICA );
-			$revQuery = Revision::getQueryInfo();
-			$row = $db->selectRow( $revQuery['tables'], $revQuery['fields'],
+			$row = $db->selectRow( 'revision', Revision::selectFields(),
 				[ 'rev_page' => $pageId ],
 				__METHOD__,
 				[
 					'ORDER BY' => 'rev_timestamp ASC, rev_id ASC',
-					'IGNORE INDEX' => [ 'revision' => 'rev_timestamp' ], // See T159319
-				],
-				$revQuery['joins']
+					'IGNORE INDEX' => 'rev_timestamp', // See T159319
+				]
 			);
 			if ( $row ) {
 				return new Revision( $row );
@@ -4481,18 +4374,17 @@ class Title implements LinkTarget {
 			return $authors;
 		}
 		$dbr = wfGetDB( DB_REPLICA );
-		$revQuery = Revision::getQueryInfo();
-		$authors = $dbr->selectFieldValues(
-			$revQuery['tables'],
-			$revQuery['fields']['rev_user_text'],
+		$res = $dbr->select( 'revision', 'DISTINCT rev_user_text',
 			[
 				'rev_page' => $this->getArticleID(),
 				"rev_timestamp $old_cmp " . $dbr->addQuotes( $dbr->timestamp( $old->getTimestamp() ) ),
 				"rev_timestamp $new_cmp " . $dbr->addQuotes( $dbr->timestamp( $new->getTimestamp() ) )
 			], __METHOD__,
-			[ 'DISTINCT', 'LIMIT' => $limit + 1 ], // add one so caller knows it was truncated
-			$revQuery['joins']
+			[ 'LIMIT' => $limit + 1 ] // add one so caller knows it was truncated
 		);
+		foreach ( $res as $row ) {
+			$authors[] = $row->rev_user_text;
+		}
 		return $authors;
 	}
 
@@ -4593,7 +4485,7 @@ class Title implements LinkTarget {
 		}
 
 		if ( $this->isExternal() ) {
-			return true; // any interwiki link might be viewable, for all we know
+			return true;  // any interwiki link might be viewable, for all we know
 		}
 
 		switch ( $this->mNamespace ) {
@@ -4726,18 +4618,16 @@ class Title implements LinkTarget {
 	 * on the number of links. Typically called on create and delete.
 	 */
 	public function touchLinks() {
-		DeferredUpdates::addUpdate( new HTMLCacheUpdate( $this, 'pagelinks', 'page-touch' ) );
+		DeferredUpdates::addUpdate( new HTMLCacheUpdate( $this, 'pagelinks' ) );
 		if ( $this->getNamespace() == NS_CATEGORY ) {
-			DeferredUpdates::addUpdate(
-				new HTMLCacheUpdate( $this, 'categorylinks', 'category-touch' )
-			);
+			DeferredUpdates::addUpdate( new HTMLCacheUpdate( $this, 'categorylinks' ) );
 		}
 	}
 
 	/**
 	 * Get the last touched timestamp
 	 *
-	 * @param IDatabase|null $db
+	 * @param IDatabase $db Optional db
 	 * @return string|false Last-touched timestamp
 	 */
 	public function getTouched( $db = null ) {
@@ -4794,12 +4684,14 @@ class Title implements LinkTarget {
 	 */
 	public function getNamespaceKey( $prepend = 'nstab-' ) {
 		global $wgContLang;
-		// Gets the subject namespace of this title
-		$subjectNS = MWNamespace::getSubject( $this->getNamespace() );
-		// Prefer canonical namespace name for HTML IDs
-		$namespaceKey = MWNamespace::getCanonicalName( $subjectNS );
-		if ( $namespaceKey === false ) {
-			// Fallback to localised text
+		// Gets the subject namespace if this title
+		$namespace = MWNamespace::getSubject( $this->getNamespace() );
+		// Checks if canonical namespace name exists for namespace
+		if ( MWNamespace::exists( $this->getNamespace() ) ) {
+			// Uses canonical namespace name
+			$namespaceKey = MWNamespace::getCanonicalName( $namespace );
+		} else {
+			// Uses text of namespace
 			$namespaceKey = $this->getSubjectNsText();
 		}
 		// Makes namespace key lowercase

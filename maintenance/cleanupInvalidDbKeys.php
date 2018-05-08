@@ -161,7 +161,7 @@ TEXT
 				$titleField . $dbr->buildLike( $percent, '_' ),
 			], LIST_OR ) ],
 			__METHOD__,
-			[ 'LIMIT' => $this->getBatchSize() ]
+			[ 'LIMIT' => $this->mBatchSize ]
 		);
 
 		$this->outputStatus( "Number of invalid rows: " . $res->numRows() . "\n" );
@@ -307,5 +307,5 @@ TEXT
 	}
 }
 
-$maintClass = CleanupInvalidDbKeys::class;
+$maintClass = 'CleanupInvalidDbKeys';
 require_once RUN_MAINTENANCE_IF_MAIN;

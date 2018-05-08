@@ -82,7 +82,7 @@
 			var apiPromise,
 				d = $.Deferred();
 
-			if ( $usernameInput.val().trim() === '' ) {
+			if ( $.trim( $usernameInput.val() ) === '' ) {
 				d.resolve( { valid: true, messages: [] } );
 				return d.promise();
 			}

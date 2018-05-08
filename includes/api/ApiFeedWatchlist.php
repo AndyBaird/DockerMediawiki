@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Oct 13, 2006
+ *
  * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -211,7 +215,10 @@ class ApiFeedWatchlist extends ApiBase {
 			preg_match( '!(.*)/\*\s*(.*?)\s*\*/(.*)!', $comment, $matches )
 		) {
 			global $wgParser;
-			$titleUrl .= $wgParser->guessSectionNameFromWikiText( $matches[ 2 ] );
+
+			$sectionTitle = $wgParser->stripSectionName( $matches[2] );
+			$sectionTitle = Sanitizer::normalizeSectionNameWhitespace( $sectionTitle );
+			$titleUrl .= Title::newFromText( '#' . $sectionTitle )->getFragmentForURL();
 		}
 
 		$timestamp = $info['timestamp'];

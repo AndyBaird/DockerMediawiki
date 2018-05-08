@@ -42,7 +42,7 @@
 			'import',
 			'options'
 		];
-		if ( csrfActions.indexOf( action ) !== -1 ) {
+		if ( $.inArray( action, csrfActions ) !== -1 ) {
 			mw.track( 'mw.deprecate', 'apitoken_' + action );
 			mw.log.warn( 'Use of the "' + action + '" token is deprecated. Use "csrf" instead.' );
 			return 'csrf';
@@ -114,7 +114,7 @@
 		 * @method
 		 */
 		abort: function () {
-			this.requests.forEach( function ( request ) {
+			$.each( this.requests, function ( index, request ) {
 				if ( request ) {
 					request.abort();
 				}
@@ -168,8 +168,9 @@
 					} else {
 						parameters[ key ] = '\x1f' + parameters[ key ].join( '\x1f' );
 					}
-				} else if ( parameters[ key ] === false || parameters[ key ] === undefined ) {
-					// Boolean values are only false when not given at all
+				}
+				// Boolean values are only false when not given at all
+				if ( parameters[ key ] === false || parameters[ key ] === undefined ) {
 					delete parameters[ key ];
 				}
 			}
@@ -321,7 +322,9 @@
 					return abortedPromise;
 				}
 
-				return ( abortable = api.post( params, ajaxOptions ) ).catch(
+				return ( abortable = api.post( params, ajaxOptions ) ).then(
+					// If no error, return to caller as-is
+					null,
 					// Error handler
 					function ( code ) {
 						if ( code === 'badtoken' ) {
@@ -363,7 +366,7 @@
 		 * @return {jQuery.Promise} Received token.
 		 */
 		getToken: function ( type, assert ) {
-			var apiPromise, promiseGroup, d, reject;
+			var apiPromise, promiseGroup, d;
 			type = mapLegacyToken( type );
 			promiseGroup = promises[ this.defaults.ajax.url ];
 			d = promiseGroup && promiseGroup[ type + 'Token' ];
@@ -379,24 +382,21 @@
 					type: type,
 					assert: assert
 				} );
-				reject = function () {
-					// Clear promise. Do not cache errors.
-					delete promiseGroup[ type + 'Token' ];
-
-					// Let caller handle the error code
-					return $.Deferred().rejectWith( this, arguments );
-				};
 				d = apiPromise
 					.then( function ( res ) {
-						if ( !res.query ) {
-							return reject( 'query-missing', res );
-						}
 						// If token type is unknown, it is omitted from the response
 						if ( !res.query.tokens[ type + 'token' ] ) {
 							return $.Deferred().reject( 'token-missing', res );
 						}
+
 						return res.query.tokens[ type + 'token' ];
-					}, reject )
+					}, function () {
+						// Clear promise. Do not cache errors.
+						delete promiseGroup[ type + 'Token' ];
+
+						// Let caller handle the error code
+						return $.Deferred().rejectWith( this, arguments );
+					} )
 					// Attach abort handler
 					.promise( { abort: apiPromise.abort } );
 

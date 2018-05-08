@@ -8,7 +8,7 @@ class LayeredParameterizedPasswordTest extends PasswordTestCase {
 	protected function getTypeConfigs() {
 		return [
 			'testLargeLayeredTop' => [
-				'class' => LayeredParameterizedPassword::class,
+				'class' => 'LayeredParameterizedPassword',
 				'types' => [
 					'testLargeLayeredBottom',
 					'testLargeLayeredBottom',
@@ -18,13 +18,13 @@ class LayeredParameterizedPasswordTest extends PasswordTestCase {
 				],
 			],
 			'testLargeLayeredBottom' => [
-				'class' => Pbkdf2Password::class,
+				'class' => 'Pbkdf2Password',
 				'algo' => 'sha512',
 				'cost' => 1024,
 				'length' => 512,
 			],
 			'testLargeLayeredFinal' => [
-				'class' => BcryptPassword::class,
+				'class' => 'BcryptPassword',
 				'cost' => 5,
 			]
 		];
@@ -35,15 +35,15 @@ class LayeredParameterizedPasswordTest extends PasswordTestCase {
 	}
 
 	public static function providePasswordTests() {
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Generic.Files.LineLength.TooLong
 		return [
 			[
 				true,
 				':testLargeLayeredTop:sha512:1024:512!sha512:1024:512!sha512:1024:512!sha512:1024:512!5!vnRy+2SrSA0fHt3dwhTP5g==!AVnwfZsAQjn+gULv7FSGjA==!xvHUX3WcpkeSn1lvjWcvBg==!It+OC/N9tu+d3ByHhuB0BQ==!Tb.gqUOiD.aWktVwHM.Q/O!7CcyMfXUPky5ptyATJsR2nq3vUqtnBC',
-				'testPassword123'
+				'testPassword123' 
 			],
 		];
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 	}
 
 	/**

@@ -46,7 +46,7 @@ class SkinTemplate extends Skin {
 	 * @var string For QuickTemplate, the name of the subclass which will
 	 *   actually fill the template.  Child classes should override the default.
 	 */
-	public $template = QuickTemplate::class;
+	public $template = 'QuickTemplate';
 
 	public $thispage;
 	public $titletxt;
@@ -174,7 +174,7 @@ class SkinTemplate extends Skin {
 					)->text();
 				}
 
-				$ilInterwikiCodeBCP47 = LanguageCode::bcp47( $ilInterwikiCode );
+				$ilInterwikiCodeBCP47 = wfBCP47( $ilInterwikiCode );
 				$languageLink = [
 					'href' => $languageLinkTitle->getFullURL(),
 					'text' => $ilLangName,
@@ -524,46 +524,13 @@ class SkinTemplate extends Skin {
 	 * @return string
 	 */
 	public function getPersonalToolsList() {
-		return $this->makePersonalToolsList();
-	}
-
-	/**
-	 * Get the HTML for the personal tools list
-	 *
-	 * @since 1.31
-	 *
-	 * @param array $personalTools
-	 * @param array $options
-	 * @return string
-	 */
-	public function makePersonalToolsList( $personalTools = null, $options = [] ) {
 		$tpl = $this->setupTemplateForOutput();
 		$tpl->set( 'personal_urls', $this->buildPersonalUrls() );
 		$html = '';
-
-		if ( $personalTools === null ) {
-			$personalTools = $tpl->getPersonalTools();
+		foreach ( $tpl->getPersonalTools() as $key => $item ) {
+			$html .= $tpl->makeListItem( $key, $item );
 		}
-
-		foreach ( $personalTools as $key => $item ) {
-			$html .= $tpl->makeListItem( $key, $item, $options );
-		}
-
 		return $html;
-	}
-
-	/**
-	 * Get personal tools for the user
-	 *
-	 * @since 1.31
-	 *
-	 * @return array Array of personal tools
-	 */
-	public function getStructuredPersonalTools() {
-		$tpl = $this->setupTemplateForOutput();
-		$tpl->set( 'personal_urls', $this->buildPersonalUrls() );
-
-		return $tpl->getPersonalTools();
 	}
 
 	/**
@@ -642,7 +609,6 @@ class SkinTemplate extends Skin {
 				'text' => $this->username,
 				'href' => &$this->userpageUrlDetails['href'],
 				'class' => $this->userpageUrlDetails['exists'] ? false : 'new',
-				'exists' => $this->userpageUrlDetails['exists'],
 				'active' => ( $this->userpageUrlDetails['href'] == $pageurl ),
 				'dir' => 'auto'
 			];
@@ -651,7 +617,6 @@ class SkinTemplate extends Skin {
 				'text' => $this->msg( 'mytalk' )->text(),
 				'href' => &$usertalkUrlDetails['href'],
 				'class' => $usertalkUrlDetails['exists'] ? false : 'new',
-				'exists' => $usertalkUrlDetails['exists'],
 				'active' => ( $usertalkUrlDetails['href'] == $pageurl )
 			];
 			$href = self::makeSpecialUrl( 'Preferences' );
@@ -764,7 +729,7 @@ class SkinTemplate extends Skin {
 			}
 		}
 
-		Hooks::runWithoutAbort( 'PersonalUrls', [ &$personal_urls, &$title, $this ] );
+		Hooks::run( 'PersonalUrls', [ &$personal_urls, &$title, $this ] );
 		return $personal_urls;
 	}
 
@@ -784,10 +749,8 @@ class SkinTemplate extends Skin {
 		if ( $selected ) {
 			$classes[] = 'selected';
 		}
-		$exists = true;
 		if ( $checkEdit && !$title->isKnown() ) {
 			$classes[] = 'new';
-			$exists = false;
 			if ( $query !== '' ) {
 				$query = 'action=edit&redlink=1&' . $query;
 			} else {
@@ -825,7 +788,6 @@ class SkinTemplate extends Skin {
 			'class' => implode( ' ', $classes ),
 			'text' => $text,
 			'href' => $title->getLocalURL( $query ),
-			'exists' => $exists,
 			'primary' => true ];
 		if ( $linkClass !== '' ) {
 			$result['link-class'] = $linkClass;
@@ -1133,10 +1095,7 @@ class SkinTemplate extends Skin {
 
 			// Avoid PHP 7.1 warning of passing $this by reference
 			$skinTemplate = $this;
-			Hooks::runWithoutAbort(
-				'SkinTemplateNavigation',
-				[ &$skinTemplate, &$content_navigation ]
-			);
+			Hooks::run( 'SkinTemplateNavigation', [ &$skinTemplate, &$content_navigation ] );
 
 			if ( $userCanRead && !$wgDisableLangConversion ) {
 				$pageLang = $title->getPageLanguage();
@@ -1163,8 +1122,8 @@ class SkinTemplate extends Skin {
 							'class' => ( $code == $preferred ) ? 'selected' : false,
 							'text' => $varname,
 							'href' => $title->getLocalURL( [ 'variant' => $code ] + $params ),
-							'lang' => LanguageCode::bcp47( $code ),
-							'hreflang' => LanguageCode::bcp47( $code ),
+							'lang' => wfBCP47( $code ),
+							'hreflang' => wfBCP47( $code ),
 						];
 					}
 				}
@@ -1180,15 +1139,14 @@ class SkinTemplate extends Skin {
 
 			// Avoid PHP 7.1 warning of passing $this by reference
 			$skinTemplate = $this;
-			Hooks::runWithoutAbort( 'SkinTemplateNavigation::SpecialPage',
+			Hooks::run( 'SkinTemplateNavigation::SpecialPage',
 				[ &$skinTemplate, &$content_navigation ] );
 		}
 
 		// Avoid PHP 7.1 warning of passing $this by reference
 		$skinTemplate = $this;
 		// Equiv to SkinTemplateContentActions
-		Hooks::runWithoutAbort( 'SkinTemplateNavigation::Universal',
-			[ &$skinTemplate, &$content_navigation ] );
+		Hooks::run( 'SkinTemplateNavigation::Universal', [ &$skinTemplate, &$content_navigation ] );
 
 		// Setup xml ids and tooltip info
 		foreach ( $content_navigation as $section => &$links ) {

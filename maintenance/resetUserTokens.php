@@ -64,10 +64,11 @@ class ResetUserTokens extends Maintenance {
 			$this->output( "\n" );
 			$this->output( "Abort with control-c in the next five seconds "
 				. "(skip this countdown with --nowarn) ... " );
-			$this->countDown( 5 );
+			wfCountDown( 5 );
 		}
 
 		// We list user by user_id from one of the replica DBs
+		// We list user by user_id from one of the slave database
 		$dbr = $this->getDB( DB_REPLICA );
 
 		$where = [];
@@ -79,7 +80,7 @@ class ResetUserTokens extends Maintenance {
 		$maxid = $dbr->selectField( 'user', 'MAX(user_id)', [], __METHOD__ );
 
 		$min = 0;
-		$max = $this->getBatchSize();
+		$max = $this->mBatchSize;
 
 		do {
 			$result = $dbr->select( 'user',
@@ -98,7 +99,7 @@ class ResetUserTokens extends Maintenance {
 			}
 
 			$min = $max;
-			$max = $min + $this->getBatchSize();
+			$max = $min + $this->mBatchSize;
 
 			wfWaitForSlaves();
 		} while ( $min <= $maxid );
@@ -115,5 +116,5 @@ class ResetUserTokens extends Maintenance {
 	}
 }
 
-$maintClass = ResetUserTokens::class;
+$maintClass = "ResetUserTokens";
 require_once RUN_MAINTENANCE_IF_MAIN;

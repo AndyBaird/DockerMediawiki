@@ -40,7 +40,7 @@ class MakeTestEdits extends Maintenance {
 	public function execute() {
 		$user = User::newFromName( $this->getOption( 'user' ) );
 		if ( !$user->getId() ) {
-			$this->fatalError( "No such user exists." );
+			$this->error( "No such user exists.", 1 );
 		}
 
 		$count = $this->getOption( 'count' );
@@ -55,7 +55,7 @@ class MakeTestEdits extends Maintenance {
 			$page->doEditContent( $content, $summary, 0, false, $user );
 
 			$this->output( "Edited $title\n" );
-			if ( $i && ( $i % $this->getBatchSize() ) == 0 ) {
+			if ( $i && ( $i % $this->mBatchSize ) == 0 ) {
 				wfWaitForSlaves();
 			}
 		}
@@ -64,5 +64,5 @@ class MakeTestEdits extends Maintenance {
 	}
 }
 
-$maintClass = MakeTestEdits::class;
+$maintClass = "MakeTestEdits";
 require_once RUN_MAINTENANCE_IF_MAIN;

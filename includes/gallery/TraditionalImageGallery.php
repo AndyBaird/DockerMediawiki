@@ -191,21 +191,29 @@ class TraditionalImageGallery extends ImageGalleryBase {
 			}
 
 			$textlink = $this->mShowFilename ?
-				$this->getCaptionHtml( $nt, $lang ) :
+				// Preloaded into LinkCache above
+				Linker::linkKnown(
+					$nt,
+					htmlspecialchars(
+						$this->mCaptionLength !== true ?
+							$lang->truncate( $nt->getText(), $this->mCaptionLength ) :
+							$nt->getText()
+					),
+					[
+						'class' => 'galleryfilename' .
+							( $this->mCaptionLength === true ? ' galleryfilename-truncate' : '' )
+					]
+				) . "\n" :
 				'';
 
 			$galleryText = $textlink . $text . $meta;
 			$galleryText = $this->wrapGalleryText( $galleryText, $thumb );
 
-			$gbWidth = $this->getGBWidth( $thumb ) . 'px';
-			if ( $this->getGBWidthOverwrite( $thumb ) ) {
-				$gbWidth = $this->getGBWidthOverwrite( $thumb );
-			}
 			# Weird double wrapping (the extra div inside the li) needed due to FF2 bug
 			# Can be safely removed if FF2 falls completely out of existence
 			$output .= "\n\t\t" . '<li class="gallerybox" style="width: '
-				. $gbWidth . '">'
-				. '<div style="width: ' . $gbWidth . '">'
+				. $this->getGBWidth( $thumb ) . 'px">'
+				. '<div style="width: ' . $this->getGBWidth( $thumb ) . 'px">'
 				. $thumbhtml
 				. $galleryText
 				. "\n\t\t</div></li>";
@@ -213,27 +221,6 @@ class TraditionalImageGallery extends ImageGalleryBase {
 		$output .= "\n</ul>";
 
 		return $output;
-	}
-
-	/**
-	 * @param Title $nt
-	 * @param Language $lang
-	 * @return string HTML
-	 */
-	protected function getCaptionHtml( Title $nt, Language $lang ) {
-		// Preloaded into LinkCache in toHTML
-		return Linker::linkKnown(
-			$nt,
-			htmlspecialchars(
-				is_int( $this->getCaptionLength() ) ?
-					$lang->truncate( $nt->getText(), $this->getCaptionLength() ) :
-					$nt->getText()
-			),
-			[
-				'class' => 'galleryfilename' .
-					( $this->getCaptionLength() === true ? ' galleryfilename-truncate' : '' )
-			]
-		) . "\n";
 	}
 
 	/**
@@ -286,17 +273,6 @@ class TraditionalImageGallery extends ImageGalleryBase {
 	}
 
 	/**
-	 * Length to truncate filename to in caption when using "showfilename" (if int).
-	 * A value of 'true' will truncate the filename to one line using CSS, while
-	 * 'false' will disable truncating.
-	 *
-	 * @return int|bool
-	 */
-	protected function getCaptionLength() {
-		return $this->mCaptionLength;
-	}
-
-	/**
 	 * Get total padding.
 	 *
 	 * @return int Number of pixels of whitespace surrounding the thumbnail.
@@ -343,7 +319,7 @@ class TraditionalImageGallery extends ImageGalleryBase {
 	}
 
 	/**
-	 * Computed width of gallerybox <li>.
+	 * Width of gallerybox <li>.
 	 *
 	 * Generally is the width of the image, plus padding on image
 	 * plus padding on gallerybox.
@@ -354,21 +330,6 @@ class TraditionalImageGallery extends ImageGalleryBase {
 	 */
 	protected function getGBWidth( $thumb ) {
 		return $this->mWidths + $this->getThumbPadding() + $this->getGBPadding();
-	}
-
-	/**
-	 * Allows overwriting the computed width of the gallerybox <li> with a string,
-	 * like '100%'.
-	 *
-	 * Generally is the width of the image, plus padding on image
-	 * plus padding on gallerybox.
-	 *
-	 * @note Important: parameter will be false if no thumb used.
-	 * @param MediaTransformOutput|bool $thumb MediaTransformObject object or false.
-	 * @return bool|string Ignored if false.
-	 */
-	protected function getGBWidthOverwrite( $thumb ) {
-		return false;
 	}
 
 	/**

@@ -204,16 +204,6 @@ abstract class RevisionItemBase {
 	}
 
 	/**
-	 * Get the DB field name storing actor ids.
-	 * Override this function.
-	 * @since 1.31
-	 * @return bool
-	 */
-	public function getAuthorActorField() {
-		return false;
-	}
-
-	/**
 	 * Get the ID, as it would appear in the ids URL parameter
 	 * @return int
 	 */
@@ -268,16 +258,6 @@ abstract class RevisionItemBase {
 	}
 
 	/**
-	 * Get the author actor ID
-	 * @since 1.31
-	 * @return string
-	 */
-	public function getAuthorActor() {
-		$field = $this->getAuthorActorField();
-		return strval( $this->row->$field );
-	}
-
-	/**
 	 * Returns true if the current user can view the item
 	 */
 	abstract public function canView();
@@ -316,14 +296,15 @@ class RevisionList extends RevisionListBase {
 		if ( $this->ids !== null ) {
 			$conds['rev_id'] = array_map( 'intval', $this->ids );
 		}
-		$revQuery = Revision::getQueryInfo( [ 'page', 'user' ] );
 		return $db->select(
-			$revQuery['tables'],
-			$revQuery['fields'],
+			[ 'revision', 'page', 'user' ],
+			array_merge( Revision::selectFields(), Revision::selectUserFields() ),
 			$conds,
 			__METHOD__,
 			[ 'ORDER BY' => 'rev_id DESC' ],
-			$revQuery['joins']
+			[
+				'page' => Revision::pageJoinCond(),
+				'user' => Revision::userJoinCond() ]
 		);
 	}
 

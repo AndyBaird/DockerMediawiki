@@ -20,6 +20,8 @@
  * @file
  */
 
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * CommentStoreComment represents a comment stored by CommentStore. The fields
  * should be considered read-only.

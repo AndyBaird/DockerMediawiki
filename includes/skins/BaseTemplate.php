@@ -98,7 +98,14 @@ abstract class BaseTemplate extends QuickTemplate {
 		}
 		if ( isset( $this->data['nav_urls']['permalink'] ) && $this->data['nav_urls']['permalink'] ) {
 			$toolbox['permalink'] = $this->data['nav_urls']['permalink'];
-			$toolbox['permalink']['id'] = 't-permalink';
+			if ( $toolbox['permalink']['href'] === '' ) {
+				unset( $toolbox['permalink']['href'] );
+				$toolbox['ispermalink']['tooltiponly'] = true;
+				$toolbox['ispermalink']['id'] = 't-ispermalink';
+				$toolbox['ispermalink']['msg'] = 'permalink';
+			} else {
+				$toolbox['permalink']['id'] = 't-permalink';
+			}
 		}
 		if ( isset( $this->data['nav_urls']['info'] ) && $this->data['nav_urls']['info'] ) {
 			$toolbox['info'] = $this->data['nav_urls']['info'];
@@ -136,7 +143,7 @@ abstract class BaseTemplate extends QuickTemplate {
 			if ( isset( $plink['active'] ) ) {
 				$ptool['active'] = $plink['active'];
 			}
-			foreach ( [ 'href', 'class', 'text', 'dir', 'data', 'exists' ] as $k ) {
+			foreach ( [ 'href', 'class', 'text', 'dir', 'data' ] as $k ) {
 				if ( isset( $plink[$k] ) ) {
 					$ptool['links'][0][$k] = $plink[$k];
 				}
@@ -175,44 +182,44 @@ abstract class BaseTemplate extends QuickTemplate {
 				continue;
 			}
 			switch ( $boxName ) {
-				case 'SEARCH':
-					// Search is a special case, skins should custom implement this
+			case 'SEARCH':
+				// Search is a special case, skins should custom implement this
+				$boxes[$boxName] = [
+					'id' => 'p-search',
+					'header' => $this->getMsg( 'search' )->text(),
+					'generated' => false,
+					'content' => true,
+				];
+				break;
+			case 'TOOLBOX':
+				$msgObj = $this->getMsg( 'toolbox' );
+				$boxes[$boxName] = [
+					'id' => 'p-tb',
+					'header' => $msgObj->exists() ? $msgObj->text() : 'toolbox',
+					'generated' => false,
+					'content' => $this->getToolbox(),
+				];
+				break;
+			case 'LANGUAGES':
+				if ( $this->data['language_urls'] !== false ) {
+					$msgObj = $this->getMsg( 'otherlanguages' );
 					$boxes[$boxName] = [
-						'id' => 'p-search',
-						'header' => $this->getMsg( 'search' )->text(),
+						'id' => 'p-lang',
+						'header' => $msgObj->exists() ? $msgObj->text() : 'otherlanguages',
 						'generated' => false,
-						'content' => true,
+						'content' => $this->data['language_urls'] ?: [],
 					];
-					break;
-				case 'TOOLBOX':
-					$msgObj = $this->getMsg( 'toolbox' );
-					$boxes[$boxName] = [
-						'id' => 'p-tb',
-						'header' => $msgObj->exists() ? $msgObj->text() : 'toolbox',
-						'generated' => false,
-						'content' => $this->getToolbox(),
-					];
-					break;
-				case 'LANGUAGES':
-					if ( $this->data['language_urls'] !== false ) {
-						$msgObj = $this->getMsg( 'otherlanguages' );
-						$boxes[$boxName] = [
-							'id' => 'p-lang',
-							'header' => $msgObj->exists() ? $msgObj->text() : 'otherlanguages',
-							'generated' => false,
-							'content' => $this->data['language_urls'] ?: [],
-						];
-					}
-					break;
-				default:
-					$msgObj = $this->getMsg( $boxName );
-					$boxes[$boxName] = [
-						'id' => "p-$boxName",
-						'header' => $msgObj->exists() ? $msgObj->text() : $boxName,
-						'generated' => true,
-						'content' => $content,
-					];
-					break;
+				}
+				break;
+			default:
+				$msgObj = $this->getMsg( $boxName );
+				$boxes[$boxName] = [
+					'id' => "p-$boxName",
+					'header' => $msgObj->exists() ? $msgObj->text() : $boxName,
+					'generated' => true,
+					'content' => $content,
+				];
+				break;
 			}
 		}
 
@@ -363,7 +370,7 @@ abstract class BaseTemplate extends QuickTemplate {
 		if ( isset( $item['text'] ) ) {
 			$text = $item['text'];
 		} else {
-			$text = wfMessage( isset( $item['msg'] ) ? $item['msg'] : $key )->text();
+			$text = $this->translator->translate( isset( $item['msg'] ) ? $item['msg'] : $key );
 		}
 
 		$html = htmlspecialchars( $text );
@@ -384,7 +391,7 @@ abstract class BaseTemplate extends QuickTemplate {
 		if ( isset( $item['href'] ) || isset( $options['link-fallback'] ) ) {
 			$attrs = $item;
 			foreach ( [ 'single-id', 'text', 'msg', 'tooltiponly', 'context', 'primary',
-				'tooltip-params', 'exists' ] as $k ) {
+				'tooltip-params' ] as $k ) {
 				unset( $attrs[$k] );
 			}
 
@@ -405,19 +412,13 @@ abstract class BaseTemplate extends QuickTemplate {
 			}
 
 			if ( isset( $item['single-id'] ) ) {
-				$tooltipOption = isset( $item['exists'] ) && $item['exists'] === false ? 'nonexisting' : null;
-
 				if ( isset( $item['tooltiponly'] ) && $item['tooltiponly'] ) {
-					$title = Linker::titleAttrib( $item['single-id'], $tooltipOption, $tooltipParams );
+					$title = Linker::titleAttrib( $item['single-id'], null, $tooltipParams );
 					if ( $title !== false ) {
 						$attrs['title'] = $title;
 					}
 				} else {
-					$tip = Linker::tooltipAndAccesskeyAttribs(
-						$item['single-id'],
-						$tooltipParams,
-						$tooltipOption
-					);
+					$tip = Linker::tooltipAndAccesskeyAttribs( $item['single-id'], $tooltipParams );
 					if ( isset( $tip['title'] ) && $tip['title'] !== false ) {
 						$attrs['title'] = $tip['title'];
 					}
@@ -534,7 +535,8 @@ abstract class BaseTemplate extends QuickTemplate {
 				$realAttrs = [
 					'type' => 'submit',
 					'name' => $mode,
-					'value' => wfMessage( $mode == 'go' ? 'searcharticle' : 'searchbutton' )->text(),
+					'value' => $this->translator->translate(
+						$mode == 'go' ? 'searcharticle' : 'searchbutton' ),
 				];
 				$realAttrs = array_merge(
 					$realAttrs,
@@ -560,7 +562,7 @@ abstract class BaseTemplate extends QuickTemplate {
 					'src' => $attrs['src'],
 					'alt' => isset( $attrs['alt'] )
 						? $attrs['alt']
-						: wfMessage( 'searchbutton' )->text(),
+						: $this->translator->translate( 'searchbutton' ),
 					'width' => isset( $attrs['width'] ) ? $attrs['width'] : null,
 					'height' => isset( $attrs['height'] ) ? $attrs['height'] : null,
 				];

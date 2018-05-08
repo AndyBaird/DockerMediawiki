@@ -222,7 +222,7 @@
 				}
 			];
 
-		cases.forEach( function ( item ) {
+		$.each( cases, function ( i, item ) {
 			$fixture = $( '<p>' ).text( item.text ).highlightText( item.highlight );
 			assert.equal(
 				$fixture.html(),

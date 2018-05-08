@@ -22,11 +22,13 @@
 
 # T32219 : can not use pathinfo() on URLs since slashes do not match
 $matches = [];
+$ext = 'php';
 $path = '/';
 foreach ( array_filter( explode( '/', $_SERVER['PHP_SELF'] ) ) as $part ) {
-	if ( !preg_match( '/\.(php)$/', $part, $matches ) ) {
+	if ( !preg_match( '/\.(php5?)$/', $part, $matches ) ) {
 		$path .= "$part/";
 	} else {
+		$ext = $matches[1] == 'php5' ? 'php5' : 'php';
 		break;
 	}
 }
@@ -48,12 +50,12 @@ $templateParser = new TemplateParser();
 
 # Render error page if no LocalSettings file can be found
 try {
-	global $wgVersion;
 	echo $templateParser->processTemplate(
 		'NoLocalSettings',
 		[
 			'wgVersion' => ( isset( $wgVersion ) ? $wgVersion : 'VERSION' ),
 			'path' => $path,
+			'ext' => $ext,
 			'localSettingsExists' => file_exists( MW_CONFIG_FILE ),
 			'installerStarted' => $installerStarted
 		]

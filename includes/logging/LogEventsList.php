@@ -98,9 +98,8 @@ class LogEventsList extends ContextSource {
 	 * @param string $user
 	 * @param string $page
 	 * @param string $pattern
-	 * @param int|string $year Use 0 to start with no year preselected.
-	 * @param int|string $month A month in the 1..12 range. Use 0 to start with no month
-	 *  preselected.
+	 * @param int $year Year
+	 * @param int $month Month
 	 * @param array $filter
 	 * @param string $tagFilter Tag to select by default
 	 * @param string $action
@@ -427,7 +426,7 @@ class LogEventsList extends ContextSource {
 	}
 
 	/**
-	 * @param stdClass $row
+	 * @param stdClass $row Row
 	 * @return string
 	 */
 	private function getShowHideLinks( $row ) {
@@ -497,7 +496,7 @@ class LogEventsList extends ContextSource {
 	}
 
 	/**
-	 * @param stdClass $row
+	 * @param stdClass $row Row
 	 * @param string|array $type
 	 * @param string|array $action
 	 * @param string $right
@@ -522,7 +521,7 @@ class LogEventsList extends ContextSource {
 	 * Determine if the current user is allowed to view a particular
 	 * field of this log row, if it's marked as deleted.
 	 *
-	 * @param stdClass $row
+	 * @param stdClass $row Row
 	 * @param int $field
 	 * @param User $user User to check, or null to use $wgUser
 	 * @return bool
@@ -559,7 +558,7 @@ class LogEventsList extends ContextSource {
 	}
 
 	/**
-	 * @param stdClass $row
+	 * @param stdClass $row Row
 	 * @param int $field One of DELETED_* bitfield constants
 	 * @return bool
 	 */

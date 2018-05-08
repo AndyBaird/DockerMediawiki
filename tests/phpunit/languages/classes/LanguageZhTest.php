@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @covers LanguageZh
- * @covers LanguageZh_hans
- * @covers ZhConverter
- */
 class LanguageZhTest extends LanguageClassesTestCase {
 	/**
 	 * @dataProvider provideAutoConvertToAllVariants

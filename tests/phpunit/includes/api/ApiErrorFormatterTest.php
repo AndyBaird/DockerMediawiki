@@ -575,11 +575,11 @@ class ApiErrorFormatterTest extends MediaWikiLangTestCase {
 	}
 
 	public static function provideGetMessageFromException() {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$usageException = new UsageException(
 			'<b>Something broke!</b>', 'ue-code', 0, [ 'xxx' => 'yyy', 'baz' => 23 ]
 		);
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		return [
 			'Normal exception' => [

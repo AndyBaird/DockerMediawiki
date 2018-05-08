@@ -39,7 +39,7 @@
  */
 
 // Warning: Converting this to a Maintenance script may reduce performance.
-if ( PHP_SAPI != 'cli' && PHP_SAPI != 'phpdbg' ) {
+if ( PHP_SAPI != 'cli' ) {
 	die( "This filter can only be run from the command line.\n" );
 }
 

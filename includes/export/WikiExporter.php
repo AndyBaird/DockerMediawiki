@@ -227,20 +227,15 @@ class WikiExporter {
 		$this->author_list = "<contributors>";
 		// rev_deleted
 
-		$revQuery = Revision::getQueryInfo( [ 'page' ] );
 		$res = $this->db->select(
-			$revQuery['tables'],
-			[
-				'rev_user_text' => $revQuery['fields']['rev_user_text'],
-				'rev_user' => $revQuery['fields']['rev_user'],
-			],
+			[ 'page', 'revision' ],
+			[ 'DISTINCT rev_user_text', 'rev_user' ],
 			[
 				$this->db->bitAnd( 'rev_deleted', Revision::DELETED_USER ) . ' = 0',
 				$cond,
+				'page_id = rev_id',
 			],
-			__METHOD__,
-			[ 'DISTINCT' ],
-			$revQuery['joins']
+			__METHOD__
 		);
 
 		foreach ( $res as $row ) {
@@ -283,19 +278,15 @@ class WikiExporter {
 			}
 			$result = null; // Assuring $result is not undefined, if exception occurs early
 
-			$commentQuery = CommentStore::getStore()->getJoin( 'log_comment' );
-			$actorQuery = ActorMigration::newMigration()->getJoin( 'log_user' );
+			$commentQuery = CommentStore::newKey( 'log_comment' )->getJoin();
 
 			try {
-				$result = $this->db->select(
-					array_merge( [ 'logging' ], $commentQuery['tables'], $actorQuery['tables'], [ 'user' ] ),
-					[ "{$logging}.*", 'user_name' ] + $commentQuery['fields'] + $actorQuery['fields'],
+				$result = $this->db->select( [ 'logging', 'user' ] + $commentQuery['tables'],
+					[ "{$logging}.*", 'user_name' ] + $commentQuery['fields'], // grab the user name
 					$where,
 					__METHOD__,
 					[ 'ORDER BY' => 'log_id', 'USE INDEX' => [ 'logging' => 'PRIMARY' ] ],
-					[
-						'user' => [ 'JOIN', 'user_id = ' . $actorQuery['fields']['log_user'] ]
-					] + $commentQuery['joins'] + $actorQuery['joins']
+					[ 'user' => [ 'JOIN', 'user_id = log_user' ] ] + $commentQuery['joins']
 				);
 				$this->outputLogStream( $result );
 				if ( $this->buffer == self::STREAM ) {
@@ -330,29 +321,13 @@ class WikiExporter {
 			}
 		# For page dumps...
 		} else {
-			$revOpts = [ 'page' ];
-			if ( $this->text != self::STUB ) {
-				$revOpts[] = 'text';
-			}
-			$revQuery = Revision::getQueryInfo( $revOpts );
-
-			// We want page primary rather than revision
-			$tables = array_merge( [ 'page' ], array_diff( $revQuery['tables'], [ 'page' ] ) );
-			$join = $revQuery['joins'] + [
-				'revision' => $revQuery['joins']['page']
-			];
-			unset( $join['page'] );
-
-			$fields = array_merge( $revQuery['fields'], [ 'page_restrictions' ] );
-
-			$conds = [];
-			if ( $cond !== '' ) {
-				$conds[] = $cond;
-			}
+			$tables = [ 'page', 'revision' ];
 			$opts = [ 'ORDER BY' => 'page_id ASC' ];
 			$opts['USE INDEX'] = [];
+			$join = [];
 			if ( is_array( $this->history ) ) {
 				# Time offset/limit for all pages/history...
+				$revJoin = 'page_id=rev_page';
 				# Set time order
 				if ( $this->history['dir'] == 'asc' ) {
 					$op = '>';
@@ -363,9 +338,10 @@ class WikiExporter {
 				}
 				# Set offset
 				if ( !empty( $this->history['offset'] ) ) {
-					$conds[] = "rev_timestamp $op " .
+					$revJoin .= " AND rev_timestamp $op " .
 						$this->db->addQuotes( $this->db->timestamp( $this->history['offset'] ) );
 				}
+				$join['revision'] = [ 'INNER JOIN', $revJoin ];
 				# Set query limit
 				if ( !empty( $this->history['limit'] ) ) {
 					$opts['LIMIT'] = intval( $this->history['limit'] );
@@ -374,11 +350,13 @@ class WikiExporter {
 				# Full history dumps...
 				# query optimization for history stub dumps
 				if ( $this->text == self::STUB && $orderRevs ) {
-					$tables = $revQuery['tables'];
+					$tables = [ 'revision', 'page' ];
+					$opts[] = 'STRAIGHT_JOIN';
 					$opts['ORDER BY'] = [ 'rev_page ASC', 'rev_id ASC' ];
 					$opts['USE INDEX']['revision'] = 'rev_page_id';
-					unset( $join['revision'] );
 					$join['page'] = [ 'INNER JOIN', 'rev_page=page_id' ];
+				} else {
+					$join['revision'] = [ 'INNER JOIN', 'page_id=rev_page' ];
 				}
 			} elseif ( $this->history & self::CURRENT ) {
 				# Latest revision dumps...
@@ -396,10 +374,21 @@ class WikiExporter {
 				}
 			} elseif ( $this->history & self::RANGE ) {
 				# Dump of revisions within a specified range
+				$join['revision'] = [ 'INNER JOIN', 'page_id=rev_page' ];
 				$opts['ORDER BY'] = [ 'rev_page ASC', 'rev_id ASC' ];
 			} else {
 				# Unknown history specification parameter?
 				throw new MWException( __METHOD__ . " given invalid history dump type." );
+			}
+			# Query optimization hacks
+			if ( $cond == '' ) {
+				$opts[] = 'STRAIGHT_JOIN';
+				$opts['USE INDEX']['page'] = 'PRIMARY';
+			}
+			# Build text join options
+			if ( $this->text != self::STUB ) { // 1-pass
+				$tables[] = 'text';
+				$join['text'] = [ 'INNER JOIN', 'rev_text_id=old_id' ];
 			}
 
 			if ( $this->buffer == self::STREAM ) {
@@ -410,14 +399,16 @@ class WikiExporter {
 				Hooks::run( 'ModifyExportQuery',
 						[ $this->db, &$tables, &$cond, &$opts, &$join ] );
 
+				$commentQuery = CommentStore::newKey( 'rev_comment' )->getJoin();
+
 				# Do the query!
 				$result = $this->db->select(
-					$tables,
-					$fields,
-					$conds,
+					$tables + $commentQuery['tables'],
+					[ '*' ] + $commentQuery['fields'],
+					$cond,
 					__METHOD__,
 					$opts,
-					$join
+					$join + $commentQuery['joins']
 				);
 				# Output dump results
 				$this->outputPageStream( $result );

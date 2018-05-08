@@ -130,7 +130,7 @@
 			[ '$ 1.50' ],
 			[ '$ 3.00' ],
 			[ '$3.50' ],
-			// Commas sort after dots
+			// Comma's sort after dots
 			// Not intentional but test to detect changes
 			[ '€ 2,99' ]
 		],
@@ -238,7 +238,7 @@
 			$tbody = $table.find( 'tbody' ),
 			$tr = $( '<tr>' );
 
-		header.forEach( function ( str ) {
+		$.each( header, function ( i, str ) {
 			var $th = $( '<th>' );
 			$th.text( str ).appendTo( $tr );
 		} );
@@ -247,7 +247,7 @@
 		for ( i = 0; i < data.length; i++ ) {
 			$tr = $( '<tr>' );
 			// eslint-disable-next-line no-loop-func
-			data[ i ].forEach( function ( str ) {
+			$.each( data[ i ], function ( j, str ) {
 				var $td = $( '<td>' );
 				$td.text( str ).appendTo( $tr );
 			} );
@@ -1492,34 +1492,6 @@
 			parsers[ 1 ].id,
 			'number',
 			'detectParserForColumn() detect parser.id "number" for second column'
-		);
-	} );
-	QUnit.test( 'T29745 - References ignored in sortkey', function ( assert ) {
-		var $table, parsers;
-		$table = $(
-			'<table class="sortable">' +
-				'<tr><th>A</th></tr>' +
-				'<tr><td>10</td></tr>' +
-				'<tr><td>2<sup class="reference"><a href="#cite_note-1">[1]</a></sup></td></tr>' +
-				'</table>'
-		);
-		$table.tablesorter();
-		$table.find( '.headerSort:eq(0)' ).click();
-
-		assert.deepEqual(
-			tableExtract( $table ),
-			[
-				[ '2[1]' ],
-				[ '10' ]
-			],
-			'References ignored in sortkey'
-		);
-
-		parsers = $table.data( 'tablesorter' ).config.parsers;
-		assert.equal(
-			parsers[ 0 ].id,
-			'number',
-			'detectParserForColumn() detect parser.id "number"'
 		);
 	} );
 

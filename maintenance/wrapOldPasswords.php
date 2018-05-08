@@ -51,12 +51,12 @@ class WrapOldPasswords extends Maintenance {
 
 		// Check that type exists and is a layered type
 		if ( !isset( $typeInfo[$layeredType] ) ) {
-			$this->fatalError( 'Undefined password type' );
+			$this->error( 'Undefined password type', true );
 		}
 
 		$passObj = $passwordFactory->newFromType( $layeredType );
 		if ( !$passObj instanceof LayeredParameterizedPassword ) {
-			$this->fatalError( 'Layered parameterized password type must be used.' );
+			$this->error( 'Layered parameterized password type must be used.', true );
 		}
 
 		// Extract the first layer type
@@ -81,7 +81,7 @@ class WrapOldPasswords extends Maintenance {
 				__METHOD__,
 				[
 					'ORDER BY' => 'user_id',
-					'LIMIT' => $this->getBatchSize(),
+					'LIMIT' => $this->mBatchSize,
 					'LOCK IN SHARE MODE',
 				]
 			);
@@ -121,5 +121,5 @@ class WrapOldPasswords extends Maintenance {
 	}
 }
 
-$maintClass = WrapOldPasswords::class;
+$maintClass = "WrapOldPasswords";
 require_once RUN_MAINTENANCE_IF_MAIN;

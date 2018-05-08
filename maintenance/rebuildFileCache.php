@@ -57,44 +57,44 @@ class RebuildFileCache extends Maintenance {
 	}
 
 	public function execute() {
+		global $wgRequestTime;
+
 		if ( !$this->enabled ) {
-			$this->fatalError( "Nothing to do -- \$wgUseFileCache is disabled." );
+			$this->error( "Nothing to do -- \$wgUseFileCache is disabled.", true );
 		}
 
 		$start = $this->getOption( 'start', "0" );
 		if ( !ctype_digit( $start ) ) {
-			$this->fatalError( "Invalid value for start parameter." );
+			$this->error( "Invalid value for start parameter.", true );
 		}
 		$start = intval( $start );
 
 		$end = $this->getOption( 'end', "0" );
 		if ( !ctype_digit( $end ) ) {
-			$this->fatalError( "Invalid value for end parameter." );
+			$this->error( "Invalid value for end parameter.", true );
 		}
 		$end = intval( $end );
 
 		$this->output( "Building content page file cache from page {$start}!\n" );
 
 		$dbr = $this->getDB( DB_REPLICA );
-		$batchSize = $this->getBatchSize();
 		$overwrite = $this->hasOption( 'overwrite' );
 		$start = ( $start > 0 )
 			? $start
-			: $dbr->selectField( 'page', 'MIN(page_id)', '', __METHOD__ );
+			: $dbr->selectField( 'page', 'MIN(page_id)', false, __METHOD__ );
 		$end = ( $end > 0 )
 			? $end
-			: $dbr->selectField( 'page', 'MAX(page_id)', '', __METHOD__ );
+			: $dbr->selectField( 'page', 'MAX(page_id)', false, __METHOD__ );
 		if ( !$start ) {
-			$this->fatalError( "Nothing to do." );
+			$this->error( "Nothing to do.", true );
 		}
 
-		// Mock request (hack, no real client)
-		$_SERVER['HTTP_ACCEPT_ENCODING'] = 'bgzip';
+		$_SERVER['HTTP_ACCEPT_ENCODING'] = 'bgzip'; // hack, no real client
 
 		# Do remaining chunk
-		$end += $batchSize - 1;
+		$end += $this->mBatchSize - 1;
 		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
+		$blockEnd = $start + $this->mBatchSize - 1;
 
 		$dbw = $this->getDB( DB_MASTER );
 		// Go through each page and save the output
@@ -103,7 +103,7 @@ class RebuildFileCache extends Maintenance {
 			$res = $dbr->select( 'page',
 				[ 'page_namespace', 'page_title', 'page_id' ],
 				[ 'page_namespace' => MWNamespace::getContentNamespaces(),
-					"page_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd ],
+					"page_id BETWEEN $blockStart AND $blockEnd" ],
 				__METHOD__,
 				[ 'ORDER BY' => 'page_id ASC', 'USE INDEX' => 'PRIMARY' ]
 			);
@@ -139,29 +139,24 @@ class RebuildFileCache extends Maintenance {
 						}
 					}
 
-					Wikimedia\suppressWarnings(); // header notices
-
-					// 1. Cache ?action=view
-					// Be sure to reset the mocked request time (T24852)
-					$_SERVER['REQUEST_TIME_FLOAT'] = microtime( true );
+					MediaWiki\suppressWarnings(); // header notices
+					// Cache ?action=view
+					$wgRequestTime = microtime( true ); # T24852
 					ob_start();
 					$article->view();
 					$context->getOutput()->output();
 					$context->getOutput()->clearHTML();
 					$viewHtml = ob_get_clean();
 					$viewCache->saveToFileCache( $viewHtml );
-
-					// 2. Cache ?action=history
-					// Be sure to reset the mocked request time (T24852)
-					$_SERVER['REQUEST_TIME_FLOAT'] = microtime( true );
+					// Cache ?action=history
+					$wgRequestTime = microtime( true ); # T24852
 					ob_start();
 					Action::factory( 'history', $article, $context )->show();
 					$context->getOutput()->output();
 					$context->getOutput()->clearHTML();
 					$historyHtml = ob_get_clean();
 					$historyCache->saveToFileCache( $historyHtml );
-
-					Wikimedia\restoreWarnings();
+					MediaWiki\restoreWarnings();
 
 					if ( $rebuilt ) {
 						$this->output( "Re-cached page '$title' (id {$row->page_id})..." );
@@ -176,12 +171,12 @@ class RebuildFileCache extends Maintenance {
 			}
 			$this->commitTransaction( $dbw, __METHOD__ ); // commit any changes (just for sanity)
 
-			$blockStart += $batchSize;
-			$blockEnd += $batchSize;
+			$blockStart += $this->mBatchSize;
+			$blockEnd += $this->mBatchSize;
 		}
 		$this->output( "Done!\n" );
 	}
 }
 
-$maintClass = RebuildFileCache::class;
+$maintClass = "RebuildFileCache";
 require_once RUN_MAINTENANCE_IF_MAIN;

@@ -151,7 +151,7 @@ class XCFHandler extends BitmapHandler {
 	 *
 	 * @param File|FSFile $file The image object, or false if there isn't one.
 	 *   Warning, FSFile::getPropsFromPath might pass an (object)array() instead (!)
-	 * @param string $filename
+	 * @param string $filename The filename
 	 * @return string
 	 */
 	public function getMetadata( $file, $filename ) {
@@ -162,17 +162,18 @@ class XCFHandler extends BitmapHandler {
 			// Unclear from base media type if it has an alpha layer,
 			// so just assume that it does since it "potentially" could.
 			switch ( $header['base_type'] ) {
-				case 0:
-					$metadata['colorType'] = 'truecolour-alpha';
-					break;
-				case 1:
-					$metadata['colorType'] = 'greyscale-alpha';
-					break;
-				case 2:
-					$metadata['colorType'] = 'index-coloured';
-					break;
-				default:
-					$metadata['colorType'] = 'unknown';
+			case 0:
+				$metadata['colorType'] = 'truecolour-alpha';
+				break;
+			case 1:
+				$metadata['colorType'] = 'greyscale-alpha';
+				break;
+			case 2:
+				$metadata['colorType'] = 'index-coloured';
+				break;
+			default:
+				$metadata['colorType'] = 'unknown';
+
 			}
 		} else {
 			// Marker to prevent repeated attempted extraction
@@ -217,9 +218,9 @@ class XCFHandler extends BitmapHandler {
 	 * @return bool
 	 */
 	public function canRender( $file ) {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$xcfMeta = unserialize( $file->getMetadata() );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 		if ( isset( $xcfMeta['colorType'] ) && $xcfMeta['colorType'] === 'index-coloured' ) {
 			return false;
 		}

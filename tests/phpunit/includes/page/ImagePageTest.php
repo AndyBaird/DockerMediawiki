@@ -21,7 +21,6 @@ class ImagePageTest extends MediaWikiMediaTestCase {
 	}
 
 	/**
-	 * @covers ImagePage::getDisplayWidthHeight
 	 * @dataProvider providerGetDisplayWidthHeight
 	 * @param array $dim Array [maxWidth, maxHeight, width, height]
 	 * @param array $expected Array [width, height] The width and height we expect to display at
@@ -66,7 +65,6 @@ class ImagePageTest extends MediaWikiMediaTestCase {
 	}
 
 	/**
-	 * @covers ImagePage::getThumbSizes
 	 * @dataProvider providerGetThumbSizes
 	 * @param string $filename
 	 * @param int $expectedNumberThumbs How many thumbnails to show

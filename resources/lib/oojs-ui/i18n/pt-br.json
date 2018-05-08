@@ -12,8 +12,7 @@
 			555,
 			"TheEduGobi",
 			"TheGabrielZaum",
-			"Felipe L. Ewald",
-			"Eduardo Addad de Oliveira"
+			"Felipe L. Ewald"
 		]
 	},
 	"ooui-outline-control-move-down": "Mover item para baixo",
@@ -22,7 +21,6 @@
 	"ooui-toolbar-more": "Mais",
 	"ooui-toolgroup-expand": "Mais",
 	"ooui-toolgroup-collapse": "Menos",
-	"ooui-item-remove": "Remover",
 	"ooui-dialog-message-accept": "OK",
 	"ooui-dialog-message-reject": "Cancelar",
 	"ooui-dialog-process-error": "Algo deu errado",

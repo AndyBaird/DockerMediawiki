@@ -30,6 +30,7 @@
  * header format when requested.
  */
 class MailAddress {
+
 	/**
 	 * @var string
 	 */
@@ -88,9 +89,8 @@ class MailAddress {
 				global $wgEnotifUseRealName;
 				$name = ( $wgEnotifUseRealName && $this->realName !== '' ) ? $this->realName : $this->name;
 				$quoted = UserMailer::quotedPrintable( $name );
-				// Must only be quoted if string does not use =? encoding (T191931)
-				if ( $quoted === $name ) {
-					$quoted = '"' . addslashes( $quoted ) . '"';
+				if ( strpos( $quoted, '.' ) !== false || strpos( $quoted, ',' ) !== false ) {
+					$quoted = '"' . $quoted . '"';
 				}
 				return "$quoted <{$this->address}>";
 			} else {

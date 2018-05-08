@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Aug 21, 2008
+ *
  * Copyright © 2008 - 2010 Bryan Tong Minh <Bryan.TongMinh@Gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -724,26 +728,26 @@ class ApiUpload extends ApiBase {
 	 */
 	protected function handleStashException( $e ) {
 		switch ( get_class( $e ) ) {
-			case UploadStashFileNotFoundException::class:
+			case 'UploadStashFileNotFoundException':
 				$wrap = 'apierror-stashedfilenotfound';
 				break;
-			case UploadStashBadPathException::class:
+			case 'UploadStashBadPathException':
 				$wrap = 'apierror-stashpathinvalid';
 				break;
-			case UploadStashFileException::class:
+			case 'UploadStashFileException':
 				$wrap = 'apierror-stashfilestorage';
 				break;
-			case UploadStashZeroLengthFileException::class:
+			case 'UploadStashZeroLengthFileException':
 				$wrap = 'apierror-stashzerolength';
 				break;
-			case UploadStashNotLoggedInException::class:
+			case 'UploadStashNotLoggedInException':
 				return StatusValue::newFatal( ApiMessage::create(
 					[ 'apierror-mustbeloggedin', $this->msg( 'action-upload' ) ], 'stashnotloggedin'
 				) );
-			case UploadStashWrongOwnerException::class:
+			case 'UploadStashWrongOwnerException':
 				$wrap = 'apierror-stashwrongowner';
 				break;
-			case UploadStashNoSuchKeyException::class:
+			case 'UploadStashNoSuchKeyException':
 				$wrap = 'apierror-stashnosuchfilekey';
 				break;
 			default:

@@ -28,10 +28,6 @@
 abstract class DataUpdate implements DeferrableUpdate {
 	/** @var mixed Result from LBFactory::getEmptyTransactionTicket() */
 	protected $ticket;
-	/** @var string Short update cause action description */
-	protected $causeAction = 'unknown';
-	/** @var string Short update cause user description */
-	protected $causeAgent = 'unknown';
 
 	public function __construct() {
 		// noop
@@ -43,29 +39,6 @@ abstract class DataUpdate implements DeferrableUpdate {
 	 */
 	public function setTransactionTicket( $ticket ) {
 		$this->ticket = $ticket;
-	}
-
-	/**
-	 * @param string $action Action type
-	 * @param string $user User name
-	 */
-	public function setCause( $action, $user ) {
-		$this->causeAction = $action;
-		$this->causeAgent = $user;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getCauseAction() {
-		return $this->causeAction;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getCauseAgent() {
-		return $this->causeAgent;
 	}
 
 	/**

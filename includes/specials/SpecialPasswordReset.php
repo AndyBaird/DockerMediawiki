@@ -37,6 +37,11 @@ class SpecialPasswordReset extends FormSpecialPage {
 	private $passwordReset = null;
 
 	/**
+	 * @var string[] Temporary storage for the passwords which have been sent out, keyed by username.
+	 */
+	private $passwords = [];
+
+	/**
 	 * @var Status
 	 */
 	private $result;
@@ -104,8 +109,6 @@ class SpecialPasswordReset extends FormSpecialPage {
 
 	public function alterForm( HTMLForm $form ) {
 		$resetRoutes = $this->getConfig()->get( 'PasswordResetRoutes' );
-
-		$form->setSubmitDestructive();
 
 		$form->addHiddenFields( $this->getRequest()->getValues( 'returnto', 'returntoquery' ) );
 

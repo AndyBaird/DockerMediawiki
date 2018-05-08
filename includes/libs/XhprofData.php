@@ -18,7 +18,7 @@
  * @file
  */
 
-use Wikimedia\RunningStat;
+use RunningStat\RunningStat;
 
 /**
  * Convenience class for working with XHProf profiling data
@@ -209,14 +209,14 @@ class XhprofData {
 			foreach ( $this->inclusive as $func => $stats ) {
 				foreach ( $stats as $name => $value ) {
 					if ( $value instanceof RunningStat ) {
-						$total = $value->getMean() * $value->getCount();
+						$total = $value->m1 * $value->n;
 						$percent = ( isset( $main[$name] ) && $main[$name] )
 							? 100 * $total / $main[$name]
 							: 0;
 						$this->inclusive[$func][$name] = [
 							'total' => $total,
 							'min' => $value->min,
-							'mean' => $value->getMean(),
+							'mean' => $value->m1,
 							'max' => $value->max,
 							'variance' => $value->m2,
 							'percent' => $percent,

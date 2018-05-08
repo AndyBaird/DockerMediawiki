@@ -16,7 +16,7 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-// phpcs:ignoreFile
+// @codingStandardsIgnoreFile
 
 /**
  * @param callable $callback

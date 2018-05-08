@@ -3,7 +3,6 @@
 /**
  * @group Database
  * @covers Parser
- * @covers BlockLevelPass
  */
 class ParserMethodsTest extends MediaWikiLangTestCase {
 

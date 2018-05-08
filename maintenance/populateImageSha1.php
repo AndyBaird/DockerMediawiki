@@ -76,7 +76,9 @@ class PopulateImageSha1 extends LoggedUpdateMaintenance {
 				__METHOD__
 			);
 			if ( !$res ) {
-				$this->fatalError( "No such file: $file" );
+				$this->error( "No such file: $file", true );
+
+				return false;
 			}
 			$this->output( "Populating img_sha1 field for specified files\n" );
 		} else {
@@ -117,7 +119,7 @@ class PopulateImageSha1 extends LoggedUpdateMaintenance {
 		$numRows = $res->numRows();
 		$i = 0;
 		foreach ( $res as $row ) {
-			if ( $i % $this->getBatchSize() == 0 ) {
+			if ( $i % $this->mBatchSize == 0 ) {
 				$this->output( sprintf(
 					"Done %d of %d, %5.3f%%  \r", $i, $numRows, $i / $numRows * 100 ) );
 				wfWaitForSlaves();
@@ -178,5 +180,5 @@ class PopulateImageSha1 extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = PopulateImageSha1::class;
+$maintClass = "PopulateImageSha1";
 require_once RUN_MAINTENANCE_IF_MAIN;

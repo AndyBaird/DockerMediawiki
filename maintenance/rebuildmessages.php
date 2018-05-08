@@ -53,5 +53,5 @@ class RebuildMessages extends Maintenance {
 	}
 }
 
-$maintClass = RebuildMessages::class;
+$maintClass = "RebuildMessages";
 require_once RUN_MAINTENANCE_IF_MAIN;

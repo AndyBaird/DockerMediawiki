@@ -5,9 +5,7 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group BagOStuff
  */
-class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class HashBagOStuffTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @covers HashBagOStuff::__construct
@@ -105,7 +103,7 @@ class HashBagOStuffTest extends PHPUnit\Framework\TestCase {
 		for ( $i = 10; $i < 20; $i++ ) {
 			$cache->set( "key$i", 1 );
 			$this->assertEquals( 1, $cache->get( "key$i" ) );
-			$this->assertEquals( false, $cache->get( "key" . ( $i - 10 ) ) );
+			$this->assertEquals( false, $cache->get( "key" . $i - 10 ) );
 		}
 	}
 

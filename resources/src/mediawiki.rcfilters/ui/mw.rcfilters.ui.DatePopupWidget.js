@@ -13,8 +13,6 @@
 
 		// Parent
 		mw.rcfilters.ui.ChangesLimitPopupWidget.parent.call( this, config );
-		// Mixin constructors
-		OO.ui.mixin.LabelElement.call( this, config );
 
 		this.model = model;
 
@@ -43,8 +41,6 @@
 		this.$element
 			.addClass( 'mw-rcfilters-ui-datePopupWidget' )
 			.append(
-				this.$label
-					.addClass( 'mw-rcfilters-ui-datePopupWidget-title' ),
 				this.hoursValuePicker.$element,
 				this.daysValuePicker.$element
 			);
@@ -53,7 +49,6 @@
 	/* Initialization */
 
 	OO.inheritClass( mw.rcfilters.ui.DatePopupWidget, OO.ui.Widget );
-	OO.mixinClass( mw.rcfilters.ui.DatePopupWidget, OO.ui.mixin.LabelElement );
 
 	/* Events */
 

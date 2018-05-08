@@ -1,12 +1,9 @@
 <?php
-/**
+/*
  * @group Media
  * @covers MimeAnalyzer
  */
-class MimeAnalyzerTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-
+class MimeMagicTest extends PHPUnit_Framework_TestCase {
 	/** @var MimeAnalyzer */
 	private $mimeAnalyzer;
 

@@ -5,11 +5,7 @@ use Wikimedia\Rdbms\DatabaseDomain;
 /**
  * @covers Wikimedia\Rdbms\DatabaseDomain
  */
-class DatabaseDomainTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-	use PHPUnit4And6Compat;
-
+class DatabaseDomainTest extends PHPUnit_Framework_TestCase {
 	public static function provideConstruct() {
 		return [
 			'All strings' =>

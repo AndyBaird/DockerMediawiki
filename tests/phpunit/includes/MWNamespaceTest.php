@@ -5,8 +5,12 @@
  * @file
  */
 
+/**
+ * Test class for MWNamespace.
+ * @todo covers tags
+ * @todo FIXME: this test file is a mess
+ */
 class MWNamespaceTest extends MediaWikiTestCase {
-
 	protected function setUp() {
 		parent::setUp();
 
@@ -23,20 +27,15 @@ class MWNamespaceTest extends MediaWikiTestCase {
 		] );
 	}
 
+# ### START OF TESTS #########################################################
+
 	/**
 	 * @todo Write more texts, handle $wgAllowImageMoving setting
 	 * @covers MWNamespace::isMovable
 	 */
 	public function testIsMovable() {
 		$this->assertFalse( MWNamespace::isMovable( NS_SPECIAL ) );
-	}
-
-	private function assertIsSubject( $ns ) {
-		$this->assertTrue( MWNamespace::isSubject( $ns ) );
-	}
-
-	private function assertIsNotSubject( $ns ) {
-		$this->assertFalse( MWNamespace::isSubject( $ns ) );
+		# @todo FIXME: Write more tests!!
 	}
 
 	/**
@@ -57,14 +56,6 @@ class MWNamespaceTest extends MediaWikiTestCase {
 		$this->assertIsNotSubject( NS_TALK );
 		$this->assertIsNotSubject( NS_USER_TALK );
 		$this->assertIsNotSubject( 101 ); # user defined
-	}
-
-	private function assertIsTalk( $ns ) {
-		$this->assertTrue( MWNamespace::isTalk( $ns ) );
-	}
-
-	private function assertIsNotTalk( $ns ) {
-		$this->assertFalse( MWNamespace::isTalk( $ns ) );
 	}
 
 	/**
@@ -164,6 +155,18 @@ class MWNamespaceTest extends MediaWikiTestCase {
 	}
 
 	/**
+	 * @todo Implement testExists().
+	 */
+	/*
+	public function testExists() {
+		// Remove the following lines when you implement this test.
+		$this->markTestIncomplete(
+			'This test has not been implemented yet. Rely on $wgCanonicalNamespaces.'
+		);
+	}
+	*/
+
+	/**
 	 * Test MWNamespace::equals
 	 * Note if we add a namespace registration system with keys like 'MAIN'
 	 * we should add tests here for equivilance on things like 'MAIN' == 0
@@ -213,6 +216,52 @@ class MWNamespaceTest extends MediaWikiTestCase {
 		);
 	}
 
+	/**
+	 * @todo Implement testGetCanonicalNamespaces().
+	 */
+	/*
+	public function testGetCanonicalNamespaces() {
+		// Remove the following lines when you implement this test.
+		$this->markTestIncomplete(
+			'This test has not been implemented yet. Rely on $wgCanonicalNamespaces.'
+		);
+	}
+	*/
+	/**
+	 * @todo Implement testGetCanonicalName().
+	 */
+	/*
+		public function testGetCanonicalName() {
+			// Remove the following lines when you implement this test.
+			$this->markTestIncomplete(
+				'This test has not been implemented yet. Rely on $wgCanonicalNamespaces.'
+			);
+		}
+	*/
+	/**
+	 * @todo Implement testGetCanonicalIndex().
+	 */
+	/*
+	public function testGetCanonicalIndex() {
+		// Remove the following lines when you implement this test.
+		$this->markTestIncomplete(
+			'This test has not been implemented yet. Rely on $wgCanonicalNamespaces.'
+		);
+	}
+	*/
+
+	/**
+	 * @todo Implement testGetValidNamespaces().
+	 */
+	/*
+	public function testGetValidNamespaces() {
+		// Remove the following lines when you implement this test.
+		$this->markTestIncomplete(
+			'This test has not been implemented yet. Rely on $wgCanonicalNamespaces.'
+		);
+	}
+	*/
+
 	public function provideHasTalkNamespace() {
 		return [
 			[ NS_MEDIA, false ],
@@ -250,14 +299,6 @@ class MWNamespaceTest extends MediaWikiTestCase {
 	public function testCanTalk( $index, $expected ) {
 		$actual = MWNamespace::canTalk( $index );
 		$this->assertSame( $actual, $expected, "NS $index" );
-	}
-
-	private function assertIsContent( $ns ) {
-		$this->assertTrue( MWNamespace::isContent( $ns ) );
-	}
-
-	private function assertIsNotContent( $ns ) {
-		$this->assertFalse( MWNamespace::isContent( $ns ) );
 	}
 
 	/**
@@ -299,14 +340,6 @@ class MWNamespaceTest extends MediaWikiTestCase {
 		$this->assertIsContent( NS_MAIN );
 	}
 
-	private function assertIsWatchable( $ns ) {
-		$this->assertTrue( MWNamespace::isWatchable( $ns ) );
-	}
-
-	private function assertIsNotWatchable( $ns ) {
-		$this->assertFalse( MWNamespace::isWatchable( $ns ) );
-	}
-
 	/**
 	 * @covers MWNamespace::isWatchable
 	 */
@@ -322,14 +355,6 @@ class MWNamespaceTest extends MediaWikiTestCase {
 		// Additional, user defined namespaces are watchables
 		$this->assertIsWatchable( 100 );
 		$this->assertIsWatchable( 101 );
-	}
-
-	private function assertHasSubpages( $ns ) {
-		$this->assertTrue( MWNamespace::hasSubpages( $ns ) );
-	}
-
-	private function assertHasNotSubpages( $ns ) {
-		$this->assertFalse( MWNamespace::hasSubpages( $ns ) );
 	}
 
 	/**
@@ -438,14 +463,6 @@ class MWNamespaceTest extends MediaWikiTestCase {
 			"Subject namespaces should not have NS_MEDIA" );
 		$this->assertNotContains( NS_SPECIAL, $talkNS,
 			"Subject namespaces should not have NS_SPECIAL" );
-	}
-
-	private function assertIsCapitalized( $ns ) {
-		$this->assertTrue( MWNamespace::isCapitalized( $ns ) );
-	}
-
-	private function assertIsNotCapitalized( $ns ) {
-		$this->assertFalse( MWNamespace::isCapitalized( $ns ) );
 	}
 
 	/**
@@ -568,11 +585,48 @@ class MWNamespaceTest extends MediaWikiTestCase {
 		$this->assertFalse( MWNamespace::isNonincludable( NS_TEMPLATE ) );
 	}
 
-	private function assertSameSubject( $ns1, $ns2, $msg = '' ) {
-		$this->assertTrue( MWNamespace::subjectEquals( $ns1, $ns2 ), $msg );
+	# ###### HELPERS ###########################################################
+	function __call( $method, $args ) {
+		// Call the real method if it exists
+		if ( method_exists( $this, $method ) ) {
+			return $this->$method( $args );
+		}
+
+		if ( preg_match(
+			'/^assert(Has|Is|Can)(Not|)(Subject|Talk|Watchable|Content|Subpages|Capitalized)$/',
+			$method,
+			$m
+		) ) {
+			# Interprets arguments:
+			$ns = $args[0];
+			$msg = isset( $args[1] ) ? $args[1] : " dummy message";
+
+			# Forge the namespace constant name:
+			if ( $ns === 0 ) {
+				$ns_name = "NS_MAIN";
+			} else {
+				$ns_name = "NS_" . strtoupper( MWNamespace::getCanonicalName( $ns ) );
+			}
+			# ... and the MWNamespace method name
+			$nsMethod = strtolower( $m[1] ) . $m[3];
+
+			$expect = ( $m[2] === '' );
+			$expect_name = $expect ? 'TRUE' : 'FALSE';
+
+			return $this->assertEquals( $expect,
+				MWNamespace::$nsMethod( $ns, $msg ),
+				"MWNamespace::$nsMethod( $ns_name ) should returns $expect_name"
+			);
+		}
+
+		throw new Exception( __METHOD__ . " could not find a method named $method\n" );
 	}
 
-	private function assertDifferentSubject( $ns1, $ns2, $msg = '' ) {
-		$this->assertFalse( MWNamespace::subjectEquals( $ns1, $ns2 ), $msg );
+	function assertSameSubject( $ns1, $ns2, $msg = '' ) {
+		$this->assertTrue( MWNamespace::subjectEquals( $ns1, $ns2, $msg ) );
+	}
+
+	function assertDifferentSubject( $ns1, $ns2, $msg = '' ) {
+		$this->assertFalse( MWNamespace::subjectEquals( $ns1, $ns2, $msg ) );
 	}
 }

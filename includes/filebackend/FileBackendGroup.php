@@ -20,8 +20,7 @@
  * @file
  * @ingroup FileBackend
  */
-
-use MediaWiki\Logger\LoggerFactory;
+use \MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -91,7 +90,7 @@ class FileBackendGroup {
 			// Get the FS backend configuration
 			$autoBackends[] = [
 				'name' => $backendName,
-				'class' => FSFileBackend::class,
+				'class' => 'FSFileBackend',
 				'lockManager' => 'fsLockManager',
 				'containerPaths' => [
 					"{$repoName}-public" => "{$directory}",
@@ -112,7 +111,7 @@ class FileBackendGroup {
 	/**
 	 * Register an array of file backend configurations
 	 *
-	 * @param array[] $configs
+	 * @param array $configs
 	 * @param string|null $readOnlyReason
 	 * @throws InvalidArgumentException
 	 */
@@ -155,7 +154,7 @@ class FileBackendGroup {
 			$config = $this->config( $name );
 
 			$class = $config['class'];
-			if ( $class === FileBackendMultiWrite::class ) {
+			if ( $class === 'FileBackendMultiWrite' ) {
 				foreach ( $config['backends'] as $index => $beConfig ) {
 					if ( isset( $beConfig['template'] ) ) {
 						// Config is just a modified version of a registered backend's.
@@ -190,9 +189,9 @@ class FileBackendGroup {
 			'wikiId' => wfWikiID(), // e.g. "my_wiki-en_"
 			'mimeCallback' => [ $this, 'guessMimeInternal' ],
 			'obResetFunc' => 'wfResetOutputBuffers',
-			'streamMimeFunc' => [ StreamFile::class, 'contentTypeFromPath' ],
+			'streamMimeFunc' => [ 'StreamFile', 'contentTypeFromPath' ],
 			'tmpDirectory' => wfTempDir(),
-			'statusWrapper' => [ Status::class, 'wrap' ],
+			'statusWrapper' => [ 'Status', 'wrap' ],
 			'wanCache' => MediaWikiServices::getInstance()->getMainWANObjectCache(),
 			'srvCache' => ObjectCache::getLocalServerInstance( 'hash' ),
 			'logger' => LoggerFactory::getInstance( 'FileOperation' ),
@@ -202,7 +201,7 @@ class FileBackendGroup {
 			LockManagerGroup::singleton( $config['wikiId'] )->get( $config['lockManager'] );
 		$config['fileJournal'] = isset( $config['fileJournal'] )
 			? FileJournal::factory( $config['fileJournal'], $name )
-			: FileJournal::factory( [ 'class' => NullFileJournal::class ], $name );
+			: FileJournal::factory( [ 'class' => 'NullFileJournal' ], $name );
 
 		return $config;
 	}
@@ -230,7 +229,7 @@ class FileBackendGroup {
 	 * @since 1.27
 	 */
 	public function guessMimeInternal( $storagePath, $content, $fsPath ) {
-		$magic = MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer();
+		$magic = MimeMagic::singleton();
 		// Trust the extension of the storage path (caller must validate)
 		$ext = FileBackend::extensionFromPath( $storagePath );
 		$type = $magic->guessTypesForExtension( $ext );

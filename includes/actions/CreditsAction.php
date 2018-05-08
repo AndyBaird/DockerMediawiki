@@ -198,9 +198,6 @@ class CreditsAction extends FormlessAction {
 	protected function link( User $user ) {
 		if ( $this->canShowRealUserName() && !$user->isAnon() ) {
 			$real = $user->getRealName();
-			if ( $real === '' ) {
-				$real = $user->getName();
-			}
 		} else {
 			$real = $user->getName();
 		}

@@ -2,7 +2,7 @@
 
 use Wikimedia\TestingAccessWrapper;
 
-abstract class MWHttpRequestTestCase extends PHPUnit\Framework\TestCase {
+class MWHttpRequestTestCase extends PHPUnit_Framework_TestCase {
 	protected static $httpEngine;
 	protected $oldHttpEngine;
 
@@ -195,11 +195,6 @@ abstract class MWHttpRequestTestCase extends PHPUnit\Framework\TestCase {
 		$this->assertSame( 401, $request->getStatus() );
 	}
 
-	public function testFactoryDefaults() {
-		$request = MWHttpRequest::factory( 'http://acme.test' );
-		$this->assertInstanceOf( MWHttpRequest::class, $request );
-	}
-
 	// --------------------
 
 	/**
@@ -247,5 +242,4 @@ abstract class MWHttpRequestTestCase extends PHPUnit\Framework\TestCase {
 		$this->assertArrayNotHasKey( strtolower( $name ),
 			array_change_key_case( $cookieJar->cookie, CASE_LOWER ) );
 	}
-
 }

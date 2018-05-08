@@ -26,8 +26,6 @@
  */
 class UserPasswordPolicyTest extends MediaWikiTestCase {
 
-	protected $tablesUsed = [ 'user', 'user_groups' ];
-
 	protected $policies = [
 		'checkuser' => [
 			'MinimalPasswordLength' => 10,

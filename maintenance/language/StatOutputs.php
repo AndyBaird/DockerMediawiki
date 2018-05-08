@@ -26,9 +26,9 @@
 /** A general output object. Need to be overridden */
 class StatsOutput {
 	function formatPercent( $subset, $total, $revert = false, $accuracy = 2 ) {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$return = sprintf( '%.' . $accuracy . 'f%%', 100 * $subset / $total );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		return $return;
 	}
@@ -92,9 +92,9 @@ class WikiStatsOutput extends StatsOutput {
 	}
 
 	function formatPercent( $subset, $total, $revert = false, $accuracy = 2 ) {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$v = round( 255 * $subset / $total );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( $revert ) {
 			# Weigh reverse with factor 20 so coloring takes effect more quickly as

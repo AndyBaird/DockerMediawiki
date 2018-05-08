@@ -4,15 +4,11 @@
  * Tests for BatchRowUpdate and its components
  *
  * @group db
- *
- * @covers BatchRowUpdate
- * @covers BatchRowIterator
- * @covers BatchRowWriter
  */
 class BatchRowUpdateTest extends MediaWikiTestCase {
 
 	public function testWriterBasicFunctionality() {
-		$db = $this->mockDb( [ 'update' ] );
+		$db = $this->mockDb();
 		$writer = new BatchRowWriter( $db, 'echo_event' );
 
 		$updates = [
@@ -36,13 +32,17 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 	}
 
 	public function testReaderBasicIterate() {
+		$db = $this->mockDb();
 		$batchSize = 2;
+		$reader = new BatchRowIterator( $db, 'some_table', 'id_field', $batchSize );
+
 		$response = $this->genSelectResult( $batchSize, /*numRows*/ 5, function () {
 			static $i = 0;
 			return [ 'id_field' => ++$i ];
 		} );
-		$db = $this->mockDbConsecutiveSelect( $response );
-		$reader = new BatchRowIterator( $db, 'some_table', 'id_field', $batchSize );
+		$db->expects( $this->exactly( count( $response ) ) )
+			->method( 'select' )
+			->will( $this->consecutivelyReturnFromSelect( $response ) );
 
 		$pos = 0;
 		foreach ( $reader as $rows ) {
@@ -126,7 +126,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 	public function testReaderSetFetchColumns(
 		$message, array $columns, array $primaryKeys, array $fetchColumns
 	) {
-		$db = $this->mockDb( [ 'select' ] );
+		$db = $this->mockDb();
 		$db->expects( $this->once() )
 			->method( 'select' )
 			// only testing second parameter of Database::select
@@ -198,7 +198,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 	}
 
 	protected function mockDbConsecutiveSelect( array $retvals ) {
-		$db = $this->mockDb( [ 'select', 'addQuotes' ] );
+		$db = $this->mockDb();
 		$db->expects( $this->any() )
 			->method( 'select' )
 			->will( $this->consecutivelyReturnFromSelect( $retvals ) );
@@ -234,12 +234,11 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 		return $res;
 	}
 
-	protected function mockDb( $methods = [] ) {
+	protected function mockDb() {
 		// @TODO: mock from Database
 		// FIXME: the constructor normally sets mAtomicLevels and mSrvCache
-		$databaseMysql = $this->getMockBuilder( Wikimedia\Rdbms\DatabaseMysqli::class )
+		$databaseMysql = $this->getMockBuilder( 'DatabaseMysqli' )
 			->disableOriginalConstructor()
-			->setMethods( array_merge( [ 'isOpen', 'getApproximateLagStatus' ], $methods ) )
 			->getMock();
 		$databaseMysql->expects( $this->any() )
 			->method( 'isOpen' )

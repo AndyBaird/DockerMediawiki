@@ -9,6 +9,7 @@
 class ApiStashEditTest extends ApiTestCase {
 
 	public function testBasicEdit() {
+		$this->doLogin();
 		$apiResult = $this->doApiRequestWithToken(
 			[
 				'action' => 'stashedit',

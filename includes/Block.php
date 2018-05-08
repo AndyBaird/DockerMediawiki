@@ -183,14 +183,11 @@ class Block {
 	 */
 	public static function newFromID( $id ) {
 		$dbr = wfGetDB( DB_REPLICA );
-		$blockQuery = self::getQueryInfo();
 		$res = $dbr->selectRow(
-			$blockQuery['tables'],
-			$blockQuery['fields'],
+			'ipblocks',
+			self::selectFields(),
 			[ 'ipb_id' => $id ],
-			__METHOD__,
-			[],
-			$blockQuery['joins']
+			__METHOD__
 		);
 		if ( $res ) {
 			return self::newFromRow( $res );
@@ -202,29 +199,16 @@ class Block {
 	/**
 	 * Return the list of ipblocks fields that should be selected to create
 	 * a new block.
-	 * @deprecated since 1.31, use self::getQueryInfo() instead.
+	 * @todo Deprecate this in favor of a method that returns tables and joins
+	 *  as well, and use CommentStore::getJoin().
 	 * @return array
 	 */
 	public static function selectFields() {
-		global $wgActorTableSchemaMigrationStage;
-
-		if ( $wgActorTableSchemaMigrationStage > MIGRATION_WRITE_BOTH ) {
-			// If code is using this instead of self::getQueryInfo(), there's a
-			// decent chance it's going to try to directly access
-			// $row->ipb_by or $row->ipb_by_text and we can't give it
-			// useful values here once those aren't being written anymore.
-			throw new BadMethodCallException(
-				'Cannot use ' . __METHOD__ . ' when $wgActorTableSchemaMigrationStage > MIGRATION_WRITE_BOTH'
-			);
-		}
-
-		wfDeprecated( __METHOD__, '1.31' );
 		return [
 			'ipb_id',
 			'ipb_address',
 			'ipb_by',
 			'ipb_by_text',
-			'ipb_by_actor' => $wgActorTableSchemaMigrationStage > MIGRATION_OLD ? 'ipb_by_actor' : null,
 			'ipb_timestamp',
 			'ipb_auto',
 			'ipb_anon_only',
@@ -235,39 +219,7 @@ class Block {
 			'ipb_block_email',
 			'ipb_allow_usertalk',
 			'ipb_parent_block_id',
-		] + CommentStore::getStore()->getFields( 'ipb_reason' );
-	}
-
-	/**
-	 * Return the tables, fields, and join conditions to be selected to create
-	 * a new block object.
-	 * @since 1.31
-	 * @return array With three keys:
-	 *   - tables: (string[]) to include in the `$table` to `IDatabase->select()`
-	 *   - fields: (string[]) to include in the `$vars` to `IDatabase->select()`
-	 *   - joins: (array) to include in the `$join_conds` to `IDatabase->select()`
-	 */
-	public static function getQueryInfo() {
-		$commentQuery = CommentStore::getStore()->getJoin( 'ipb_reason' );
-		$actorQuery = ActorMigration::newMigration()->getJoin( 'ipb_by' );
-		return [
-			'tables' => [ 'ipblocks' ] + $commentQuery['tables'] + $actorQuery['tables'],
-			'fields' => [
-				'ipb_id',
-				'ipb_address',
-				'ipb_timestamp',
-				'ipb_auto',
-				'ipb_anon_only',
-				'ipb_create_account',
-				'ipb_enable_autoblock',
-				'ipb_expiry',
-				'ipb_deleted',
-				'ipb_block_email',
-				'ipb_allow_usertalk',
-				'ipb_parent_block_id',
-			] + $commentQuery['fields'] + $actorQuery['fields'],
-			'joins' => $commentQuery['joins'] + $actorQuery['joins'],
-		];
+		] + CommentStore::newKey( 'ipb_reason' )->getFields();
 	}
 
 	/**
@@ -343,10 +295,7 @@ class Block {
 			}
 		}
 
-		$blockQuery = self::getQueryInfo();
-		$res = $db->select(
-			$blockQuery['tables'], $blockQuery['fields'], $conds, __METHOD__, [], $blockQuery['joins']
-		);
+		$res = $db->select( 'ipblocks', self::selectFields(), $conds, __METHOD__ );
 
 		# This result could contain a block on the user, a block on the IP, and a russian-doll
 		# set of rangeblocks.  We want to choose the most specific one, so keep a leader board.
@@ -457,9 +406,11 @@ class Block {
 	 */
 	protected function initFromRow( $row ) {
 		$this->setTarget( $row->ipb_address );
-		$this->setBlocker( User::newFromAnyId(
-			$row->ipb_by, $row->ipb_by_text, isset( $row->ipb_by_actor ) ? $row->ipb_by_actor : null
-		) );
+		if ( $row->ipb_by ) { // local user
+			$this->setBlocker( User::newFromId( $row->ipb_by ) );
+		} else { // foreign user
+			$this->setBlocker( $row->ipb_by_text );
+		}
 
 		$this->mTimestamp = wfTimestamp( TS_MW, $row->ipb_timestamp );
 		$this->mAuto = $row->ipb_auto;
@@ -470,9 +421,9 @@ class Block {
 		// I wish I didn't have to do this
 		$db = wfGetDB( DB_REPLICA );
 		$this->mExpiry = $db->decodeExpiry( $row->ipb_expiry );
-		$this->mReason = CommentStore::getStore()
-			// Legacy because $row may have come from self::selectFields()
-			->getCommentLegacy( $db, 'ipb_reason', $row )->text;
+		$this->mReason = CommentStore::newKey( 'ipb_reason' )
+			// Legacy because $row probably came from self::selectFields()
+			->getCommentLegacy( $db, $row )->text;
 
 		$this->isHardblock( !$row->ipb_anon_only );
 		$this->isAutoblocking( $row->ipb_enable_autoblock );
@@ -529,9 +480,6 @@ class Block {
 		if ( $this->getSystemBlockType() !== null ) {
 			throw new MWException( 'Cannot insert a system block into the database' );
 		}
-		if ( !$this->getBlocker() || $this->getBlocker()->getName() === '' ) {
-			throw new MWException( 'Cannot insert a block without a blocker set' );
-		}
 
 		wfDebug( "Block::insert; timestamp {$this->mTimestamp}\n" );
 
@@ -539,7 +487,10 @@ class Block {
 			$dbw = wfGetDB( DB_MASTER );
 		}
 
-		self::purgeExpired();
+		# Periodic purge via commit hooks
+		if ( mt_rand( 0, 9 ) == 0 ) {
+			self::purgeExpired();
+		}
 
 		$row = $this->getDatabaseArray( $dbw );
 
@@ -650,6 +601,8 @@ class Block {
 		$a = [
 			'ipb_address'          => (string)$this->target,
 			'ipb_user'             => $uid,
+			'ipb_by'               => $this->getBy(),
+			'ipb_by_text'          => $this->getByName(),
 			'ipb_timestamp'        => $dbw->timestamp( $this->mTimestamp ),
 			'ipb_auto'             => $this->mAuto,
 			'ipb_anon_only'        => !$this->isHardblock(),
@@ -662,8 +615,7 @@ class Block {
 			'ipb_block_email'      => $this->prevents( 'sendemail' ),
 			'ipb_allow_usertalk'   => !$this->prevents( 'editownusertalk' ),
 			'ipb_parent_block_id'  => $this->mParentBlockId
-		] + CommentStore::getStore()->insert( $dbw, 'ipb_reason', $this->mReason )
-			+ ActorMigration::newMigration()->getInsertValues( $dbw, 'ipb_by', $this->getBlocker() );
+		] + CommentStore::newKey( 'ipb_reason' )->insert( $dbw, $this->mReason );
 
 		return $a;
 	}
@@ -674,11 +626,12 @@ class Block {
 	 */
 	protected function getAutoblockUpdateArray( IDatabase $dbw ) {
 		return [
+			'ipb_by'               => $this->getBy(),
+			'ipb_by_text'          => $this->getByName(),
 			'ipb_create_account'   => $this->prevents( 'createaccount' ),
 			'ipb_deleted'          => (int)$this->mHideName, // typecast required for SQLite
 			'ipb_allow_usertalk'   => !$this->prevents( 'editownusertalk' ),
-		] + CommentStore::getStore()->insert( $dbw, 'ipb_reason', $this->mReason )
-			+ ActorMigration::newMigration()->getInsertValues( $dbw, 'ipb_by', $this->getBlocker() );
+		] + CommentStore::newKey( 'ipb_reason' )->insert( $dbw, $this->mReason );
 	}
 
 	/**
@@ -718,27 +671,16 @@ class Block {
 			return;
 		}
 
-		$target = $block->getTarget();
-		if ( is_string( $target ) ) {
-			$target = User::newFromName( $target, false );
-		}
-
 		$dbr = wfGetDB( DB_REPLICA );
-		$rcQuery = ActorMigration::newMigration()->getWhere( $dbr, 'rc_user', $target, false );
 
 		$options = [ 'ORDER BY' => 'rc_timestamp DESC' ];
+		$conds = [ 'rc_user_text' => (string)$block->getTarget() ];
 
 		// Just the last IP used.
 		$options['LIMIT'] = 1;
 
-		$res = $dbr->select(
-			[ 'recentchanges' ] + $rcQuery['tables'],
-			[ 'rc_ip' ],
-			$rcQuery['conds'],
-			__METHOD__,
-			$options,
-			$rcQuery['joins']
-		);
+		$res = $dbr->select( 'recentchanges', [ 'rc_ip' ], $conds,
+			__METHOD__, $options );
 
 		if ( !$res->numRows() ) {
 			# No results, don't autoblock anything
@@ -767,7 +709,7 @@ class Block {
 		// than getting the msg raw and explode()'ing it.
 		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 		$lines = $cache->getWithSetCallback(
-			$cache->makeKey( 'ip-autoblock', 'whitelist' ),
+			$cache->makeKey( 'ipb', 'autoblock', 'whitelist' ),
 			$cache::TTL_DAY,
 			function ( $curValue, &$ttl, array &$setOpts ) {
 				$setOpts += Database::getCacheSetOptions( wfGetDB( DB_REPLICA ) );
@@ -1134,18 +1076,15 @@ class Block {
 			return;
 		}
 
-		DeferredUpdates::addUpdate( new AutoCommitUpdate(
+		DeferredUpdates::addUpdate( new AtomicSectionUpdate(
 			wfGetDB( DB_MASTER ),
 			__METHOD__,
 			function ( IDatabase $dbw, $fname ) {
-				$ids = $dbw->selectFieldValues( 'ipblocks',
-					'ipb_id',
+				$dbw->delete(
+					'ipblocks',
 					[ 'ipb_expiry < ' . $dbw->addQuotes( $dbw->timestamp() ) ],
 					$fname
 				);
-				if ( $ids ) {
-					$dbw->delete( 'ipblocks', [ 'ipb_id' => $ids ], $fname );
-				}
 			}
 		) );
 	}
@@ -1248,14 +1187,14 @@ class Block {
 		if ( !$isAnon ) {
 			$conds = [ $conds, 'ipb_anon_only' => 0 ];
 		}
-		$blockQuery = self::getQueryInfo();
-		$rows = $db->select(
-			$blockQuery['tables'],
-			array_merge( [ 'ipb_range_start', 'ipb_range_end' ], $blockQuery['fields'] ),
+		$selectFields = array_merge(
+			[ 'ipb_range_start', 'ipb_range_end' ],
+			self::selectFields()
+		);
+		$rows = $db->select( 'ipblocks',
+			$selectFields,
 			$conds,
-			__METHOD__,
-			[],
-			$blockQuery['joins']
+			__METHOD__
 		);
 
 		$blocks = [];
@@ -1493,7 +1432,7 @@ class Block {
 
 	/**
 	 * Get the user who implemented this block
-	 * @return User User object. May name a foreign user.
+	 * @return User|string Local User object or string for a foreign user
 	 */
 	public function getBlocker() {
 		return $this->blocker;
@@ -1501,19 +1440,9 @@ class Block {
 
 	/**
 	 * Set the user who implemented (or will implement) this block
-	 * @param User|string $user Local User object or username string
+	 * @param User|string $user Local User object or username string for foreign users
 	 */
 	public function setBlocker( $user ) {
-		if ( is_string( $user ) ) {
-			$user = User::newFromName( $user, false );
-		}
-
-		if ( $user->isAnon() && User::isUsableName( $user->getName() ) ) {
-			throw new InvalidArgumentException(
-				'Blocker must be a local user or a name that cannot be a local user'
-			);
-		}
-
 		$this->blocker = $user;
 	}
 

@@ -16,10 +16,7 @@
  *  - Tests for LanguageConverter and Language should probably be separate..
  */
 
-/**
- * @covers LanguageUz
- * @covers UzConverter
- */
+/** Tests for MediaWiki languages/LanguageUz.php */
 class LanguageUzTest extends LanguageClassesTestCase {
 
 	/**

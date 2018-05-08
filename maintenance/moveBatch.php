@@ -73,7 +73,7 @@ class MoveBatch extends Maintenance {
 
 		# Setup
 		if ( !$file ) {
-			$this->fatalError( "Unable to read file, exiting" );
+			$this->error( "Unable to read file, exiting", true );
 		}
 		if ( $user === false ) {
 			$wgUser = User::newSystemUser( 'Move page script', [ 'steal' => true ] );
@@ -81,13 +81,14 @@ class MoveBatch extends Maintenance {
 			$wgUser = User::newFromName( $user );
 		}
 		if ( !$wgUser ) {
-			$this->fatalError( "Invalid username" );
+			$this->error( "Invalid username", true );
 		}
 
 		# Setup complete, now start
 		$dbw = $this->getDB( DB_MASTER );
-		// phpcs:ignore Generic.CodeAnalysis.ForLoopWithTestFunctionCall
+		// @codingStandardsIgnoreStart Ignore avoid function calls in a FOR loop test part warning
 		for ( $linenum = 1; !feof( $file ); $linenum++ ) {
+			// @codingStandardsIgnoreEnd
 			$line = fgets( $file );
 			if ( $line === false ) {
 				break;
@@ -117,9 +118,10 @@ class MoveBatch extends Maintenance {
 			if ( $interval ) {
 				sleep( $interval );
 			}
+			wfWaitForSlaves();
 		}
 	}
 }
 
-$maintClass = MoveBatch::class;
+$maintClass = "MoveBatch";
 require_once RUN_MAINTENANCE_IF_MAIN;

@@ -19,15 +19,15 @@
 
 		api.uploadWithIframe( $( '<input>' )[ 0 ], { filename: 'Testing API upload.jpg' } );
 
-		$iframe = $( 'iframe:last-child' );
+		$iframe = $( 'iframe' );
 		$form = $( 'form.mw-api-upload-form' );
 		$input = $form.find( 'input[name=filename]' );
 
-		assert.ok( $form.length > 0, 'form' );
-		assert.ok( $input.length > 0, 'input' );
-		assert.ok( $iframe.length > 0, 'frame' );
-		assert.strictEqual( $form.prop( 'target' ), $iframe.prop( 'id' ), 'form.target and frame.id ' );
-		assert.strictEqual( $input.val(), 'Testing API upload.jpg', 'input value' );
+		assert.ok( $form.length > 0 );
+		assert.ok( $input.length > 0 );
+		assert.ok( $iframe.length > 0 );
+		assert.strictEqual( $form.prop( 'target' ), $iframe.prop( 'id' ) );
+		assert.strictEqual( $input.val(), 'Testing API upload.jpg' );
 	} );
 
 }( mediaWiki, jQuery ) );

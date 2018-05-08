@@ -21,6 +21,8 @@
  * @file
  */
 
+use Liuggio\StatsdClient\Factory\StatsdDataFactory;
+
 /**
  * Interface for objects which can provide a MediaWiki context on request
  *
@@ -51,13 +53,16 @@
  * shutdown by separate persistence handler objects, for example.
  */
 interface IContextSource extends MessageLocalizer {
-
 	/**
+	 * Get the WebRequest object
+	 *
 	 * @return WebRequest
 	 */
 	public function getRequest();
 
 	/**
+	 * Get the Title object
+	 *
 	 * @return Title|null
 	 */
 	public function getTitle();
@@ -84,22 +89,30 @@ interface IContextSource extends MessageLocalizer {
 	public function getWikiPage();
 
 	/**
+	 * Get the OutputPage object
+	 *
 	 * @return OutputPage
 	 */
 	public function getOutput();
 
 	/**
+	 * Get the User object
+	 *
 	 * @return User
 	 */
 	public function getUser();
 
 	/**
+	 * Get the Language object
+	 *
 	 * @return Language
 	 * @since 1.19
 	 */
 	public function getLanguage();
 
 	/**
+	 * Get the Skin object
+	 *
 	 * @return Skin
 	 */
 	public function getSkin();
@@ -113,6 +126,8 @@ interface IContextSource extends MessageLocalizer {
 	public function getConfig();
 
 	/**
+	 * Get the stats object
+	 *
 	 * @deprecated since 1.27 use a StatsdDataFactory from MediaWikiServices (preferably injected)
 	 *
 	 * @since 1.25
@@ -121,6 +136,8 @@ interface IContextSource extends MessageLocalizer {
 	public function getStats();
 
 	/**
+	 * Get the timing object
+	 *
 	 * @since 1.27
 	 * @return Timing
 	 */

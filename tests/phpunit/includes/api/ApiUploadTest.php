@@ -19,10 +19,8 @@
  * @group Database
  * @group medium
  * @group Broken
- *
- * @covers ApiUpload
  */
-class ApiUploadTest extends ApiUploadTestCase {
+class ApiUploadTest extends ApiTestCaseUpload {
 	/**
 	 * Testing login
 	 * XXX this is a funny way of getting session context
@@ -53,6 +51,7 @@ class ApiUploadTest extends ApiUploadTestCase {
 		$this->assertArrayHasKey( "login", $result );
 		$this->assertArrayHasKey( "result", $result['login'] );
 		$this->assertEquals( "Success", $result['login']['result'] );
+		$this->assertArrayHasKey( 'lgtoken', $result['login'] );
 
 		$this->assertNotEmpty( $session, 'API Login must return a session' );
 
@@ -70,7 +69,7 @@ class ApiUploadTest extends ApiUploadTestCase {
 			] );
 		} catch ( ApiUsageException $e ) {
 			$exception = true;
-			$this->assertContains( 'The "token" parameter must be set', $e->getMessage() );
+			$this->assertEquals( 'The "token" parameter must be set', $e->getMessage() );
 		}
 		$this->assertTrue( $exception, "Got exception" );
 	}
@@ -86,10 +85,8 @@ class ApiUploadTest extends ApiUploadTestCase {
 			], $session, self::$users['uploader']->getUser() );
 		} catch ( ApiUsageException $e ) {
 			$exception = true;
-			$this->assertEquals(
-				'One of the parameters "filekey", "file" and "url" is required.',
-				$e->getMessage()
-			);
+			$this->assertEquals( "One of the parameters filekey, file, url is required",
+				$e->getMessage() );
 		}
 		$this->assertTrue( $exception, "Got exception" );
 	}
@@ -456,9 +453,9 @@ class ApiUploadTest extends ApiUploadTestCase {
 		$chunkSessionKey = false;
 		$resultOffset = 0;
 		// Open the file:
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$handle = fopen( $filePath, "r" );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( $handle === false ) {
 			$this->markTestIncomplete( "could not open file: $filePath" );
@@ -466,9 +463,9 @@ class ApiUploadTest extends ApiUploadTestCase {
 
 		while ( !feof( $handle ) ) {
 			// Get the current chunk
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$chunkData = fread( $handle, $chunkSize );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 
 			// Upload the current chunk into the $_FILE object:
 			$this->fakeUploadChunk( 'chunk', 'blob', $mimeType, $chunkData );

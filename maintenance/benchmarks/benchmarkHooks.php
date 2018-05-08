@@ -69,5 +69,5 @@ class BenchmarkHooks extends Benchmarker {
 	}
 }
 
-$maintClass = BenchmarkHooks::class;
+$maintClass = 'BenchmarkHooks';
 require_once RUN_MAINTENANCE_IF_MAIN;

@@ -643,9 +643,9 @@ EOT;
 	 */
 	private function doGuessMimeType( $file, $ext ) {
 		// Read a chunk of the file
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$f = fopen( $file, 'rb' );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( !$f ) {
 			return 'unknown/unknown';
@@ -833,9 +833,9 @@ EOT;
 			}
 		}
 
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$gis = getimagesize( $file );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( $gis && isset( $gis['mime'] ) ) {
 			$mime = $gis['mime'];

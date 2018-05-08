@@ -32,6 +32,13 @@
 		switch ( mode ) {
 			case 'html5':
 				return str.replace( / /g, '_' );
+			case 'html5-legacy':
+				str = str.replace( /[ \t\n\r\f_'"&#%]+/g, '_' )
+					.replace( /^_+|_+$/, '' );
+				if ( str === '' ) {
+					str = '_';
+				}
+				return str;
 			case 'legacy':
 				return rawurlencode( str.replace( / /g, '_' ) )
 					.replace( /%3A/g, ':' )
@@ -452,7 +459,7 @@
 		 * Note: borrows from IP::isIPv4
 		 *
 		 * @param {string} address
-		 * @param {boolean} [allowBlock=false]
+		 * @param {boolean} allowBlock
 		 * @return {boolean}
 		 */
 		isIPv4Address: function ( address, allowBlock ) {
@@ -473,7 +480,7 @@
 		 * Note: borrows from IP::isIPv6
 		 *
 		 * @param {string} address
-		 * @param {boolean} [allowBlock=false]
+		 * @param {boolean} allowBlock
 		 * @return {boolean}
 		 */
 		isIPv6Address: function ( address, allowBlock ) {
@@ -524,7 +531,7 @@
 		 *
 		 * @since 1.25
 		 * @param {string} address String to check
-		 * @param {boolean} [allowBlock=false] If a block of IPs should be allowed
+		 * @param {boolean} allowBlock True if a block of IPs should be allowed
 		 * @return {boolean}
 		 */
 		isIPAddress: function ( address, allowBlock ) {
@@ -532,6 +539,13 @@
 				util.isIPv6Address( address, allowBlock );
 		}
 	};
+
+	/**
+	 * @method wikiGetlink
+	 * @inheritdoc #getUrl
+	 * @deprecated since 1.23 Use #getUrl instead.
+	 */
+	mw.log.deprecate( util, 'wikiGetlink', util.getUrl, 'Use mw.util.getUrl instead.', 'mw.util.wikiGetlink' );
 
 	/**
 	 * Add the appropriate prefix to the accesskey shown in the tooltip.

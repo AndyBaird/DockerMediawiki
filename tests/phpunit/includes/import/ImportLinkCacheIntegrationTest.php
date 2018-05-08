@@ -5,10 +5,8 @@ use MediaWiki\MediaWikiServices;
  * Integration test that checks import success and
  * LinkCache integration.
  *
- * @group large
+ * @group medium
  * @group Database
- * @covers ImportStreamSource
- * @covers ImportReporter
  *
  * @author mwjames
  */
@@ -91,10 +89,19 @@ class ImportLinkCacheIntegrationTest extends MediaWikiTestCase {
 
 		$reporter->setContext( new RequestContext() );
 		$reporter->open();
+		$exception = false;
 
-		$importer->doImport();
+		try {
+			$importer->doImport();
+		} catch ( Exception $e ) {
+			$exception = $e;
+		}
 
 		$result = $reporter->close();
+
+		$this->assertFalse(
+			$exception
+		);
 
 		$this->assertTrue(
 			$result->isGood()

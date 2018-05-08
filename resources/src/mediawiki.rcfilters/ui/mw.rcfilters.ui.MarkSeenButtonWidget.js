@@ -15,7 +15,7 @@
 		// Parent
 		mw.rcfilters.ui.MarkSeenButtonWidget.parent.call( this, $.extend( {
 			label: mw.message( 'rcfilters-watchlist-markseen-button' ).text(),
-			icon: 'checkAll'
+			icon: 'doubleCheck'
 		}, config ) );
 
 		this.controller = controller;

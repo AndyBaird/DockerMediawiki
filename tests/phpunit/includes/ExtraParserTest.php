@@ -26,6 +26,7 @@ class ExtraParserTest extends MediaWikiTestCase {
 		// FIXME: This test should pass without setting global content language
 		$this->options = ParserOptions::newFromUserAndLang( new User, $contLang );
 		$this->options->setTemplateCallback( [ __CLASS__, 'statelessFetchTemplate' ] );
+		$this->options->setWrapOutputClass( false );
 		$this->parser = new Parser;
 
 		MagicWord::clearCache();
@@ -40,8 +41,9 @@ class ExtraParserTest extends MediaWikiTestCase {
 
 		$title = Title::newFromText( 'Unit test' );
 		$options = ParserOptions::newFromUser( new User() );
+		$options->setWrapOutputClass( false );
 		$this->assertEquals( "<p>$longLine</p>",
-			$this->parser->parse( $longLine, $title, $options )->getText( [ 'unwrap' => true ] ) );
+			$this->parser->parse( $longLine, $title, $options )->getText() );
 	}
 
 	/**
@@ -53,7 +55,7 @@ class ExtraParserTest extends MediaWikiTestCase {
 		$parserOutput = $this->parser->parse( "Test\n{{Foo}}\n{{Bar}}", $title, $this->options );
 		$this->assertEquals(
 			"<p>Test\nContent of <i>Template:Foo</i>\nContent of <i>Template:Bar</i>\n</p>",
-			$parserOutput->getText( [ 'unwrap' => true ] )
+			$parserOutput->getText()
 		);
 	}
 
@@ -191,6 +193,7 @@ class ExtraParserTest extends MediaWikiTestCase {
 	}
 
 	/**
+	 * @group Database
 	 * @covers Parser::parse
 	 */
 	public function testTrackingCategory() {
@@ -204,6 +207,7 @@ class ExtraParserTest extends MediaWikiTestCase {
 	}
 
 	/**
+	 * @group Database
 	 * @covers Parser::parse
 	 */
 	public function testTrackingCategorySpecial() {

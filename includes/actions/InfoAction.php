@@ -128,7 +128,7 @@ class InfoAction extends FormlessAction {
 			// pageinfo-header-basic, pageinfo-header-edits, pageinfo-header-restrictions,
 			// pageinfo-header-properties, pageinfo-category-info
 			$content .= $this->makeHeader(
-				$this->msg( "pageinfo-${header}" )->text(),
+				$this->msg( "pageinfo-${header}" )->escaped(),
 				"mw-pageinfo-${header}"
 			) . "\n";
 			$table = "\n";
@@ -186,7 +186,7 @@ class InfoAction extends FormlessAction {
 	 * Adds a table to the content that will be added to the output.
 	 *
 	 * @param string $content The content that will be added to the output
-	 * @param string $table
+	 * @param string $table The table
 	 * @return string The content with the table added
 	 */
 	protected function addTable( $content, $table ) {
@@ -435,19 +435,6 @@ class InfoAction extends FormlessAction {
 					$lang->formatNum( $fileCount )
 				]
 			];
-		}
-
-		// Display image SHA-1 value
-		if ( $title->inNamespace( NS_FILE ) ) {
-			$fileObj = wfFindFile( $title );
-			if ( $fileObj !== false ) {
-				// Convert the base-36 sha1 value obtained from database to base-16
-				$output = Wikimedia\base_convert( $fileObj->getSha1(), 36, 16, 40 );
-				$pageInfo['header-basic'][] = [
-					$this->msg( 'pageinfo-file-hash' ),
-					$output
-				];
-			}
 		}
 
 		// Page protection
@@ -718,37 +705,12 @@ class InfoAction extends FormlessAction {
 			self::getCacheKey( $cache, $page->getTitle(), $page->getLatest() ),
 			WANObjectCache::TTL_WEEK,
 			function ( $oldValue, &$ttl, &$setOpts ) use ( $page, $config, $fname ) {
-				global $wgActorTableSchemaMigrationStage;
-
 				$title = $page->getTitle();
 				$id = $title->getArticleID();
 
 				$dbr = wfGetDB( DB_REPLICA );
 				$dbrWatchlist = wfGetDB( DB_REPLICA, 'watchlist' );
 				$setOpts += Database::getCacheSetOptions( $dbr, $dbrWatchlist );
-
-				if ( $wgActorTableSchemaMigrationStage === MIGRATION_NEW ) {
-					$tables = [ 'revision_actor_temp' ];
-					$field = 'revactor_actor';
-					$pageField = 'revactor_page';
-					$tsField = 'revactor_timestamp';
-					$joins = [];
-				} elseif ( $wgActorTableSchemaMigrationStage === MIGRATION_OLD ) {
-					$tables = [ 'revision' ];
-					$field = 'rev_user_text';
-					$pageField = 'rev_page';
-					$tsField = 'rev_timestamp';
-					$joins = [];
-				} else {
-					$tables = [ 'revision', 'revision_actor_temp', 'actor' ];
-					$field = 'COALESCE( actor_name, rev_user_text)';
-					$pageField = 'rev_page';
-					$tsField = 'rev_timestamp';
-					$joins = [
-						'revision_actor_temp' => [ 'LEFT JOIN', 'revactor_rev = rev_id' ],
-						'actor' => [ 'LEFT JOIN', 'revactor_actor = actor_id' ],
-					];
-				}
 
 				$watchedItemStore = MediaWikiServices::getInstance()->getWatchedItemStore();
 
@@ -777,12 +739,10 @@ class InfoAction extends FormlessAction {
 					$result['authors'] = 0;
 				} else {
 					$result['authors'] = (int)$dbr->selectField(
-						$tables,
-						"COUNT(DISTINCT $field)",
-						[ $pageField => $id ],
-						$fname,
-						[],
-						$joins
+						'revision',
+						'COUNT(DISTINCT rev_user_text)',
+						[ 'rev_page' => $id ],
+						$fname
 					);
 				}
 
@@ -803,15 +763,13 @@ class InfoAction extends FormlessAction {
 
 				// Recent number of distinct authors
 				$result['recent_authors'] = (int)$dbr->selectField(
-					$tables,
-					"COUNT(DISTINCT $field)",
+					'revision',
+					'COUNT(DISTINCT rev_user_text)',
 					[
-						$pageField => $id,
-						"$tsField >= " . $dbr->addQuotes( $threshold )
+						'rev_page' => $id,
+						"rev_timestamp >= " . $dbr->addQuotes( $threshold )
 					],
-					$fname,
-					[],
-					$joins
+					$fname
 				);
 
 				// Subpages (if enabled)

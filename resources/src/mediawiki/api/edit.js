@@ -120,14 +120,11 @@
 		edit: function ( title, transform ) {
 			var basetimestamp, curtimestamp,
 				api = this;
-
-			title = String( title );
-
 			return api.get( {
 				action: 'query',
 				prop: 'revisions',
 				rvprop: [ 'content', 'timestamp' ],
-				titles: [ title ],
+				titles: String( title ),
 				formatversion: '2',
 				curtimestamp: true
 			} )
@@ -137,10 +134,7 @@
 						return $.Deferred().reject( 'unknown' );
 					}
 					page = data.query.pages[ 0 ];
-					if ( !page || page.invalid ) {
-						return $.Deferred().reject( 'invalidtitle' );
-					}
-					if ( page.missing ) {
+					if ( !page || page.missing ) {
 						return $.Deferred().reject( 'nocreate-missing' );
 					}
 					revision = page.revisions[ 0 ];

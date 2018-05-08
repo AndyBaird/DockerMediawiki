@@ -224,29 +224,15 @@ class SpecialEmailUser extends UnlistedSpecialPage {
 			wfDebug( "Target is invalid user.\n" );
 
 			return 'notarget';
-		}
-
-		if ( !$target->isEmailConfirmed() ) {
+		} elseif ( !$target->isEmailConfirmed() ) {
 			wfDebug( "User has no valid email.\n" );
 
 			return 'noemail';
-		}
-
-		if ( !$target->canReceiveEmail() ) {
+		} elseif ( !$target->canReceiveEmail() ) {
 			wfDebug( "User does not allow user emails.\n" );
 
 			return 'nowikiemail';
-		}
-
-		if ( $sender !== null && !$target->getOption( 'email-allow-new-users' ) &&
-			$sender->isNewbie()
-		) {
-			wfDebug( "User does not allow user emails from new users.\n" );
-
-			return 'nowikiemail';
-		}
-
-		if ( $sender !== null ) {
+		} elseif ( $sender !== null ) {
 			$blacklist = $target->getOption( 'email-blacklist', [] );
 			if ( $blacklist ) {
 				$lookup = CentralIdLookup::factory();
@@ -294,9 +280,7 @@ class SpecialEmailUser extends UnlistedSpecialPage {
 			return "blockedemailuser";
 		}
 
-		// Check the ping limiter without incrementing it - we'll check it
-		// again later and increment it on a successful send
-		if ( $user->pingLimiter( 'emailuser', 0 ) ) {
+		if ( $user->pingLimiter( 'emailuser' ) ) {
 			wfDebug( "Ping limiter triggered.\n" );
 
 			return 'actionthrottledtext';
@@ -391,11 +375,6 @@ class SpecialEmailUser extends UnlistedSpecialPage {
 		$text = rtrim( $text ) . "\n\n-- \n";
 		$text .= $context->msg( 'emailuserfooter',
 			$from->name, $to->name )->inContentLanguage()->text();
-
-		// Check and increment the rate limits
-		if ( $context->getUser()->pingLimiter( 'emailuser' ) ) {
-			throw new ThrottledError();
-		}
 
 		$error = false;
 		if ( !Hooks::run( 'EmailUser', [ &$to, &$from, &$subject, &$text, &$error ] ) ) {

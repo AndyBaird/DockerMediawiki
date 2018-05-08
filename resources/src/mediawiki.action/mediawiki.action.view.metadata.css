@@ -1,19 +1,22 @@
 /*!
- * Styles for metadata.js.
+ * Hide collapsable rows in a collapsed table.
  */
+table.collapsed tr.collapsable {
+	display: none;
+}
 
 /*
  * Exclude user interface elements from selection.
  */
 .mw-metadata-show-hide-extended {
-	-webkit-user-select: none;
 	-moz-user-select: none;
+	-webkit-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
 }
 
 @media print {
-	.mw_metadata .mw-metadata-show-hide-extended {
+	tr.mw-metadata-show-hide-extended {
 		display: none;
 	}
 }

@@ -29,10 +29,10 @@ $.widget("ui.mouse", {
 		var that = this;
 
 		this.element
-			.on('mousedown.'+this.widgetName, function(event) {
+			.bind('mousedown.'+this.widgetName, function(event) {
 				return that._mouseDown(event);
 			})
-			.on('click.'+this.widgetName, function(event) {
+			.bind('click.'+this.widgetName, function(event) {
 				if (true === $.data(event.target, that.widgetName + '.preventClickEvent')) {
 					$.removeData(event.target, that.widgetName + '.preventClickEvent');
 					event.stopImmediatePropagation();
@@ -46,11 +46,11 @@ $.widget("ui.mouse", {
 	// TODO: make sure destroying one instance of mouse doesn't mess with
 	// other instances of mouse
 	_mouseDestroy: function() {
-		this.element.off('.'+this.widgetName);
+		this.element.unbind('.'+this.widgetName);
 		if ( this._mouseMoveDelegate ) {
 			$(document)
-				.off('mousemove.'+this.widgetName, this._mouseMoveDelegate)
-				.off('mouseup.'+this.widgetName, this._mouseUpDelegate);
+				.unbind('mousemove.'+this.widgetName, this._mouseMoveDelegate)
+				.unbind('mouseup.'+this.widgetName, this._mouseUpDelegate);
 		}
 	},
 
@@ -100,8 +100,8 @@ $.widget("ui.mouse", {
 			return that._mouseUp(event);
 		};
 		$(document)
-			.on('mousemove.'+this.widgetName, this._mouseMoveDelegate)
-			.on('mouseup.'+this.widgetName, this._mouseUpDelegate);
+			.bind('mousemove.'+this.widgetName, this._mouseMoveDelegate)
+			.bind('mouseup.'+this.widgetName, this._mouseUpDelegate);
 
 		event.preventDefault();
 
@@ -131,8 +131,8 @@ $.widget("ui.mouse", {
 
 	_mouseUp: function(event) {
 		$(document)
-			.off('mousemove.'+this.widgetName, this._mouseMoveDelegate)
-			.off('mouseup.'+this.widgetName, this._mouseUpDelegate);
+			.unbind('mousemove.'+this.widgetName, this._mouseMoveDelegate)
+			.unbind('mouseup.'+this.widgetName, this._mouseUpDelegate);
 
 		if (this._mouseStarted) {
 			this._mouseStarted = false;

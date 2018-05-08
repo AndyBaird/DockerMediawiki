@@ -5,9 +5,7 @@
  * @file
  */
 
-/**
- * @covers LanguageWa
- */
+/** Tests for MediaWiki languages/classes/LanguageWa.php */
 class LanguageWaTest extends LanguageClassesTestCase {
 	/**
 	 * @dataProvider providePlural

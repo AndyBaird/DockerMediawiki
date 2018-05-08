@@ -207,6 +207,7 @@ class SpecialNewpages extends IncludableSpecialPage {
 
 	protected function form() {
 		$out = $this->getOutput();
+		$out->addModules( 'mediawiki.userSuggest' );
 
 		// Consume values
 		$this->opts->consumeValue( 'offset' ); // don't carry offset, DWIW
@@ -250,12 +251,13 @@ class SpecialNewpages extends IncludableSpecialPage {
 				'default' => $tagFilterVal,
 			],
 			'username' => [
-				'type' => 'user',
+				'type' => 'text',
 				'name' => 'username',
 				'label-message' => 'newpages-username',
 				'default' => $userText,
 				'id' => 'mw-np-username',
 				'size' => 30,
+				'cssclass' => 'mw-autocomplete-user', // used by mediawiki.userSuggest
 			],
 			'size' => [
 				'type' => 'sizefilter',
@@ -267,6 +269,7 @@ class SpecialNewpages extends IncludableSpecialPage {
 		$htmlForm = new HTMLForm( $form, $this->getContext() );
 
 		$htmlForm->setSubmitText( $this->msg( 'newpages-submit' )->text() );
+		$htmlForm->setSubmitProgressive();
 		// The form should be visible on each request (inclusive requests with submitted forms), so
 		// return always false here.
 		$htmlForm->setSubmitCallback(
@@ -287,17 +290,15 @@ class SpecialNewpages extends IncludableSpecialPage {
 
 	/**
 	 * @param stdClass $result Result row from recent changes
-	 * @param Title $title
-	 * @return bool|Revision
+	 * @return Revision|bool
 	 */
-	protected function revisionFromRcResult( stdClass $result, Title $title ) {
+	protected function revisionFromRcResult( stdClass $result ) {
 		return new Revision( [
-			'comment' => CommentStore::getStore()->getComment( 'rc_comment', $result )->text,
+			'comment' => CommentStore::newKey( 'rc_comment' )->getComment( $result )->text,
 			'deleted' => $result->rc_deleted,
 			'user_text' => $result->rc_user_text,
 			'user' => $result->rc_user,
-			'actor' => $result->rc_actor,
-		], 0, $title );
+		] );
 	}
 
 	/**
@@ -312,7 +313,8 @@ class SpecialNewpages extends IncludableSpecialPage {
 
 		// Revision deletion works on revisions,
 		// so cast our recent change row to a revision row.
-		$rev = $this->revisionFromRcResult( $result, $title );
+		$rev = $this->revisionFromRcResult( $result );
+		$rev->setTitle( $title );
 
 		$classes = [];
 		$attribs = [ 'data-mw-revid' => $result->rev_id ];

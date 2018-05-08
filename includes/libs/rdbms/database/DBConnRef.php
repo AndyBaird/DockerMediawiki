@@ -211,6 +211,10 @@ class DBConnRef implements IDatabase {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
+	public function fieldInfo( $table, $field ) {
+		return $this->__call( __FUNCTION__, func_get_args() );
+	}
+
 	public function affectedRows() {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
@@ -227,7 +231,15 @@ class DBConnRef implements IDatabase {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
+	public function reportConnectionError( $error = 'Unknown error' ) {
+		return $this->__call( __FUNCTION__, func_get_args() );
+	}
+
 	public function query( $sql, $fname = __METHOD__, $tempIgnore = false ) {
+		return $this->__call( __FUNCTION__, func_get_args() );
+	}
+
+	public function reportQueryError( $error, $errno, $sql, $fname, $tempIgnore = false ) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -269,7 +281,7 @@ class DBConnRef implements IDatabase {
 	}
 
 	public function estimateRowCount(
-		$table, $vars = '*', $conds = '', $fname = __METHOD__, $options = [], $join_conds = []
+		$table, $vars = '*', $conds = '', $fname = __METHOD__, $options = []
 	) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
@@ -289,6 +301,10 @@ class DBConnRef implements IDatabase {
 	}
 
 	public function tableExists( $table, $fname = __METHOD__ ) {
+		return $this->__call( __FUNCTION__, func_get_args() );
+	}
+
+	public function indexUnique( $table, $index ) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -334,22 +350,7 @@ class DBConnRef implements IDatabase {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
-	public function buildSubstring( $input, $startPosition, $length = null ) {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
 	public function buildStringCast( $field ) {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
-	public function buildIntegerCast( $field ) {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
-	public function buildSelectSubquery(
-		$table, $vars, $conds = '', $fname = __METHOD__,
-		$options = [], $join_conds = []
-	) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -451,15 +452,11 @@ class DBConnRef implements IDatabase {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
-	public function wasConnectionLoss() {
+	public function wasErrorReissuable() {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
 	public function wasReadOnlyError() {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
-	public function wasErrorReissuable() {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -495,9 +492,7 @@ class DBConnRef implements IDatabase {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
-	public function startAtomic(
-		$fname = __METHOD__, $cancelable = IDatabase::ATOMIC_NOT_CANCELABLE
-	) {
+	public function startAtomic( $fname = __METHOD__ ) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -505,13 +500,7 @@ class DBConnRef implements IDatabase {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
-	public function cancelAtomic( $fname = __METHOD__, AtomicSectionIdentifier $sectionId = null ) {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
-	public function doAtomicSection(
-		$fname, callable $callback, $cancelable = self::ATOMIC_NOT_CANCELABLE
-	) {
+	public function doAtomicSection( $fname, callable $callback ) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -528,6 +517,10 @@ class DBConnRef implements IDatabase {
 	}
 
 	public function flushSnapshot( $fname = __METHOD__ ) {
+		return $this->__call( __FUNCTION__, func_get_args() );
+	}
+
+	public function listTables( $prefix = null, $fname = __METHOD__ ) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 
@@ -614,10 +607,6 @@ class DBConnRef implements IDatabase {
 	}
 
 	public function setTableAliases( array $aliases ) {
-		return $this->__call( __FUNCTION__, func_get_args() );
-	}
-
-	public function setIndexAliases( array $aliases ) {
 		return $this->__call( __FUNCTION__, func_get_args() );
 	}
 

@@ -11,10 +11,10 @@
 }
 
 .mw-notification {
-	padding: 0.75em 1.5em;
+	padding: 0.25em 1em;
 	margin-bottom: 0.5em;
 	border: solid 1px #ddd;
-	background-color: #fff;
+	background-color: #fcfcfc;
 	/* Click handler in mediawiki.notification.js */
 	cursor: pointer;
 
@@ -42,12 +42,12 @@
 	font-weight: bold;
 }
 
-.mw-notification.mw-notification-type-warn {
+.mw-notification-type-warn {
 	border-color: #f5be00; /* yellow */
 	background-color: #ffffe8;
 }
 
-.mw-notification.mw-notification-type-error {
+.mw-notification-type-error {
 	border-color: #eb3941; /* red */
 	background-color: #fff8f8;
 }

@@ -55,7 +55,7 @@ class GenerateJsonI18n extends Maintenance {
 
 		if ( $extension ) {
 			if ( $phpfile ) {
-				$this->fatalError( "The phpfile is already specified, conflicts with --extension." );
+				$this->error( "The phpfile is already specified, conflicts with --extension.", 1 );
 			}
 			$phpfile = "$IP/extensions/$extension/$extension.i18n.php";
 		}
@@ -101,28 +101,28 @@ class GenerateJsonI18n extends Maintenance {
 			$this->output( "Creating directory $jsondir.\n" );
 			$success = mkdir( $jsondir );
 			if ( !$success ) {
-				$this->fatalError( "Could not create directory $jsondir" );
+				$this->error( "Could not create directory $jsondir", 1 );
 			}
 		}
 
 		if ( !is_readable( $phpfile ) ) {
-			$this->fatalError( "Error reading $phpfile" );
+			$this->error( "Error reading $phpfile", 1 );
 		}
 		$messages = null;
 		include $phpfile;
 		$phpfileContents = file_get_contents( $phpfile );
 
 		if ( !isset( $messages ) ) {
-			$this->fatalError( "PHP file $phpfile does not define \$messages array" );
+			$this->error( "PHP file $phpfile does not define \$messages array", 1 );
 		}
 
 		if ( !$messages ) {
-			$this->fatalError( "PHP file $phpfile contains an empty \$messages array. " .
-				"Maybe it was already converted?" );
+			$this->error( "PHP file $phpfile contains an empty \$messages array. " .
+				"Maybe it was already converted?", 1 );
 		}
 
 		if ( !isset( $messages['en'] ) || !is_array( $messages['en'] ) ) {
-			$this->fatalError( "PHP file $phpfile does not set language codes" );
+			$this->error( "PHP file $phpfile does not set language codes", 1 );
 		}
 
 		foreach ( $messages as $langcode => $langmsgs ) {
@@ -142,7 +142,7 @@ class GenerateJsonI18n extends Maintenance {
 				FormatJson::encode( $langmsgs, "\t", FormatJson::ALL_OK ) . "\n"
 			);
 			if ( $success === false ) {
-				$this->fatalError( "FAILED to write $jsonfile" );
+				$this->error( "FAILED to write $jsonfile", 1 );
 			}
 			$this->output( "$jsonfile\n" );
 		}
@@ -192,5 +192,5 @@ class GenerateJsonI18n extends Maintenance {
 	}
 }
 
-$maintClass = GenerateJsonI18n::class;
+$maintClass = "GenerateJsonI18n";
 require_once RUN_MAINTENANCE_IF_MAIN;

@@ -48,32 +48,22 @@ class PopulateLogUsertext extends LoggedUpdateMaintenance {
 	}
 
 	protected function doDBUpdates() {
-		$batchSize = $this->getBatchSize();
 		$db = $this->getDB( DB_MASTER );
-		$start = $db->selectField( 'logging', 'MIN(log_id)', '', __METHOD__ );
+		$start = $db->selectField( 'logging', 'MIN(log_id)', false, __METHOD__ );
 		if ( !$start ) {
 			$this->output( "Nothing to do.\n" );
 
 			return true;
 		}
-		$end = $db->selectField( 'logging', 'MAX(log_id)', '', __METHOD__ );
-
-		// If this is being run during an upgrade from 1.16 or earlier, this
-		// will be run before the actor table change and should continue. But
-		// if it's being run on a new installation, the field won't exist to be populated.
-		if ( !$db->fieldInfo( 'logging', 'log_user_text' ) ) {
-			$this->output( "No log_user_text field, nothing to do.\n" );
-			return true;
-		}
+		$end = $db->selectField( 'logging', 'MAX(log_id)', false, __METHOD__ );
 
 		# Do remaining chunk
-		$end += $batchSize - 1;
+		$end += $this->mBatchSize - 1;
 		$blockStart = $start;
-		$blockEnd = $start + $batchSize - 1;
+		$blockEnd = $start + $this->mBatchSize - 1;
 		while ( $blockEnd <= $end ) {
 			$this->output( "...doing log_id from $blockStart to $blockEnd\n" );
-			$cond = "log_id BETWEEN " . (int)$blockStart . " AND " . (int)$blockEnd .
-				" AND log_user = user_id";
+			$cond = "log_id BETWEEN $blockStart AND $blockEnd AND log_user = user_id";
 			$res = $db->select( [ 'logging', 'user' ],
 				[ 'log_id', 'user_name' ], $cond, __METHOD__ );
 
@@ -83,8 +73,9 @@ class PopulateLogUsertext extends LoggedUpdateMaintenance {
 					[ 'log_id' => $row->log_id ], __METHOD__ );
 			}
 			$this->commitTransaction( $db, __METHOD__ );
-			$blockStart += $batchSize;
-			$blockEnd += $batchSize;
+			$blockStart += $this->mBatchSize;
+			$blockEnd += $this->mBatchSize;
+			wfWaitForSlaves();
 		}
 		$this->output( "Done populating log_user_text field.\n" );
 
@@ -92,5 +83,5 @@ class PopulateLogUsertext extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = PopulateLogUsertext::class;
+$maintClass = "PopulateLogUsertext";
 require_once RUN_MAINTENANCE_IF_MAIN;

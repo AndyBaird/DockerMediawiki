@@ -130,16 +130,10 @@ class XMPReader implements LoggerAwareInterface {
 	private $logger;
 
 	/**
-	 * @var string
-	 */
-	private $filename;
-
-	/**
 	 * Primary job is to initialize the XMLParser
 	 * @param LoggerInterface|null $logger
-	 * @param string $filename
 	 */
-	function __construct( LoggerInterface $logger = null, $filename = 'unknown' ) {
+	function __construct( LoggerInterface $logger = null ) {
 		if ( !function_exists( 'xml_parser_create_ns' ) ) {
 			// this should already be checked by this point
 			throw new RuntimeException( 'XMP support requires XML Parser' );
@@ -149,7 +143,6 @@ class XMPReader implements LoggerAwareInterface {
 		} else {
 			$this->setLogger( new NullLogger() );
 		}
-		$this->filename = $filename;
 
 		$this->items = XMPInfo::getItems();
 
@@ -343,9 +336,9 @@ class XMPReader implements LoggerAwareInterface {
 			}
 			if ( $this->charset !== 'UTF-8' ) {
 				// don't convert if already utf-8
-				Wikimedia\suppressWarnings();
+				MediaWiki\suppressWarnings();
 				$content = iconv( $this->charset, 'UTF-8//IGNORE', $content );
-				Wikimedia\restoreWarnings();
+				MediaWiki\restoreWarnings();
 			}
 
 			// Ensure the XMP block does not have an xml doctype declaration, which
@@ -377,15 +370,13 @@ class XMPReader implements LoggerAwareInterface {
 				$col = xml_get_current_column_number( $this->xmlParser );
 				$offset = xml_get_current_byte_index( $this->xmlParser );
 
-				$this->logger->info(
+				$this->logger->warning(
 					'{method} : Error reading XMP content: {error} ' .
-					'(file: {file}, line: {line} column: {column} ' .
-					'byte offset: {offset})',
+					'(line: {line} column: {column} byte offset: {offset})',
 					[
 						'method' => __METHOD__,
 						'error_code' => $code,
 						'error' => $error,
-						'file' => $this->filename,
 						'line' => $line,
 						'column' => $col,
 						'offset' => $offset,
@@ -397,11 +388,10 @@ class XMPReader implements LoggerAwareInterface {
 			}
 		} catch ( Exception $e ) {
 			$this->logger->warning(
-				'{method} {exception}',
+				'{method} Exception caught while parsing: ' . $e->getMessage(),
 				[
 					'method' => __METHOD__,
 					'exception' => $e,
-					'file' => $this->filename,
 					'content' => $content,
 				]
 			);
@@ -430,12 +420,7 @@ class XMPReader implements LoggerAwareInterface {
 			|| $this->results['xmp-special']['HasExtendedXMP'] !== $guid
 		) {
 			$this->logger->info( __METHOD__ .
-				" Ignoring XMPExtended block due to wrong guid (guid= '{guid}')",
-					[
-						'guid' => $guid,
-						'file' => $this->filename,
-					]
-			);
+				" Ignoring XMPExtended block due to wrong guid (guid= '$guid')" );
 
 			return false;
 		}
@@ -447,8 +432,7 @@ class XMPReader implements LoggerAwareInterface {
 			$len['offset'] > $len['length']
 		) {
 			$this->logger->info(
-				__METHOD__ . 'Error reading extended XMP block, invalid length or offset.',
-				[ 'file' => $this->filename ]
+				__METHOD__ . 'Error reading extended XMP block, invalid length or offset.'
 			);
 
 			return false;
@@ -466,9 +450,7 @@ class XMPReader implements LoggerAwareInterface {
 
 		if ( $len['offset'] !== $this->extendedXMPOffset ) {
 			$this->logger->info( __METHOD__ . 'Ignoring XMPExtended block due to wrong order. (Offset was '
-				. $len['offset'] . ' but expected ' . $this->extendedXMPOffset . ')',
-				[ 'file' => $this->filename ]
-			);
+				. $len['offset'] . ' but expected ' . $this->extendedXMPOffset . ')' );
 
 			return false;
 		}
@@ -489,10 +471,7 @@ class XMPReader implements LoggerAwareInterface {
 			$atEnd = false;
 		}
 
-		$this->logger->debug(
-			__METHOD__ . 'Parsing a XMPExtended block',
-			[ 'file' => $this->filename ]
-		);
+		$this->logger->debug( __METHOD__ . 'Parsing a XMPExtended block' );
 
 		return $this->parse( $actualContent, $atEnd );
 	}
@@ -571,7 +550,7 @@ class XMPReader implements LoggerAwareInterface {
 
 		// Even with LIBXML_NOWARNING set, XMLReader::read gives a warning
 		// when parsing truncated XML, which causes unit tests to fail.
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		while ( $reader->read() ) {
 			if ( $reader->nodeType === XMLReader::ELEMENT ) {
 				// Reached the first element without hitting a doctype declaration
@@ -585,7 +564,7 @@ class XMPReader implements LoggerAwareInterface {
 				break;
 			}
 		}
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		if ( !is_null( $result ) ) {
 			return $result;
@@ -688,28 +667,19 @@ class XMPReader implements LoggerAwareInterface {
 
 			if ( !isset( $this->results['xmp-' . $info['map_group']][$finalName] ) ) {
 				// This can happen if all the members of the struct failed validation.
-				$this->logger->debug(
-					__METHOD__ . " <$ns:$tag> has no valid members.",
-					[ 'file' => $this->filename ]
-				);
+				$this->logger->debug( __METHOD__ . " <$ns:$tag> has no valid members." );
 			} elseif ( is_callable( $validate ) ) {
 				$val =& $this->results['xmp-' . $info['map_group']][$finalName];
 				call_user_func_array( $validate, [ $info, &$val, false ] );
 				if ( is_null( $val ) ) {
 					// the idea being the validation function will unset the variable if
 					// its invalid.
-					$this->logger->info(
-						__METHOD__ . " <$ns:$tag> failed validation.",
-						[ 'file' => $this->filename ]
-					);
+					$this->logger->info( __METHOD__ . " <$ns:$tag> failed validation." );
 					unset( $this->results['xmp-' . $info['map_group']][$finalName] );
 				}
 			} else {
-				$this->logger->warning(
-					__METHOD__ . " Validation function for $finalName (" .
-					$validate[0] . '::' . $validate[1] . '()) is not callable.',
-					[ 'file' => $this->filename ]
-				);
+				$this->logger->warning( __METHOD__ . " Validation function for $finalName ("
+					. $validate[0] . '::' . $validate[1] . '()) is not callable.' );
 			}
 		}
 
@@ -748,10 +718,7 @@ class XMPReader implements LoggerAwareInterface {
 		array_shift( $this->mode );
 
 		if ( !isset( $this->results['xmp-' . $info['map_group']][$finalName] ) ) {
-			$this->logger->debug(
-				__METHOD__ . " Empty compund element $finalName.",
-				[ 'file' => $this->filename ]
-			);
+			$this->logger->debug( __METHOD__ . " Empty compund element $finalName." );
 
 			return;
 		}
@@ -819,10 +786,7 @@ class XMPReader implements LoggerAwareInterface {
 		if ( $elm === self::NS_RDF . ' type' ) {
 			// these aren't really supported properly yet.
 			// However, it appears they almost never used.
-			$this->logger->info(
-				__METHOD__ . ' encountered <rdf:type>',
-				[ 'file' => $this->filename ]
-			);
+			$this->logger->info( __METHOD__ . ' encountered <rdf:type>' );
 		}
 
 		if ( strpos( $elm, ' ' ) === false ) {
@@ -830,15 +794,12 @@ class XMPReader implements LoggerAwareInterface {
 			// However, there is a bug in an adobe product
 			// that forgets the namespace on some things.
 			// (Luckily they are unimportant things).
-			$this->logger->info(
-				__METHOD__ . " Encountered </$elm> which has no namespace. Skipping.",
-				[ 'file' => $this->filename ]
-			);
+			$this->logger->info( __METHOD__ . " Encountered </$elm> which has no namespace. Skipping." );
 
 			return;
 		}
 
-		if ( count( $this->mode ) === 0 ) {
+		if ( count( $this->mode[0] ) === 0 ) {
 			// This should never ever happen and means
 			// there is a pretty major bug in this class.
 			throw new RuntimeException( 'Encountered end element with no mode' );
@@ -879,10 +840,7 @@ class XMPReader implements LoggerAwareInterface {
 				$this->endElementModeQDesc( $elm );
 				break;
 			default:
-				$this->logger->info(
-					__METHOD__ . " no mode (elm = $elm)",
-					[ 'file' => $this->filename ]
-				);
+				$this->logger->warning( __METHOD__ . " no mode (elm = $elm)" );
 				break;
 		}
 	}
@@ -932,11 +890,8 @@ class XMPReader implements LoggerAwareInterface {
 			array_unshift( $this->mode, self::MODE_LI );
 		} elseif ( $elm === self::NS_RDF . ' Bag' ) {
 			# T29105
-			$this->logger->info(
-				__METHOD__ . ' Expected an rdf:Seq, but got an rdf:Bag. Pretending' .
-				' it is a Seq, since some buggy software is known to screw this up.',
-				[ 'file' => $this->filename ]
-			);
+			$this->logger->info( __METHOD__ . ' Expected an rdf:Seq, but got an rdf:Bag. Pretending'
+				. ' it is a Seq, since some buggy software is known to screw this up.' );
 			array_unshift( $this->mode, self::MODE_LI );
 		} else {
 			throw new RuntimeException( "Expected <rdf:Seq> but got $elm." );
@@ -999,13 +954,8 @@ class XMPReader implements LoggerAwareInterface {
 		} else {
 			// something else we don't recognize, like a qualifier maybe.
 			$this->logger->info( __METHOD__ .
-				" Encountered element <{element}> where only expecting character data as value of {curitem}",
-				[
-					'element' => $elm,
-					'curitem' => $this->curItem[0],
-					'file' => $this->filename,
-				]
-			);
+				" Encountered element <$elm> where only expecting character data as value of " .
+				$this->curItem[0] );
 			array_unshift( $this->mode, self::MODE_IGNORE );
 			array_unshift( $this->curItem, $elm );
 		}
@@ -1055,10 +1005,8 @@ class XMPReader implements LoggerAwareInterface {
 					// a child of a struct), then something weird is
 					// happening, so ignore this element and its children.
 
-					$this->logger->info(
-						'Encountered <{element}> outside of its expected parent. Ignoring.',
-						[ 'element' => "$ns:$tag", 'file' => $this->filename ]
-					);
+					$this->logger->warning( "Encountered <$ns:$tag> outside"
+						. " of its expected parent. Ignoring." );
 
 					array_unshift( $this->mode, self::MODE_IGNORE );
 					array_unshift( $this->curItem, $ns . ' ' . $tag );
@@ -1079,8 +1027,7 @@ class XMPReader implements LoggerAwareInterface {
 				}
 			} else {
 				// This element is not on our list of allowed elements so ignore.
-				$this->logger->debug( __METHOD__ . ' Ignoring unrecognized element <{element}>.',
-					[ 'element' => "$ns:$tag", 'file' => $this->filename ] );
+				$this->logger->debug( __METHOD__ . " Ignoring unrecognized element <$ns:$tag>." );
 				array_unshift( $this->mode, self::MODE_IGNORE );
 				array_unshift( $this->curItem, $ns . ' ' . $tag );
 
@@ -1257,18 +1204,12 @@ class XMPReader implements LoggerAwareInterface {
 			// on page 25 of part 1 of the xmp standard.
 			// Also it seems as if exiv2 and exiftool do not support
 			// this either (That or I misunderstand the standard)
-			$this->logger->info(
-				__METHOD__ . ' Encountered <rdf:type> which isn\'t currently supported',
-				[ 'file' => $this->filename ]
-			);
+			$this->logger->info( __METHOD__ . ' Encountered <rdf:type> which isn\'t currently supported' );
 		}
 
 		if ( strpos( $elm, ' ' ) === false ) {
 			// This probably shouldn't happen.
-			$this->logger->info(
-				__METHOD__ . " Encountered <$elm> which has no namespace. Skipping.",
-				[ 'file' => $this->filename ]
-			);
+			$this->logger->info( __METHOD__ . " Encountered <$elm> which has no namespace. Skipping." );
 
 			return;
 		}
@@ -1318,7 +1259,7 @@ class XMPReader implements LoggerAwareInterface {
 		}
 	}
 
-	// phpcs:disable Generic.Files.LineLength
+	// @codingStandardsIgnoreStart Generic.Files.LineLength
 	/**
 	 * Process attributes.
 	 * Simple values can be stored as either a tag or attribute
@@ -1334,7 +1275,7 @@ class XMPReader implements LoggerAwareInterface {
 	 * @param array $attribs Array attribute=>value
 	 * @throws RuntimeException
 	 */
-	// phpcs:enable
+	// @codingStandardsIgnoreEnd
 	private function doAttribs( $attribs ) {
 		// first check for rdf:parseType attribute, as that can change
 		// how the attributes are interperted.
@@ -1350,11 +1291,8 @@ class XMPReader implements LoggerAwareInterface {
 			if ( strpos( $name, ' ' ) === false ) {
 				// This shouldn't happen, but so far some old software forgets namespace
 				// on rdf:about.
-				$this->logger->info(
-					__METHOD__ . ' Encountered non-namespaced attribute: ' .
-					" $name=\"$val\". Skipping. ",
-					[ 'file' => $this->filename ]
-				);
+				$this->logger->info( __METHOD__ . ' Encountered non-namespaced attribute: '
+					. " $name=\"$val\". Skipping. " );
 				continue;
 			}
 			list( $ns, $tag ) = explode( ' ', $name, 2 );
@@ -1371,10 +1309,7 @@ class XMPReader implements LoggerAwareInterface {
 				}
 				$this->saveValue( $ns, $tag, $val );
 			} else {
-				$this->logger->debug(
-					__METHOD__ . " Ignoring unrecognized element <$ns:$tag>.",
-					[ 'file' => $this->filename ]
-				);
+				$this->logger->debug( __METHOD__ . " Ignoring unrecognized element <$ns:$tag>." );
 			}
 		}
 	}
@@ -1407,19 +1342,13 @@ class XMPReader implements LoggerAwareInterface {
 				// the reasoning behind using &$val instead of using the return value
 				// is to be consistent between here and validating structures.
 				if ( is_null( $val ) ) {
-					$this->logger->info(
-						__METHOD__ . " <$ns:$tag> failed validation.",
-						[ 'file' => $this->filename ]
-					);
+					$this->logger->info( __METHOD__ . " <$ns:$tag> failed validation." );
 
 					return;
 				}
 			} else {
-				$this->logger->warning(
-					__METHOD__ . " Validation function for $finalName (" .
-					$validate[0] . '::' . $validate[1] . '()) is not callable.',
-					[ 'file' => $this->filename ]
-				);
+				$this->logger->warning( __METHOD__ . " Validation function for $finalName ("
+					. $validate[0] . '::' . $validate[1] . '()) is not callable.' );
 			}
 		}
 

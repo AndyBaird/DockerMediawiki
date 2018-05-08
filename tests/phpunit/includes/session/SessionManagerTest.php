@@ -14,14 +14,7 @@ use Wikimedia\TestingAccessWrapper;
  */
 class SessionManagerTest extends MediaWikiTestCase {
 
-	/** @var \HashConfig */
-	private $config;
-
-	/** @var \TestLogger */
-	private $logger;
-
-	/** @var TestBagOStuff */
-	private $store;
+	protected $config, $logger, $store;
 
 	protected function getManager() {
 		\ObjectCache::$instances['testSessionStore'] = new TestBagOStuff();
@@ -30,7 +23,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 			'SessionCacheType' => 'testSessionStore',
 			'ObjectCacheSessionExpiry' => 100,
 			'SessionProviders' => [
-				[ 'class' => \DummySessionProvider::class ],
+				[ 'class' => 'DummySessionProvider' ],
 			]
 		] );
 		$this->logger = new \TestLogger( false, function ( $m ) {
@@ -145,7 +138,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 		$id2 = '';
 		$idEmpty = 'empty-session-------------------';
 
-		$providerBuilder = $this->getMockBuilder( \DummySessionProvider::class )
+		$providerBuilder = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods(
 				[ 'provideSessionInfo', 'newSessionInfo', '__toString', 'describe', 'unpersistSession' ]
 			);
@@ -404,7 +397,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 
 		// Failure to create an empty session
 		$manager = $this->getManager();
-		$provider = $this->getMockBuilder( \DummySessionProvider::class )
+		$provider = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods( [ 'provideSessionInfo', 'newSessionInfo', '__toString' ] )
 			->getMock();
 		$provider->expects( $this->any() )->method( 'provideSessionInfo' )
@@ -429,7 +422,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 		$pmanager = TestingAccessWrapper::newFromObject( $manager );
 		$request = new \FauxRequest();
 
-		$providerBuilder = $this->getMockBuilder( \DummySessionProvider::class )
+		$providerBuilder = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods( [ 'provideSessionInfo', 'newSessionInfo', '__toString' ] );
 
 		$expectId = null;
@@ -653,7 +646,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 		$user = User::newFromName( 'UTSysop' );
 		$manager = $this->getManager();
 
-		$providerBuilder = $this->getMockBuilder( \DummySessionProvider::class )
+		$providerBuilder = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods( [ 'invalidateSessionsForUser', '__toString' ] );
 
 		$provider1 = $providerBuilder->getMock();
@@ -681,7 +674,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 	public function testGetVaryHeaders() {
 		$manager = $this->getManager();
 
-		$providerBuilder = $this->getMockBuilder( \DummySessionProvider::class )
+		$providerBuilder = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods( [ 'getVaryHeaders', '__toString' ] );
 
 		$provider1 = $providerBuilder->getMock();
@@ -725,7 +718,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 	public function testGetVaryCookies() {
 		$manager = $this->getManager();
 
-		$providerBuilder = $this->getMockBuilder( \DummySessionProvider::class )
+		$providerBuilder = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods( [ 'getVaryCookies', '__toString' ] );
 
 		$provider1 = $providerBuilder->getMock();
@@ -758,7 +751,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 		$manager = TestingAccessWrapper::newFromObject( $realManager );
 
 		$this->config->set( 'SessionProviders', [
-			[ 'class' => \DummySessionProvider::class ],
+			[ 'class' => 'DummySessionProvider' ],
 		] );
 		$providers = $manager->getProviders();
 		$this->assertArrayHasKey( 'DummySessionProvider', $providers );
@@ -768,8 +761,8 @@ class SessionManagerTest extends MediaWikiTestCase {
 		$this->assertSame( $realManager, $provider->getManager() );
 
 		$this->config->set( 'SessionProviders', [
-			[ 'class' => \DummySessionProvider::class ],
-			[ 'class' => \DummySessionProvider::class ],
+			[ 'class' => 'DummySessionProvider' ],
+			[ 'class' => 'DummySessionProvider' ],
 		] );
 		$manager->sessionProviders = null;
 		try {
@@ -787,7 +780,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 		$manager = TestingAccessWrapper::newFromObject( $this->getManager() );
 		$manager->setLogger( new \Psr\Log\NullLogger() );
 
-		$mock = $this->getMockBuilder( stdClass::class )
+		$mock = $this->getMockBuilder( 'stdClass' )
 			->setMethods( [ 'shutdown' ] )->getMock();
 		$mock->expects( $this->once() )->method( 'shutdown' );
 
@@ -878,7 +871,7 @@ class SessionManagerTest extends MediaWikiTestCase {
 	public function testPreventSessionsForUser() {
 		$manager = $this->getManager();
 
-		$providerBuilder = $this->getMockBuilder( \DummySessionProvider::class )
+		$providerBuilder = $this->getMockBuilder( 'DummySessionProvider' )
 			->setMethods( [ 'preventSessionsForUser', '__toString' ] );
 
 		$provider1 = $providerBuilder->getMock();

@@ -176,32 +176,44 @@ class PageArchive {
 	 * @return ResultWrapper
 	 */
 	public function listRevisions() {
-		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
-		$queryInfo = $revisionStore->getArchiveQueryInfo();
+		$dbr = wfGetDB( DB_REPLICA );
+		$commentQuery = CommentStore::newKey( 'ar_comment' )->getJoin();
 
-		$conds = [
-			'ar_namespace' => $this->title->getNamespace(),
-			'ar_title' => $this->title->getDBkey(),
-		];
+		$tables = [ 'archive' ] + $commentQuery['tables'];
+
+		$fields = [
+			'ar_minor_edit', 'ar_timestamp', 'ar_user', 'ar_user_text',
+			'ar_len', 'ar_deleted', 'ar_rev_id', 'ar_sha1',
+			'ar_page_id'
+		] + $commentQuery['fields'];
+
+		if ( $this->config->get( 'ContentHandlerUseDB' ) ) {
+			$fields[] = 'ar_content_format';
+			$fields[] = 'ar_content_model';
+		}
+
+		$conds = [ 'ar_namespace' => $this->title->getNamespace(),
+			'ar_title' => $this->title->getDBkey() ];
+
 		$options = [ 'ORDER BY' => 'ar_timestamp DESC' ];
 
+		$join_conds = [] + $commentQuery['joins'];
+
 		ChangeTags::modifyDisplayQuery(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
+			$tables,
+			$fields,
 			$conds,
-			$queryInfo['joins'],
+			$join_conds,
 			$options,
 			''
 		);
 
-		$dbr = wfGetDB( DB_REPLICA );
-		return $dbr->select(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
+		return $dbr->select( $tables,
+			$fields,
 			$conds,
 			__METHOD__,
 			$options,
-			$queryInfo['joins']
+			$join_conds
 		);
 	}
 
@@ -219,14 +231,12 @@ class PageArchive {
 		}
 
 		$dbr = wfGetDB( DB_REPLICA );
-		$fileQuery = ArchivedFile::getQueryInfo();
 		return $dbr->select(
-			$fileQuery['tables'],
-			$fileQuery['fields'],
+			'filearchive',
+			ArchivedFile::selectFields(),
 			[ 'fa_name' => $this->title->getDBkey() ],
 			__METHOD__,
-			[ 'ORDER BY' => 'fa_timestamp DESC' ],
-			$fileQuery['joins']
+			[ 'ORDER BY' => 'fa_timestamp DESC' ]
 		);
 	}
 
@@ -239,11 +249,34 @@ class PageArchive {
 	 */
 	public function getRevision( $timestamp ) {
 		$dbr = wfGetDB( DB_REPLICA );
-		$arQuery = Revision::getArchiveQueryInfo();
+		$commentQuery = CommentStore::newKey( 'ar_comment' )->getJoin();
+
+		$tables = [ 'archive' ] + $commentQuery['tables'];
+
+		$fields = [
+			'ar_rev_id',
+			'ar_text',
+			'ar_user',
+			'ar_user_text',
+			'ar_timestamp',
+			'ar_minor_edit',
+			'ar_flags',
+			'ar_text_id',
+			'ar_deleted',
+			'ar_len',
+			'ar_sha1',
+		] + $commentQuery['fields'];
+
+		if ( $this->config->get( 'ContentHandlerUseDB' ) ) {
+			$fields[] = 'ar_content_format';
+			$fields[] = 'ar_content_model';
+		}
+
+		$join_conds = [] + $commentQuery['joins'];
 
 		$row = $dbr->selectRow(
-			$arQuery['tables'],
-			$arQuery['fields'],
+			$tables,
+			$fields,
 			[
 				'ar_namespace' => $this->title->getNamespace(),
 				'ar_title' => $this->title->getDBkey(),
@@ -251,7 +284,7 @@ class PageArchive {
 			],
 			__METHOD__,
 			[],
-			$arQuery['joins']
+			$join_conds
 		);
 
 		if ( $row ) {
@@ -315,13 +348,19 @@ class PageArchive {
 	}
 
 	/**
-	 * Get the text from an archive row containing ar_text_id
+	 * Get the text from an archive row containing ar_text, ar_flags and ar_text_id
 	 *
-	 * @deprecated since 1.31
 	 * @param object $row Database row
 	 * @return string
 	 */
 	public function getTextFromRow( $row ) {
+		if ( is_null( $row->ar_text_id ) ) {
+			// An old row from MediaWiki 1.4 or previous.
+			// Text is embedded in this row in classic compression format.
+			return Revision::getRevisionText( $row, 'ar_' );
+		}
+
+		// New-style: keyed to the text storage backend.
 		$dbr = wfGetDB( DB_REPLICA );
 		$text = $dbr->selectRow( 'text',
 			[ 'old_text', 'old_flags' ],
@@ -341,18 +380,15 @@ class PageArchive {
 	 */
 	public function getLastRevisionText() {
 		$dbr = wfGetDB( DB_REPLICA );
-		$row = $dbr->selectRow(
-			[ 'archive', 'text' ],
-			[ 'old_text', 'old_flags' ],
+		$row = $dbr->selectRow( 'archive',
+			[ 'ar_text', 'ar_flags', 'ar_text_id' ],
 			[ 'ar_namespace' => $this->title->getNamespace(),
 				'ar_title' => $this->title->getDBkey() ],
 			__METHOD__,
-			[ 'ORDER BY' => 'ar_timestamp DESC, ar_id DESC' ],
-			[ 'text' => [ 'JOIN', 'old_id = ar_text_id' ] ]
-		);
+			[ 'ORDER BY' => 'ar_timestamp DESC' ] );
 
 		if ( $row ) {
-			return Revision::getRevisionText( $row );
+			return $this->getTextFromRow( $row );
 		}
 
 		return null;
@@ -527,23 +563,47 @@ class PageArchive {
 			$oldWhere['ar_timestamp'] = array_map( [ &$dbw, 'timestamp' ], $timestamps );
 		}
 
-		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
-		$queryInfo = $revisionStore->getArchiveQueryInfo();
-		$queryInfo['tables'][] = 'revision';
-		$queryInfo['fields'][] = 'rev_id';
-		$queryInfo['joins']['revision'] = [ 'LEFT JOIN', 'ar_rev_id=rev_id' ];
+		$commentQuery = CommentStore::newKey( 'ar_comment' )->getJoin();
+
+		$tables = [ 'archive', 'revision' ] + $commentQuery['tables'];
+
+		$fields = [
+			'ar_id',
+			'ar_rev_id',
+			'rev_id',
+			'ar_text',
+			'ar_user',
+			'ar_user_text',
+			'ar_timestamp',
+			'ar_minor_edit',
+			'ar_flags',
+			'ar_text_id',
+			'ar_deleted',
+			'ar_page_id',
+			'ar_len',
+			'ar_sha1'
+		] + $commentQuery['fields'];
+
+		if ( $this->config->get( 'ContentHandlerUseDB' ) ) {
+			$fields[] = 'ar_content_format';
+			$fields[] = 'ar_content_model';
+		}
+
+		$join_conds = [
+			'revision' => [ 'LEFT JOIN', 'ar_rev_id=rev_id' ],
+		] + $commentQuery['joins'];
 
 		/**
 		 * Select each archived revision...
 		 */
 		$result = $dbw->select(
-			$queryInfo['tables'],
-			$queryInfo['fields'],
+			$tables,
+			$fields,
 			$oldWhere,
 			__METHOD__,
 			/* options */
 			[ 'ORDER BY' => 'ar_timestamp' ],
-			$queryInfo['joins']
+			$join_conds
 		);
 
 		$rev_count = $result->numRows();
@@ -725,9 +785,7 @@ class PageArchive {
 			Hooks::run( 'ArticleUndelete',
 				[ &$this->title, $created, $comment, $oldPageId, $restoredPages ] );
 			if ( $this->title->getNamespace() == NS_FILE ) {
-				DeferredUpdates::addUpdate(
-					new HTMLCacheUpdate( $this->title, 'imagelinks', 'file-restore' )
-				);
+				DeferredUpdates::addUpdate( new HTMLCacheUpdate( $this->title, 'imagelinks' ) );
 			}
 		}
 

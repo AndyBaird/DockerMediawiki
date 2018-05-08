@@ -18,7 +18,6 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Session\BotPasswordSessionProvider;
 use Wikimedia\Rdbms\IMaintainableDatabase;
 
@@ -75,10 +74,9 @@ class BotPassword implements IDBAccessObject {
 	public static function getDB( $db ) {
 		global $wgBotPasswordsCluster, $wgBotPasswordsDatabase;
 
-		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 		$lb = $wgBotPasswordsCluster
-			? $lbFactory->getExternalLB( $wgBotPasswordsCluster )
-			: $lbFactory->getMainLB( $wgBotPasswordsDatabase );
+			? wfGetLBFactory()->getExternalLB( $wgBotPasswordsCluster )
+			: wfGetLB( $wgBotPasswordsDatabase );
 		return $lb->getConnectionRef( $db, [], $wgBotPasswordsDatabase );
 	}
 

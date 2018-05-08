@@ -42,13 +42,13 @@ class GetTextMaint extends Maintenance {
 		$titleText = $this->getArg( 0 );
 		$title = Title::newFromText( $titleText );
 		if ( !$title ) {
-			$this->fatalError( "$titleText is not a valid title.\n" );
+			$this->error( "$titleText is not a valid title.\n", true );
 		}
 
 		$rev = Revision::newFromTitle( $title );
 		if ( !$rev ) {
 			$titleText = $title->getPrefixedText();
-			$this->fatalError( "Page $titleText does not exist.\n" );
+			$this->error( "Page $titleText does not exist.\n", true );
 		}
 		$content = $rev->getContent( $this->hasOption( 'show-private' )
 			? Revision::RAW
@@ -56,11 +56,11 @@ class GetTextMaint extends Maintenance {
 
 		if ( $content === false ) {
 			$titleText = $title->getPrefixedText();
-			$this->fatalError( "Couldn't extract the text from $titleText.\n" );
+			$this->error( "Couldn't extract the text from $titleText.\n", true );
 		}
 		$this->output( $content->serialize() );
 	}
 }
 
-$maintClass = GetTextMaint::class;
+$maintClass = "GetTextMaint";
 require_once RUN_MAINTENANCE_IF_MAIN;

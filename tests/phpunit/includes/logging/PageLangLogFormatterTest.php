@@ -1,8 +1,5 @@
 <?php
 
-/**
- * @covers PageLangLogFormatter
- */
 class PageLangLogFormatterTest extends LogFormatterTestCase {
 
 	protected function setUp() {
@@ -12,7 +9,7 @@ class PageLangLogFormatterTest extends LogFormatterTestCase {
 		$this->setMwGlobals( 'wgHooks', [] );
 		// Register LogHandler, see $wgPageLanguageUseDB in Setup.php
 		$this->mergeMwGlobalArrayValue( 'wgLogActionsHandlers', [
-			'pagelang/pagelang' => PageLangLogFormatter::class,
+			'pagelang/pagelang' => 'PageLangLogFormatter',
 		] );
 	}
 

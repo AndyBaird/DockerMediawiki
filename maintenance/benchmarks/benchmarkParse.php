@@ -106,7 +106,7 @@ class BenchmarkParse extends Maintenance {
 
 		$loops = $this->getOption( 'loops', 1 );
 		if ( $loops < 1 ) {
-			$this->fatalError( 'Invalid number of loops specified' );
+			$this->error( 'Invalid number of loops specified', true );
 		}
 		$startUsage = getrusage();
 		$startTime = microtime( true );
@@ -188,5 +188,5 @@ class BenchmarkParse extends Maintenance {
 	}
 }
 
-$maintClass = BenchmarkParse::class;
+$maintClass = 'BenchmarkParse';
 require RUN_MAINTENANCE_IF_MAIN;

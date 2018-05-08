@@ -22,7 +22,7 @@
  */
 
 use MediaWiki\MediaWikiServices;
-use Wikimedia\Rdbms\IResultWrapper;
+use Wikimedia\Rdbms\ResultWrapper;
 use Wikimedia\Rdbms\IDatabase;
 
 /**
@@ -33,8 +33,6 @@ use Wikimedia\Rdbms\IDatabase;
  */
 class SpecialWatchlist extends ChangesListSpecialPage {
 	protected static $savedQueriesPreferenceName = 'rcfilters-wl-saved-queries';
-	protected static $daysPreferenceName = 'watchlistdays';
-	protected static $limitPreferenceName = 'wllimit';
 
 	private $maxDays;
 
@@ -103,6 +101,7 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		if ( $this->isStructuredFilterUiEnabled() ) {
 			$output->addModuleStyles( [ 'mediawiki.rcfilters.highlightCircles.seenunseen.styles' ] );
 
+			$output->addJsConfigVars( 'wgStructuredChangeFiltersLiveUpdateSupported', false );
 			$output->addJsConfigVars(
 				'wgStructuredChangeFiltersEditWatchlistUrl',
 				SpecialPage::getTitleFor( 'EditWatchlist' )->getLocalURL()
@@ -110,11 +109,16 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		}
 	}
 
-	public static function checkStructuredFilterUiEnabled( Config $config, User $user ) {
-		return (
-			$config->get( 'StructuredChangeFiltersOnWatchlist' ) &&
-			$user->getOption( 'rcenhancedfilters' )
+	public function isStructuredFilterUiEnabled() {
+		return $this->getRequest()->getBool( 'rcfilters' ) || (
+			$this->getConfig()->get( 'StructuredChangeFiltersOnWatchlist' ) &&
+			$this->getUser()->getOption( 'rcenhancedfilters' )
 		);
+	}
+
+	public function isStructuredFilterUiEnabledByDefault() {
+		return $this->getConfig()->get( 'StructuredChangeFiltersOnWatchlist' ) &&
+			$this->getUser()->getDefaultOption( 'rcenhancedfilters' );
 	}
 
 	/**
@@ -245,31 +249,11 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		$hideLiu = $registration->getFilter( 'hideliu' );
 		$hideLiu->setDefault( $user->getBoolOption( 'watchlisthideliu' ) );
 
-		// Selecting both hideanons and hideliu on watchlist preferances
-		// gives mutually exclusive filters, so those are ignored
-		if ( $user->getBoolOption( 'watchlisthideanons' ) &&
-			!$user->getBoolOption( 'watchlisthideliu' )
-		) {
-			$this->getFilterGroup( 'userExpLevel' )
-				->setDefault( 'registered' );
-		}
-
-		if ( $user->getBoolOption( 'watchlisthideliu' ) &&
-			!$user->getBoolOption( 'watchlisthideanons' )
-		) {
-			$this->getFilterGroup( 'userExpLevel' )
-				->setDefault( 'unregistered' );
-		}
-
 		$reviewStatus = $this->getFilterGroup( 'reviewStatus' );
 		if ( $reviewStatus !== null ) {
 			// Conditional on feature being available and rights
-			if ( $user->getBoolOption( 'watchlisthidepatrolled' ) ) {
-				$reviewStatus->setDefault( 'unpatrolled' );
-				$legacyReviewStatus = $this->getFilterGroup( 'legacyReviewStatus' );
-				$legacyHidePatrolled = $legacyReviewStatus->getFilter( 'hidepatrolled' );
-				$legacyHidePatrolled->setDefault( true );
-			}
+			$hidePatrolled = $reviewStatus->getFilter( 'hidepatrolled' );
+			$hidePatrolled->setDefault( $user->getBoolOption( 'watchlisthidepatrolled' ) );
 		}
 
 		$authorship = $this->getFilterGroup( 'authorship' );
@@ -282,6 +266,26 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 			// Conditional on feature being available
 			$hideCategorization->setDefault( $user->getBoolOption( 'watchlisthidecategorization' ) );
 		}
+	}
+
+	/**
+	 * Get a FormOptions object containing the default options
+	 *
+	 * @return FormOptions
+	 */
+	public function getDefaultOptions() {
+		$opts = parent::getDefaultOptions();
+
+		$opts->add( 'days', $this->getDefaultDays(), FormOptions::FLOAT );
+		$opts->add( 'limit', $this->getDefaultLimit(), FormOptions::INT );
+
+		return $opts;
+	}
+
+	public function validateOptions( FormOptions $opts ) {
+		$opts->validateBounds( 'days', 0, $this->maxDays );
+		$opts->validateIntBounds( 'limit', 0, 5000 );
+		parent::validateOptions( $opts );
 	}
 
 	/**
@@ -334,8 +338,15 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 
 			// This is how we handle the fact that HTML forms don't submit
 			// unchecked boxes.
-			foreach ( $this->getLegacyShowHideFilters() as $filter ) {
-				$allBooleansFalse[ $filter->getName() ] = false;
+			foreach ( $this->filterGroups as $filterGroup ) {
+				if ( $filterGroup instanceof ChangesListBooleanFilterGroup ) {
+					/** @var ChangesListBooleanFilter $filter */
+					foreach ( $filterGroup->getFilters() as $filter ) {
+						if ( $filter->displaysOnUnstructuredUi() ) {
+							$allBooleansFalse[$filter->getName()] = false;
+						}
+					}
+				}
 			}
 
 			$params = $params + $allBooleansFalse;
@@ -352,15 +363,31 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 	/**
 	 * @inheritDoc
 	 */
+	protected function buildQuery( &$tables, &$fields, &$conds, &$query_options,
+		&$join_conds, FormOptions $opts
+	) {
+		$dbr = $this->getDB();
+		parent::buildQuery( $tables, $fields, $conds, $query_options, $join_conds,
+			$opts );
+
+		// Calculate cutoff
+		if ( $opts['days'] > 0 ) {
+			$conds[] = 'rc_timestamp > ' .
+				$dbr->addQuotes( $dbr->timestamp( time() - $opts['days'] * 3600 * 24 ) );
+		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
 	protected function doMainQuery( $tables, $fields, $conds, $query_options,
 		$join_conds, FormOptions $opts
 	) {
 		$dbr = $this->getDB();
 		$user = $this->getUser();
 
-		$rcQuery = RecentChange::getQueryInfo();
-		$tables = array_merge( $tables, $rcQuery['tables'], [ 'watchlist' ] );
-		$fields = array_merge( $rcQuery['fields'], $fields );
+		$tables = array_merge( [ 'recentchanges', 'watchlist' ], $tables );
+		$fields = array_merge( RecentChange::selectFields(), $fields );
 
 		$join_conds = array_merge(
 			[
@@ -373,7 +400,6 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 					],
 				],
 			],
-			$rcQuery['joins'],
 			$join_conds
 		);
 
@@ -481,7 +507,7 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 	/**
 	 * Build and output the actual changes list.
 	 *
-	 * @param IResultWrapper $rows Database rows
+	 * @param ResultWrapper $rows Database rows
 	 * @param FormOptions $opts
 	 */
 	public function outputChangesList( $rows, $opts ) {
@@ -490,7 +516,7 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		$output = $this->getOutput();
 
 		# Show a message about replica DB lag, if applicable
-		$lag = MediaWikiServices::getInstance()->getDBLoadBalancer()->safeGetLag( $dbr );
+		$lag = wfGetLB()->safeGetLag( $dbr );
 		if ( $lag > 0 ) {
 			$output->showLagWarning( $lag );
 		}
@@ -620,14 +646,16 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		}
 
 		$lang = $this->getLanguage();
+		if ( $opts['days'] > 0 ) {
+			$days = $opts['days'];
+		} else {
+			$days = $this->maxDays;
+		}
 		$timestamp = wfTimestampNow();
 		$wlInfo = Html::rawElement(
 			'span',
-			[
-				'class' => 'wlinfo',
-				'data-params' => json_encode( [ 'from' => $timestamp ] ),
-			],
-			$this->msg( 'wlnote' )->numParams( $numRows, round( $opts['days'] * 24 ) )->params(
+			[ 'class' => 'wlinfo' ],
+			$this->msg( 'wlnote' )->numParams( $numRows, round( $days * 24 ) )->params(
 				$lang->userDate( $timestamp, $user ), $lang->userTime( $timestamp, $user )
 			)->parse()
 		) . "<br />\n";
@@ -642,15 +670,21 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		# Spit out some control panel links
 		$links = [];
 		$namesOfDisplayedFilters = [];
-		foreach ( $this->getLegacyShowHideFilters() as $filterName => $filter ) {
-			$namesOfDisplayedFilters[] = $filterName;
-			$links[] = $this->showHideCheck(
-				$nondefaults,
-				$filter->getShowHide(),
-				$filterName,
-				$opts[ $filterName ],
-				$filter->isFeatureAvailableOnStructuredUi( $this )
-			);
+		foreach ( $this->getFilterGroups() as $groupName => $group ) {
+			if ( !$group->isPerGroupRequestParameter() ) {
+				foreach ( $group->getFilters() as $filterName => $filter ) {
+					if ( $filter->displaysOnUnstructuredUi( $this ) ) {
+						$namesOfDisplayedFilters[] = $filterName;
+						$links[] = $this->showHideCheck(
+							$nondefaults,
+							$filter->getShowHide(),
+							$filterName,
+							$opts[$filterName],
+							$filter->isFeatureAvailableOnStructuredUi( $this )
+						);
+					}
+				}
+			}
 		}
 
 		$hiddenFields = $nondefaults;
@@ -856,12 +890,11 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		return Html::rawElement(
 			'span',
 			$attribs,
-			// not using Html::checkLabel because that would escape the contents
-			Html::check( $name, (int)$value, [ 'id' => $name ] ) . Html::rawElement(
-				'label',
-				$attribs + [ 'for' => $name ],
-				// <nowiki/> at beginning to avoid messages with "$1 ..." being parsed as pre tags
-				$this->msg( $message, '<nowiki/>' )->parse()
+			Xml::checkLabel(
+				$this->msg( $message, '' )->text(),
+				$name,
+				$name,
+				(int)$value
 			)
 		);
 	}
@@ -877,5 +910,13 @@ class SpecialWatchlist extends ChangesListSpecialPage {
 		$store = MediaWikiServices::getInstance()->getWatchedItemStore();
 		$count = $store->countWatchedItems( $this->getUser() );
 		return floor( $count / 2 );
+	}
+
+	function getDefaultLimit() {
+		return $this->getUser()->getIntOption( 'wllimit' );
+	}
+
+	function getDefaultDays() {
+		return floatval( $this->getUser()->getOption( 'watchlistdays' ) );
 	}
 }

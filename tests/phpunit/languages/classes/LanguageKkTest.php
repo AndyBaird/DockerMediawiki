@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @covers LanguageKk
- * @covers LanguageKk_cyrl
- * @covers KkConverter
- */
 class LanguageKkTest extends LanguageClassesTestCase {
 	/**
 	 * @dataProvider provideAutoConvertToAllVariants

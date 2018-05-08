@@ -94,26 +94,6 @@ class ApiComparePages extends ApiBase {
 			$this->dieWithError( 'apierror-baddiff' );
 		}
 
-		// Extract sections, if told to
-		if ( isset( $params['fromsection'] ) ) {
-			$fromContent = $fromContent->getSection( $params['fromsection'] );
-			if ( !$fromContent ) {
-				$this->dieWithError(
-					[ 'apierror-compare-nosuchfromsection', wfEscapeWikiText( $params['fromsection'] ) ],
-					'nosuchfromsection'
-				);
-			}
-		}
-		if ( isset( $params['tosection'] ) ) {
-			$toContent = $toContent->getSection( $params['tosection'] );
-			if ( !$toContent ) {
-				$this->dieWithError(
-					[ 'apierror-compare-nosuchtosection', wfEscapeWikiText( $params['tosection'] ) ],
-					'nosuchtosection'
-				);
-			}
-		}
-
 		// Get the diff
 		$context = new DerivativeContext( $this->getContext() );
 		if ( $relRev && $relRev->getTitle() ) {
@@ -167,10 +147,7 @@ class ApiComparePages extends ApiBase {
 			ApiResult::setContentValue( $vals, 'body', $difftext );
 		}
 
-		// Diffs can be really big and there's little point in having
-		// ApiResult truncate it to an empty response since the diff is the
-		// whole reason this module exists. So pass NO_SIZE_CHECK here.
-		$this->getResult()->addValue( null, $this->getModuleName(), $vals, ApiResult::NO_SIZE_CHECK );
+		$this->getResult()->addValue( null, $this->getModuleName(), $vals );
 	}
 
 	/**
@@ -198,17 +175,14 @@ class ApiComparePages extends ApiBase {
 				$rev = Revision::newFromId( $revId );
 				if ( !$rev ) {
 					// Titles of deleted revisions aren't secret, per T51088
-					$arQuery = Revision::getArchiveQueryInfo();
 					$row = $this->getDB()->selectRow(
-						$arQuery['tables'],
+						'archive',
 						array_merge(
-							$arQuery['fields'],
+							Revision::selectArchiveFields(),
 							[ 'ar_namespace', 'ar_title' ]
 						),
 						[ 'ar_rev_id' => $revId ],
-						__METHOD__,
-						[],
-						$arQuery['joins']
+						__METHOD__
 					);
 					if ( $row ) {
 						$rev = Revision::newFromArchiveRow( $row );
@@ -311,17 +285,14 @@ class ApiComparePages extends ApiBase {
 			$rev = Revision::newFromId( $revId );
 			if ( !$rev && $this->getUser()->isAllowedAny( 'deletedtext', 'undelete' ) ) {
 				// Try the 'archive' table
-				$arQuery = Revision::getArchiveQueryInfo();
 				$row = $this->getDB()->selectRow(
-					$arQuery['tables'],
+					'archive',
 					array_merge(
-						$arQuery['fields'],
+						Revision::selectArchiveFields(),
 						[ 'ar_namespace', 'ar_title' ]
 					),
 					[ 'ar_rev_id' => $revId ],
-					__METHOD__,
-					[],
-					$arQuery['joins']
+					__METHOD__
 				);
 				if ( $row ) {
 					$rev = Revision::newFromArchiveRow( $row );
@@ -397,7 +368,7 @@ class ApiComparePages extends ApiBase {
 		if ( $rev ) {
 			$title = $rev->getTitle();
 			if ( isset( $this->props['ids'] ) ) {
-				$vals["{$prefix}id"] = $title->getArticleID();
+				$vals["{$prefix}id"] = $title->getArticleId();
 				$vals["{$prefix}revid"] = $rev->getId();
 			}
 			if ( isset( $this->props['title'] ) ) {
@@ -467,7 +438,6 @@ class ApiComparePages extends ApiBase {
 			'text' => [
 				ApiBase::PARAM_TYPE => 'text'
 			],
-			'section' => null,
 			'pst' => false,
 			'contentformat' => [
 				ApiBase::PARAM_TYPE => ContentHandler::getAllContentFormats(),

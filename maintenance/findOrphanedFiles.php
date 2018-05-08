@@ -37,7 +37,7 @@ class FindOrphanedFiles extends Maintenance {
 
 		$repo = RepoGroup::singleton()->getLocalRepo();
 		if ( $repo->hasSha1Storage() ) {
-			$this->fatalError( "Local repo uses SHA-1 file storage names; aborting." );
+			$this->error( "Local repo uses SHA-1 file storage names; aborting.", 1 );
 		}
 
 		$directory = $repo->getZonePath( 'public' );
@@ -51,7 +51,7 @@ class FindOrphanedFiles extends Maintenance {
 
 		$list = $repo->getBackend()->getFileList( [ 'dir' => $directory ] );
 		if ( $list === null ) {
-			$this->fatalError( "Could not get file listing." );
+			$this->error( "Could not get file listing.", 1 );
 		}
 
 		$pathBatch = [];
@@ -61,7 +61,7 @@ class FindOrphanedFiles extends Maintenance {
 			}
 
 			$pathBatch[] = $path;
-			if ( count( $pathBatch ) >= $this->getBatchSize() ) {
+			if ( count( $pathBatch ) >= $this->mBatchSize ) {
 				$this->checkFiles( $repo, $pathBatch, $verbose );
 				$pathBatch = [];
 			}
@@ -151,5 +151,5 @@ class FindOrphanedFiles extends Maintenance {
 	}
 }
 
-$maintClass = FindOrphanedFiles::class;
+$maintClass = 'FindOrphanedFiles';
 require_once RUN_MAINTENANCE_IF_MAIN;

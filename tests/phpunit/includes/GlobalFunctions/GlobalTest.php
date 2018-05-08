@@ -474,45 +474,25 @@ class GlobalTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @covers ::wfMerge
-	 */
-	public function testMerge_worksWithLessParameters() {
-		$this->markTestSkippedIfNoDiff3();
-
-		$mergedText = null;
-		$successfulMerge = wfMerge( "old1\n\nold2", "old1\n\nnew2", "new1\n\nold2", $mergedText );
-
-		$mergedText = null;
-		$conflictingMerge = wfMerge( 'old', 'old and mine', 'old and yours', $mergedText );
-
-		$this->assertEquals( true, $successfulMerge );
-		$this->assertEquals( false, $conflictingMerge );
-	}
-
-	/**
 	 * @param string $old Text as it was in the database
 	 * @param string $mine Text submitted while user was editing
 	 * @param string $yours Text submitted by the user
 	 * @param bool $expectedMergeResult Whether the merge should be a success
 	 * @param string $expectedText Text after merge has been completed
-	 * @param string $expectedMergeAttemptResult Diff3 output if conflicts occur
 	 *
 	 * @dataProvider provideMerge()
 	 * @group medium
 	 * @covers ::wfMerge
 	 */
-	public function testMerge( $old, $mine, $yours, $expectedMergeResult, $expectedText,
-							   $expectedMergeAttemptResult ) {
+	public function testMerge( $old, $mine, $yours, $expectedMergeResult, $expectedText ) {
 		$this->markTestSkippedIfNoDiff3();
 
 		$mergedText = null;
-		$attemptMergeResult = null;
-		$isMerged = wfMerge( $old, $mine, $yours, $mergedText, $mergeAttemptResult );
+		$isMerged = wfMerge( $old, $mine, $yours, $mergedText );
 
 		$msg = 'Merge should be a ';
 		$msg .= $expectedMergeResult ? 'success' : 'failure';
 		$this->assertEquals( $expectedMergeResult, $isMerged, $msg );
-		$this->assertEquals( $expectedMergeAttemptResult, $mergeAttemptResult );
 
 		if ( $isMerged ) {
 			// Verify the merged text
@@ -550,9 +530,6 @@ class GlobalTest extends MediaWikiTestCase {
 				"one one one ONE ONE\n" .
 					"\n" .
 					"two two TWO TWO\n", // note: will always end in a newline
-
-				// mergeAttemptResult:
-				"",
 			],
 
 			// #1: conflict, fail
@@ -575,13 +552,6 @@ class GlobalTest extends MediaWikiTestCase {
 
 				// result:
 				null,
-
-				// mergeAttemptResult:
-				"1,3c\n" .
-				"one one one\n" .
-				"\n" .
-				"two two\n" .
-				".\n",
 			],
 		];
 	}
@@ -711,9 +681,9 @@ class GlobalTest extends MediaWikiTestCase {
 	public function testWfMkdirParents() {
 		// Should not return true if file exists instead of directory
 		$fname = $this->getNewTempFile();
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$ok = wfMkdirParents( $fname );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 		$this->assertFalse( $ok );
 	}
 
@@ -752,9 +722,6 @@ class GlobalTest extends MediaWikiTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::wfMemcKey
-	 */
 	public function testWfMemcKey() {
 		$cache = ObjectCache::getLocalClusterInstance();
 		$this->assertEquals(
@@ -763,9 +730,6 @@ class GlobalTest extends MediaWikiTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::wfForeignMemcKey
-	 */
 	public function testWfForeignMemcKey() {
 		$cache = ObjectCache::getLocalClusterInstance();
 		$keyspace = $this->readAttribute( $cache, 'keyspace' );
@@ -775,9 +739,6 @@ class GlobalTest extends MediaWikiTestCase {
 		);
 	}
 
-	/**
-	 * @covers ::wfGlobalCacheKey
-	 */
 	public function testWfGlobalCacheKey() {
 		$cache = ObjectCache::getLocalClusterInstance();
 		$this->assertEquals(

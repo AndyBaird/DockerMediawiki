@@ -85,6 +85,7 @@ class HTMLSelectOrOtherField extends HTMLTextField {
 
 		# DropdownInput
 		$dropdownAttribs = [
+			'id' => $this->mID,
 			'name' => $this->mName,
 			'options' => $this->getOptionsOOUI(),
 			'value' => $valInSelect ? $value : 'other',
@@ -102,6 +103,7 @@ class HTMLSelectOrOtherField extends HTMLTextField {
 
 		# TextInput
 		$textAttribs = [
+			'id' => $this->mID . '-other',
 			'name' => $this->mName . '-other',
 			'size' => $this->getSize(),
 			'value' => $valInSelect ? '' : $value,
@@ -128,7 +130,6 @@ class HTMLSelectOrOtherField extends HTMLTextField {
 		}
 
 		return $this->getInputWidget( [
-			'id' => $this->mID,
 			'textinput' => $textAttribs,
 			'dropdowninput' => $dropdownAttribs,
 			'or' => true,
@@ -136,7 +137,7 @@ class HTMLSelectOrOtherField extends HTMLTextField {
 	}
 
 	public function getInputWidget( $params ) {
-		return new MediaWiki\Widget\SelectWithInputWidget( $params );
+		return new Mediawiki\Widget\SelectWithInputWidget( $params );
 	}
 
 	/**

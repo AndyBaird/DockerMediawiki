@@ -6,7 +6,6 @@ class FileTest extends MediaWikiMediaTestCase {
 	 * @param string $filename
 	 * @param bool $expected
 	 * @dataProvider providerCanAnimate
-	 * @covers File::canAnimateThumbIfAppropriate
 	 */
 	function testCanAnimateThumbIfAppropriate( $filename, $expected ) {
 		$this->setMwGlobals( 'wgMaxAnimatedGifArea', 9000 );
@@ -38,7 +37,7 @@ class FileTest extends MediaWikiMediaTestCase {
 		$this->setMwGlobals( 'wgThumbnailBuckets', $data['buckets'] );
 		$this->setMwGlobals( 'wgThumbnailMinimumBucketDistance', $data['minimumBucketDistance'] );
 
-		$fileMock = $this->getMockBuilder( File::class )
+		$fileMock = $this->getMockBuilder( 'File' )
 			->setConstructorArgs( [ 'fileMock', false ] )
 			->setMethods( [ 'getWidth' ] )
 			->getMockForAbstractClass();
@@ -137,11 +136,11 @@ class FileTest extends MediaWikiMediaTestCase {
 	 * @covers File::getThumbnailSource
 	 */
 	public function testGetThumbnailSource( $data ) {
-		$backendMock = $this->getMockBuilder( FSFileBackend::class )
+		$backendMock = $this->getMockBuilder( 'FSFileBackend' )
 			->setConstructorArgs( [ [ 'name' => 'backendMock', 'wikiId' => wfWikiID() ] ] )
 			->getMock();
 
-		$repoMock = $this->getMockBuilder( FileRepo::class )
+		$repoMock = $this->getMockBuilder( 'FileRepo' )
 			->setConstructorArgs( [ [ 'name' => 'repoMock', 'backend' => $backendMock ] ] )
 			->setMethods( [ 'fileExists', 'getLocalReference' ] )
 			->getMock();
@@ -156,13 +155,13 @@ class FileTest extends MediaWikiMediaTestCase {
 			->method( 'getLocalReference' )
 			->will( $this->returnValue( $fsFile ) );
 
-		$handlerMock = $this->getMockBuilder( BitmapHandler::class )
+		$handlerMock = $this->getMockBuilder( 'BitmapHandler' )
 			->setMethods( [ 'supportsBucketing' ] )->getMock();
 		$handlerMock->expects( $this->any() )
 			->method( 'supportsBucketing' )
 			->will( $this->returnValue( $data['supportsBucketing'] ) );
 
-		$fileMock = $this->getMockBuilder( File::class )
+		$fileMock = $this->getMockBuilder( 'File' )
 			->setConstructorArgs( [ 'fileMock', $repoMock ] )
 			->setMethods( [ 'getThumbnailBucket', 'getLocalRefPath', 'getHandler' ] )
 			->getMockForAbstractClass();
@@ -248,22 +247,22 @@ class FileTest extends MediaWikiMediaTestCase {
 	public function testGenerateBucketsIfNeeded( $data ) {
 		$this->setMwGlobals( 'wgThumbnailBuckets', $data['buckets'] );
 
-		$backendMock = $this->getMockBuilder( FSFileBackend::class )
+		$backendMock = $this->getMockBuilder( 'FSFileBackend' )
 			->setConstructorArgs( [ [ 'name' => 'backendMock', 'wikiId' => wfWikiID() ] ] )
 			->getMock();
 
-		$repoMock = $this->getMockBuilder( FileRepo::class )
+		$repoMock = $this->getMockBuilder( 'FileRepo' )
 			->setConstructorArgs( [ [ 'name' => 'repoMock', 'backend' => $backendMock ] ] )
 			->setMethods( [ 'fileExists', 'getLocalReference' ] )
 			->getMock();
 
-		$fileMock = $this->getMockBuilder( File::class )
+		$fileMock = $this->getMockBuilder( 'File' )
 			->setConstructorArgs( [ 'fileMock', $repoMock ] )
 			->setMethods( [ 'getWidth', 'getBucketThumbPath', 'makeTransformTmpFile',
 				'generateAndSaveThumb', 'getHandler' ] )
 			->getMockForAbstractClass();
 
-		$handlerMock = $this->getMockBuilder( JpegHandler::class )
+		$handlerMock = $this->getMockBuilder( 'JpegHandler' )
 			->setMethods( [ 'supportsBucketing' ] )->getMock();
 		$handlerMock->expects( $this->any() )
 			->method( 'supportsBucketing' )
@@ -273,7 +272,7 @@ class FileTest extends MediaWikiMediaTestCase {
 			->method( 'getHandler' )
 			->will( $this->returnValue( $handlerMock ) );
 
-		$reflectionMethod = new ReflectionMethod( File::class, 'generateBucketsIfNeeded' );
+		$reflectionMethod = new ReflectionMethod( 'File', 'generateBucketsIfNeeded' );
 		$reflectionMethod->setAccessible( true );
 
 		$fileMock->expects( $this->any() )

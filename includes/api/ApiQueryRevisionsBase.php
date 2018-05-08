@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Oct 3, 2014 as a split from ApiQueryRevisions
+ *
  * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify

@@ -50,10 +50,6 @@ class RevDelArchivedFileItem extends RevDelFileItem {
 		return 'fa_user_text';
 	}
 
-	public function getAuthorActorField() {
-		return 'fa_actor';
-	}
-
 	public function getId() {
 		return $this->row->fa_id;
 	}

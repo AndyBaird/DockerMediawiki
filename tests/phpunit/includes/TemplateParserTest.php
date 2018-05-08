@@ -2,7 +2,6 @@
 
 /**
  * @group Templates
- * @covers TemplateParser
  */
 class TemplateParserTest extends MediaWikiTestCase {
 
@@ -20,6 +19,9 @@ class TemplateParserTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideProcessTemplate
+	 * @covers TemplateParser::processTemplate
+	 * @covers TemplateParser::getTemplate
+	 * @covers TemplateParser::getTemplateFilename
 	 */
 	public function testProcessTemplate( $name, $args, $result, $exception = false ) {
 		if ( $exception ) {
@@ -116,7 +118,7 @@ class TemplateParserTest extends MediaWikiTestCase {
 		$this->assertEquals( 'rrr', $tp->processTemplate( 'recurse', $data ) );
 
 		$tp->enableRecursivePartials( false );
-		$this->setExpectedException( Exception::class );
+		$this->setExpectedException( 'Exception' );
 		$tp->processTemplate( 'recurse', $data );
 	}
 

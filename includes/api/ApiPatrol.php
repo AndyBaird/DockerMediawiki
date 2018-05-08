@@ -2,6 +2,8 @@
 /**
  * API for MediaWiki 1.14+
  *
+ * Created on Sep 2, 2008
+ *
  * Copyright © 2008 Soxred93 soxred93@gmail.com,
  *
  * This program is free software; you can redistribute it and/or modify

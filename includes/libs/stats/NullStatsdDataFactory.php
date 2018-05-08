@@ -2,6 +2,7 @@
 
 use Liuggio\StatsdClient\Entity\StatsdData;
 use Liuggio\StatsdClient\Entity\StatsdDataInterface;
+use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 
 /**
  * @author Addshore
@@ -105,22 +106,27 @@ class NullStatsdDataFactory implements IBufferingStatsdDataFactory {
 		return $data;
 	}
 
+	/**
+	 * Check whether this data factory has any data.
+	 * @return bool
+	 */
 	public function hasData() {
 		return false;
 	}
 
+	/**
+	 * Return data from the factory.
+	 * @return StatsdData[]
+	 */
 	public function getData() {
 		return [];
 	}
 
-	public function clearData() {
-		// Nothing to do, always empty
-	}
-
-	public function getDataCount() {
-		return 0;
-	}
-
+	/**
+	 * Set collection enable status.
+	 * @param bool $enabled Will collection be enabled?
+	 * @return void
+	 */
 	public function setEnabled( $enabled ) {
 		// Nothing to do, null factory is always disabled.
 	}

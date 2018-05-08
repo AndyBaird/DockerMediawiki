@@ -56,7 +56,7 @@ class GenderCache {
 
 	/**
 	 * Returns the gender for given username.
-	 * @param string|User $username
+	 * @param string|User $username Username
 	 * @param string $caller The calling method
 	 * @return string
 	 */

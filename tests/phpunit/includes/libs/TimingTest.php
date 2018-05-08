@@ -19,9 +19,7 @@
  * @author Ori Livneh <ori@wikimedia.org>
  */
 
-class TimingTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class TimingTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @covers Timing::clearMarks

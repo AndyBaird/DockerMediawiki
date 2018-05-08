@@ -49,9 +49,9 @@ class InvalidateUserSesssions extends Maintenance {
 		$file = $this->getOption( 'file' );
 
 		if ( $username === null && $file === null ) {
-			$this->fatalError( 'Either --user or --file is required' );
+			$this->error( 'Either --user or --file is required', 1 );
 		} elseif ( $username !== null && $file !== null ) {
-			$this->fatalError( 'Cannot use both --user and --file' );
+			$this->error( 'Cannot use both --user and --file', 1 );
 		}
 
 		if ( $username !== null ) {
@@ -60,7 +60,7 @@ class InvalidateUserSesssions extends Maintenance {
 			$usernames = is_readable( $file ) ?
 				file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) : false;
 			if ( $usernames === false ) {
-				$this->fatalError( "Could not open $file", 2 );
+				$this->error( "Could not open $file", 2 );
 			}
 		}
 
@@ -83,12 +83,12 @@ class InvalidateUserSesssions extends Maintenance {
 					. str_replace( [ "\r", "\n" ], ' ', $e->getMessage() ) . "\n" );
 			}
 
-			if ( $i % $this->getBatchSize() ) {
+			if ( $i % $this->mBatchSize ) {
 				$lbFactory->waitForReplication();
 			}
 		}
 	}
 }
 
-$maintClass = InvalidateUserSesssions::class;
+$maintClass = "InvalidateUserSesssions";
 require_once RUN_MAINTENANCE_IF_MAIN;

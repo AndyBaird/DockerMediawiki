@@ -165,9 +165,9 @@ class ParserFuzzTest extends Maintenance {
 	function guessVarSize( $var ) {
 		$length = 0;
 		try {
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$length = strlen( serialize( $var ) );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 		} catch ( Exception $e ) {
 		}
 		return $length;

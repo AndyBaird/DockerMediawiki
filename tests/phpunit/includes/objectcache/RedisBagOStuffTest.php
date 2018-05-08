@@ -5,16 +5,13 @@ use Wikimedia\TestingAccessWrapper;
 /**
  * @group BagOStuff
  */
-class RedisBagOStuffTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-
+class RedisBagOStuffTest extends PHPUnit_Framework_TestCase {
 	/** @var RedisBagOStuff */
 	private $cache;
 
 	protected function setUp() {
 		parent::setUp();
-		$cache = $this->getMockBuilder( RedisBagOStuff::class )
+		$cache = $this->getMockBuilder( 'RedisBagOStuff' )
 			->disableOriginalConstructor()
 			->getMock();
 		$this->cache = TestingAccessWrapper::newFromObject( $cache );

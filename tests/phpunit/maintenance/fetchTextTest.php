@@ -1,15 +1,5 @@
 <?php
 
-namespace MediaWiki\Tests\Maintenance;
-
-use ContentHandler;
-use FetchText;
-use MediaWikiTestCase;
-use MWException;
-use Title;
-use PHPUnit_Framework_ExpectationFailedException;
-use WikiPage;
-
 require_once __DIR__ . "/../../../maintenance/fetchText.php";
 
 /**
@@ -215,7 +205,7 @@ class FetchTextTest extends MediaWikiTestCase {
 
 	function testExistingSeveral() {
 		$this->assertFilter(
-			implode( "\n", [
+			join( "\n", [
 				self::$textId1,
 				self::$textId5,
 				self::$textId3,

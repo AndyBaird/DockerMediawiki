@@ -740,13 +740,8 @@ class FormatMetadata extends ContextSource {
 
 					case 'Software':
 						if ( is_array( $val ) ) {
-							if ( count( $val ) > 1 ) {
-								// if its a software, version array.
-								$val = $this->msg( 'exif-software-version-value', $val[0], $val[1] )->text();
-							} else {
-								// https://phabricator.wikimedia.org/T178130
-								$val = $this->exifMsg( $tag, '', $val[0] );
-							}
+							// if its a software, version array.
+							$val = $this->msg( 'exif-software-version-value', $val[0], $val[1] )->text();
 						} else {
 							$val = $this->exifMsg( $tag, '', $val );
 						}
@@ -1047,7 +1042,7 @@ class FormatMetadata extends ContextSource {
 
 		if ( !is_array( $vals ) ) {
 			return $vals; // do nothing if not an array;
-		} elseif ( count( $vals ) === 1 && $type !== 'lang' && isset( $vals[0] ) ) {
+		} elseif ( count( $vals ) === 1 && $type !== 'lang' ) {
 			return $vals[0];
 		} elseif ( count( $vals ) === 0 ) {
 			wfDebug( __METHOD__ . " metadata array with 0 elements!\n" );
@@ -1766,9 +1761,9 @@ class FormatMetadata extends ContextSource {
 			}
 			return $newValue;
 		} else { // _type is 'ul' or 'ol' or missing in which case it defaults to 'ul'
-			$v = reset( $value );
-			if ( key( $value ) === '_type' ) {
-				$v = next( $value );
+			list( $k, $v ) = each( $value );
+			if ( $k === '_type' ) {
+				$v = current( $value );
 			}
 			return $v;
 		}

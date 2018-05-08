@@ -23,9 +23,6 @@ namespace MediaWiki\Logger\Monolog;
 use MediaWikiTestCase;
 use PHPUnit_Framework_Error_Notice;
 
-/**
- * @covers \MediaWiki\Logger\Monolog\AvroFormatter
- */
 class AvroFormatterTest extends MediaWikiTestCase {
 
 	protected function setUp() {
@@ -50,9 +47,9 @@ class AvroFormatterTest extends MediaWikiTestCase {
 		// disable conversion of notices
 		PHPUnit_Framework_Error_Notice::$enabled = false;
 		// have to keep the user notice from being output
-		\Wikimedia\suppressWarnings();
+		\MediaWiki\suppressWarnings();
 		$res = $formatter->format( [ 'channel' => 'marty' ] );
-		\Wikimedia\restoreWarnings();
+		\MediaWiki\restoreWarnings();
 		PHPUnit_Framework_Error_Notice::$enabled = $noticeEnabled;
 		$this->assertNull( $res );
 	}

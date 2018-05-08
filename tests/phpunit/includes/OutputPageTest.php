@@ -124,47 +124,6 @@ class OutputPageTest extends MediaWikiTestCase {
 		] );
 	}
 
-	public static function provideCdnCacheEpoch() {
-		$base = [
-			'pageTime' => '2011-04-01T12:00:00+00:00',
-			'maxAge' => 24 * 3600,
-		];
-		return [
-			'after 1s' => [ $base + [
-				'reqTime' => '2011-04-01T12:00:01+00:00',
-				'expect' => '2011-04-01T12:00:00+00:00',
-			] ],
-			'after 23h' => [ $base + [
-				'reqTime' => '2011-04-02T11:00:00+00:00',
-				'expect' => '2011-04-01T12:00:00+00:00',
-			] ],
-			'after 24h and a bit' => [ $base + [
-				'reqTime' => '2011-04-02T12:34:56+00:00',
-				'expect' => '2011-04-01T12:34:56+00:00',
-			] ],
-			'after a year' => [ $base + [
-				'reqTime' => '2012-05-06T00:12:07+00:00',
-				'expect' => '2012-05-05T00:12:07+00:00',
-			] ],
-		];
-	}
-
-	/**
-	 * @dataProvider provideCdnCacheEpoch
-	 */
-	public function testCdnCacheEpoch( $params ) {
-		$out = TestingAccessWrapper::newFromObject( $this->newInstance() );
-		$reqTime = strtotime( $params['reqTime'] );
-		$pageTime = strtotime( $params['pageTime'] );
-		$actual = max( $pageTime, $out->getCdnCacheEpoch( $reqTime, $params['maxAge'] ) );
-
-		$this->assertEquals(
-			$params['expect'],
-			gmdate( DateTime::ATOM, $actual ),
-			'cdn epoch'
-		);
-	}
-
 	/**
 	 * Tests screen requests, without either query parameter set
 	 * @covers OutputPage::transformCssMedia
@@ -307,15 +266,15 @@ class OutputPageTest extends MediaWikiTestCase {
 			'UploadPath' => $uploadPath,
 		] );
 
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$actual = OutputPage::transformResourcePath( $conf, $path );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		$this->assertEquals( $expected ?: $path, $actual );
 	}
 
 	public static function provideMakeResourceLoaderLink() {
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Generic.Files.LineLength
 		return [
 			// Single only=scripts load
 			[
@@ -338,7 +297,7 @@ class OutputPageTest extends MediaWikiTestCase {
 					. "});</script>"
 			],
 		];
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 	}
 
 	/**
@@ -352,7 +311,7 @@ class OutputPageTest extends MediaWikiTestCase {
 			'wgResourceLoaderDebug' => false,
 			'wgLoadScript' => 'http://127.0.0.1:8080/w/load.php',
 		] );
-		$class = new ReflectionClass( OutputPage::class );
+		$class = new ReflectionClass( 'OutputPage' );
 		$method = $class->getMethod( 'makeResourceLoaderLink' );
 		$method->setAccessible( true );
 		$ctx = new RequestContext();
@@ -386,7 +345,6 @@ class OutputPageTest extends MediaWikiTestCase {
 	}
 
 	public static function provideBuildExemptModules() {
-		// phpcs:disable Generic.Files.LineLength
 		return [
 			'empty' => [
 				'exemptStyleModules' => [],
@@ -396,6 +354,7 @@ class OutputPageTest extends MediaWikiTestCase {
 				'exemptStyleModules' => [ 'site' => [], 'noscript' => [], 'private' => [], 'user' => [] ],
 				'<meta name="ResourceLoaderDynamicStyles" content=""/>',
 			],
+			// @codingStandardsIgnoreStart Generic.Files.LineLength
 			'default logged-out' => [
 				'exemptStyleModules' => [ 'site' => [ 'site.styles' ] ],
 				'<meta name="ResourceLoaderDynamicStyles" content=""/>' . "\n" .
@@ -418,8 +377,8 @@ class OutputPageTest extends MediaWikiTestCase {
 				'<link rel="stylesheet" href="/w/load.php?debug=false&amp;lang=en&amp;modules=example.user&amp;only=styles&amp;skin=fallback&amp;version=0a56zyi"/>' . "\n" .
 				'<link rel="stylesheet" href="/w/load.php?debug=false&amp;lang=en&amp;modules=user.styles&amp;only=styles&amp;skin=fallback&amp;version=1e9z0ox"/>',
 			],
+			// @codingStandardsIgnoreEnd Generic.Files.LineLength
 		];
-		// phpcs:enable
 	}
 
 	/**
@@ -439,10 +398,13 @@ class OutputPageTest extends MediaWikiTestCase {
 		$ctx = new RequestContext();
 		$ctx->setSkin( SkinFactory::getDefaultInstance()->makeSkin( 'fallback' ) );
 		$ctx->setLanguage( 'en' );
-		$outputPage = $this->getMockBuilder( OutputPage::class )
+		$outputPage = $this->getMockBuilder( 'OutputPage' )
 			->setConstructorArgs( [ $ctx ] )
-			->setMethods( [ 'buildCssLinksArray' ] )
+			->setMethods( [ 'isUserCssPreview', 'buildCssLinksArray' ] )
 			->getMock();
+		$outputPage->expects( $this->any() )
+			->method( 'isUserCssPreview' )
+			->willReturn( false );
 		$outputPage->expects( $this->any() )
 			->method( 'buildCssLinksArray' )
 			->willReturn( [] );
@@ -472,7 +434,7 @@ class OutputPageTest extends MediaWikiTestCase {
 	 */
 	public function testVaryHeaders( $calls, $vary, $key ) {
 		// get rid of default Vary fields
-		$outputPage = $this->getMockBuilder( OutputPage::class )
+		$outputPage = $this->getMockBuilder( 'OutputPage' )
 			->setConstructorArgs( [ new RequestContext() ] )
 			->setMethods( [ 'getCacheVaryCookies' ] )
 			->getMock();
@@ -563,7 +525,7 @@ class OutputPageTest extends MediaWikiTestCase {
 		$this->assertTrue( $outputPage->haveCacheVaryCookies() );
 	}
 
-	/**
+	/*
 	 * @covers OutputPage::addCategoryLinks
 	 * @covers OutputPage::getCategories
 	 */
@@ -577,7 +539,7 @@ class OutputPageTest extends MediaWikiTestCase {
 				'page_title' => 'Test2'
 			]
 		] );
-		$outputPage = $this->getMockBuilder( OutputPage::class )
+		$outputPage = $this->getMockBuilder( 'OutputPage' )
 			->setConstructorArgs( [ new RequestContext() ] )
 			->setMethods( [ 'addCategoryLinksToLBAndGetResult' ] )
 			->getMock();
@@ -681,17 +643,6 @@ class OutputPageTest extends MediaWikiTestCase {
 			[
 				[
 					'ResourceBasePath' => '/w',
-					'Logo' => '/img/default.png',
-					'LogoHD' => [
-						'svg' => '/img/vector.svg',
-					],
-				],
-				'Link: </img/vector.svg>;rel=preload;as=image'
-
-			],
-			[
-				[
-					'ResourceBasePath' => '/w',
 					'Logo' => '/w/test.jpg',
 					'LogoHD' => false,
 					'UploadPath' => '/w/images',
@@ -711,6 +662,7 @@ class OutputPageTest extends MediaWikiTestCase {
 		$context->setConfig( new HashConfig( $config + [
 			'AppleTouchIcon' => false,
 			'DisableLangConversion' => true,
+			'EnableAPI' => false,
 			'EnableCanonicalServerLink' => false,
 			'Favicon' => false,
 			'Feed' => false,
@@ -731,6 +683,10 @@ class OutputPageTest extends MediaWikiTestCase {
 class NullMessageBlobStore extends MessageBlobStore {
 	public function get( ResourceLoader $resourceLoader, $modules, $lang ) {
 		return [];
+	}
+
+	public function insertMessageBlob( $name, ResourceLoaderModule $module, $lang ) {
+		return false;
 	}
 
 	public function updateModule( $name, ResourceLoaderModule $module, $lang ) {

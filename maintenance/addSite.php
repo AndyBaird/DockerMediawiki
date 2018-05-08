@@ -88,5 +88,5 @@ class AddSite extends Maintenance {
 	}
 }
 
-$maintClass = AddSite::class;
+$maintClass = 'AddSite';
 require_once RUN_MAINTENANCE_IF_MAIN;

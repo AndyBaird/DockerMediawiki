@@ -243,12 +243,17 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 				$this->showTitles( $toUnwatch, $this->successMessage );
 			}
 		} else {
+			$this->clearWatchlist();
+			$this->getUser()->invalidateCache();
 
-			if ( count( $current ) === 0 ) {
+			if ( count( $current ) > 0 ) {
+				$this->successMessage = $this->msg( 'watchlistedit-raw-done' )->parse();
+			} else {
 				return false;
 			}
 
-			$this->clearUserWatchedItems( $current, 'raw' );
+			$this->successMessage .= ' ' . $this->msg( 'watchlistedit-raw-removed' )
+				->numParams( count( $current ) )->parse();
 			$this->showTitles( $current, $this->successMessage );
 		}
 
@@ -257,26 +262,14 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 
 	public function submitClear( $data ) {
 		$current = $this->getWatchlist();
-		$this->clearUserWatchedItems( $current, 'clear' );
+		$this->clearWatchlist();
+		$this->getUser()->invalidateCache();
+		$this->successMessage = $this->msg( 'watchlistedit-clear-done' )->parse();
+		$this->successMessage .= ' ' . $this->msg( 'watchlistedit-clear-removed' )
+			->numParams( count( $current ) )->parse();
 		$this->showTitles( $current, $this->successMessage );
-		return true;
-	}
 
-	/**
-	 * @param array $current
-	 * @param string $messageFor 'raw' or 'clear'
-	 */
-	private function clearUserWatchedItems( $current, $messageFor ) {
-		$watchedItemStore = MediaWikiServices::getInstance()->getWatchedItemStore();
-		if ( $watchedItemStore->clearUserWatchedItems( $this->getUser() ) ) {
-			$this->successMessage = $this->msg( 'watchlistedit-' . $messageFor . '-done' )->parse();
-			$this->successMessage .= ' ' . $this->msg( 'watchlistedit-' . $messageFor . '-removed' )
-					->numParams( count( $current ) )->parse();
-			$this->getUser()->invalidateCache();
-		} else {
-			$watchedItemStore->clearUserWatchedItemsUsingJobQueue( $this->getUser() );
-			$this->successMessage = $this->msg( 'watchlistedit-clear-jobqueue' )->parse();
-		}
+		return true;
 	}
 
 	/**
@@ -455,6 +448,18 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 	}
 
 	/**
+	 * Remove all titles from a user's watchlist
+	 */
+	private function clearWatchlist() {
+		$dbw = wfGetDB( DB_MASTER );
+		$dbw->delete(
+			'watchlist',
+			[ 'wl_user' => $this->getUser()->getId() ],
+			__METHOD__
+		);
+	}
+
+	/**
 	 * Add a list of targets to a user's watchlist
 	 *
 	 * @param string[]|LinkTarget[] $targets
@@ -563,7 +568,7 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 			// checkTitle can filter some options out, avoid empty sections
 			if ( count( $options ) > 0 ) {
 				$fields['TitlesNs' . $namespace] = [
-					'class' => EditWatchlistCheckboxSeriesField::class,
+					'class' => 'EditWatchlistCheckboxSeriesField',
 					'options' => $options,
 					'section' => "ns$namespace",
 				];
@@ -657,7 +662,7 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 	 * @return HTMLForm
 	 */
 	protected function getRawForm() {
-		$titles = implode( "\n", $this->getWatchlist() );
+		$titles = implode( $this->getWatchlist(), "\n" );
 		$fields = [
 			'Titles' => [
 				'type' => 'textarea',
@@ -667,7 +672,7 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 		];
 		$context = new DerivativeContext( $this->getContext() );
 		$context->setTitle( $this->getPageTitle( 'raw' ) ); // Reset subpage
-		$form = new OOUIHTMLForm( $fields, $context );
+		$form = new HTMLForm( $fields, $context );
 		$form->setSubmitTextMsg( 'watchlistedit-raw-submit' );
 		# Used message keys: 'accesskey-watchlistedit-raw-submit', 'tooltip-watchlistedit-raw-submit'
 		$form->setSubmitTooltip( 'watchlistedit-raw-submit' );
@@ -686,7 +691,7 @@ class SpecialEditWatchlist extends UnlistedSpecialPage {
 	protected function getClearForm() {
 		$context = new DerivativeContext( $this->getContext() );
 		$context->setTitle( $this->getPageTitle( 'clear' ) ); // Reset subpage
-		$form = new OOUIHTMLForm( [], $context );
+		$form = new HTMLForm( [], $context );
 		$form->setSubmitTextMsg( 'watchlistedit-clear-submit' );
 		# Used message keys: 'accesskey-watchlistedit-clear-submit', 'tooltip-watchlistedit-clear-submit'
 		$form->setSubmitTooltip( 'watchlistedit-clear-submit' );

@@ -220,5 +220,5 @@ class ImageCleanup extends TableCleanup {
 	}
 }
 
-$maintClass = ImageCleanup::class;
+$maintClass = "ImageCleanup";
 require_once RUN_MAINTENANCE_IF_MAIN;

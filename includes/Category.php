@@ -119,9 +119,9 @@ class Category {
 	/**
 	 * Factory function.
 	 *
-	 * @param string $name A category name (no "Category:" prefix).  It need
+	 * @param array $name A category name (no "Category:" prefix).  It need
 	 *   not be normalized, with spaces replaced by underscores.
-	 * @return Category|bool Category, or false on a totally invalid name
+	 * @return mixed Category, or false on a totally invalid name
 	 */
 	public static function newFromName( $name ) {
 		$cat = new self();
@@ -328,34 +328,24 @@ class Category {
 		$dbw = wfGetDB( DB_MASTER );
 		# Avoid excess contention on the same category (T162121)
 		$name = __METHOD__ . ':' . md5( $this->mName );
-		$scopedLock = $dbw->getScopedLockAndFlush( $name, __METHOD__, 0 );
+		$scopedLock = $dbw->getScopedLockAndFlush( $name, __METHOD__, 1 );
 		if ( !$scopedLock ) {
 			return false;
 		}
 
 		$dbw->startAtomic( __METHOD__ );
 
-		// Lock all the `categorylinks` records and gaps for this category;
-		// this is a separate query due to postgres/oracle limitations
-		$dbw->selectRowCount(
+		$cond1 = $dbw->conditional( [ 'page_namespace' => NS_CATEGORY ], 1, 'NULL' );
+		$cond2 = $dbw->conditional( [ 'page_namespace' => NS_FILE ], 1, 'NULL' );
+		$result = $dbw->selectRow(
 			[ 'categorylinks', 'page' ],
-			'*',
+			[ 'pages' => 'COUNT(*)',
+				'subcats' => "COUNT($cond1)",
+				'files' => "COUNT($cond2)"
+			],
 			[ 'cl_to' => $this->mName, 'page_id = cl_from' ],
 			__METHOD__,
 			[ 'LOCK IN SHARE MODE' ]
-		);
-		// Get the aggregate `categorylinks` row counts for this category
-		$catCond = $dbw->conditional( [ 'page_namespace' => NS_CATEGORY ], 1, 'NULL' );
-		$fileCond = $dbw->conditional( [ 'page_namespace' => NS_FILE ], 1, 'NULL' );
-		$result = $dbw->selectRow(
-			[ 'categorylinks', 'page' ],
-			[
-				'pages' => 'COUNT(*)',
-				'subcats' => "COUNT($catCond)",
-				'files' => "COUNT($fileCond)"
-			],
-			[ 'cl_to' => $this->mName, 'page_id = cl_from' ],
-			__METHOD__
 		);
 
 		$shouldExist = $result->pages > 0 || $this->getTitle()->exists();

@@ -52,11 +52,11 @@ class BenchmarkCSSMin extends Benchmarker {
 
 		$this->bench( [
 			"minify ($filename)" => [
-				'function' => [ CSSMin::class, 'minify' ],
+				'function' => [ 'CSSMin', 'minify' ],
 				'args' => [ $css ]
 			],
 			"remap ($filename)" => [
-				'function' => [ CSSMin::class, 'remap' ],
+				'function' => [ 'CSSMin', 'remap' ],
 				'args' => [ $css, dirname( $file ), 'https://example.org/test/', true ]
 			],
 		] );
@@ -72,5 +72,5 @@ class BenchmarkCSSMin extends Benchmarker {
 	}
 }
 
-$maintClass = BenchmarkCSSMin::class;
+$maintClass = 'BenchmarkCSSMin';
 require_once RUN_MAINTENANCE_IF_MAIN;

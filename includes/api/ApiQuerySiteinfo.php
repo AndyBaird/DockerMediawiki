@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Sep 25, 2006
+ *
  * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -223,7 +227,7 @@ class ApiQuerySiteinfo extends ApiQueryBase {
 		if ( $data['readonly'] ) {
 			$data['readonlyreason'] = wfReadOnlyReason();
 		}
-		$data['writeapi'] = true; // Deprecated since MW 1.32
+		$data['writeapi'] = (bool)$config->get( 'EnableWriteAPI' );
 
 		$data['maxarticlesize'] = $config->get( 'MaxArticleSize' ) * 1024;
 
@@ -278,8 +282,6 @@ class ApiQuerySiteinfo extends ApiQueryBase {
 
 		$data['interwikimagic'] = (bool)$config->get( 'InterwikiMagic' );
 		$data['magiclinks'] = $config->get( 'EnableMagicLinks' );
-
-		$data['categorycollation'] = $config->get( 'CategoryCollation' );
 
 		Hooks::run( 'APIQuerySiteInfoGeneralInfo', [ $this, &$data ] );
 
@@ -445,7 +447,7 @@ class ApiQuerySiteinfo extends ApiQueryBase {
 
 	protected function appendDbReplLagInfo( $property, $includeAll ) {
 		$data = [];
-		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
+		$lb = wfGetLB();
 		$showHostnames = $this->getConfig()->get( 'ShowHostnames' );
 		if ( $includeAll ) {
 			if ( !$showHostnames ) {
@@ -465,7 +467,7 @@ class ApiQuerySiteinfo extends ApiQueryBase {
 				'host' => $showHostnames
 						? $lb->getServerName( $index )
 						: '',
-				'lag' => $lag
+				'lag' => intval( $lag )
 			];
 		}
 
@@ -848,7 +850,7 @@ class ApiQuerySiteinfo extends ApiQueryBase {
 		foreach ( $myWgHooks as $name => $subscribers ) {
 			$arr = [
 				'name' => $name,
-				'subscribers' => array_map( [ SpecialVersion::class, 'arrayToString' ], $subscribers ),
+				'subscribers' => array_map( [ 'SpecialVersion', 'arrayToString' ], $subscribers ),
 			];
 
 			ApiResult::setArrayType( $arr['subscribers'], 'array' );

@@ -155,6 +155,16 @@ class JavaScriptContentTest extends TextContentTest {
 			],
 			[ 'Foo',
 				null,
+				'comma',
+				false
+			],
+			[ 'Foo, bar',
+				null,
+				'comma',
+				false
+			],
+			[ 'Foo',
+				null,
 				'link',
 				false
 			],
@@ -177,6 +187,11 @@ class JavaScriptContentTest extends TextContentTest {
 				true,
 				'any',
 				true
+			],
+			[ '#REDIRECT [[bar]]',
+				true,
+				'comma',
+				false
 			],
 			[ '#REDIRECT [[bar]]',
 				true,
@@ -236,18 +251,19 @@ class JavaScriptContentTest extends TextContentTest {
 	}
 
 	public static function provideUpdateRedirect() {
-		// phpcs:disable Generic.Files.LineLength
 		return [
 			[
 				'#REDIRECT [[Someplace]]',
 				'#REDIRECT [[Someplace]]',
 			],
+
+			// @codingStandardsIgnoreStart Generic.Files.LineLength
 			[
 				'/* #REDIRECT */mw.loader.load("//example.org/w/index.php?title=MediaWiki:MonoBook.js\u0026action=raw\u0026ctype=text/javascript");',
 				'/* #REDIRECT */mw.loader.load("//example.org/w/index.php?title=TestUpdateRedirect_target\u0026action=raw\u0026ctype=text/javascript");'
 			]
+			// @codingStandardsIgnoreEnd
 		];
-		// phpcs:enable
 	}
 
 	/**
@@ -278,7 +294,6 @@ class JavaScriptContentTest extends TextContentTest {
 	}
 
 	/**
-	 * @covers JavaScriptContent::getRedirectTarget
 	 * @dataProvider provideGetRedirectTarget
 	 */
 	public function testGetRedirectTarget( $title, $text ) {
@@ -297,7 +312,7 @@ class JavaScriptContentTest extends TextContentTest {
 	 * Keep this in sync with JavaScriptContentHandlerTest::provideMakeRedirectContent()
 	 */
 	public static function provideGetRedirectTarget() {
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Generic.Files.LineLength
 		return [
 			[
 				'MediaWiki:MonoBook.js',
@@ -322,6 +337,6 @@ class JavaScriptContentTest extends TextContentTest {
 				'/* #REDIRECT */mw.loader.load("//example.com/w/index.php?title=MediaWiki:OtherWiki.js\u0026action=raw\u0026ctype=text/javascript");'
 			],
 		];
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 	}
 }

@@ -47,16 +47,14 @@ class HTMLCacheUpdateJob extends Job {
 			// Multiple pages per job make matches unlikely
 			!( isset( $params['pages'] ) && count( $params['pages'] ) != 1 )
 		);
-		$this->params += [ 'causeAction' => 'unknown', 'causeAgent' => 'unknown' ];
 	}
 
 	/**
 	 * @param Title $title Title to purge backlink pages from
 	 * @param string $table Backlink table name
-	 * @param array $params Additional job parameters
 	 * @return HTMLCacheUpdateJob
 	 */
-	public static function newForBacklinks( Title $title, $table, $params = [] ) {
+	public static function newForBacklinks( Title $title, $table ) {
 		return new self(
 			$title,
 			[
@@ -64,7 +62,7 @@ class HTMLCacheUpdateJob extends Job {
 				'recursive' => true
 			] + Job::newRootJobParams( // "overall" refresh links job info
 				"htmlCacheUpdate:{$table}:{$title->getPrefixedText()}"
-			) + $params
+			)
 		);
 	}
 
@@ -77,11 +75,6 @@ class HTMLCacheUpdateJob extends Job {
 
 		// Job to purge all (or a range of) backlink pages for a page
 		if ( !empty( $this->params['recursive'] ) ) {
-			// Carry over information for de-duplication
-			$extraParams = $this->getRootJobParams();
-			// Carry over cause information for logging
-			$extraParams['causeAction'] = $this->params['causeAction'];
-			$extraParams['causeAgent'] = $this->params['causeAgent'];
 			// Convert this into no more than $wgUpdateRowsPerJob HTMLCacheUpdateJob per-title
 			// jobs and possibly a recursive HTMLCacheUpdateJob job for the rest of the backlinks
 			$jobs = BacklinkJobUtils::partitionBacklinkJob(
@@ -89,7 +82,7 @@ class HTMLCacheUpdateJob extends Job {
 				$wgUpdateRowsPerJob,
 				$wgUpdateRowsPerQuery, // jobs-per-title
 				// Carry over information for de-duplication
-				[ 'params' => $extraParams ]
+				[ 'params' => $this->getRootJobParams() ]
 			);
 			JobQueueGroup::singleton()->push( $jobs );
 		// Job to purge pages for a set of titles
@@ -110,7 +103,7 @@ class HTMLCacheUpdateJob extends Job {
 	 * @param array $pages Map of (page ID => (namespace, DB key)) entries
 	 */
 	protected function invalidateTitles( array $pages ) {
-		global $wgUpdateRowsPerQuery, $wgUseFileCache, $wgPageLanguageUseDB;
+		global $wgUpdateRowsPerQuery, $wgUseFileCache;
 
 		// Get all page IDs in this query into an array
 		$pageIds = array_keys( $pages );
@@ -152,10 +145,7 @@ class HTMLCacheUpdateJob extends Job {
 		// Get the list of affected pages (races only mean something else did the purge)
 		$titleArray = TitleArray::newFromResult( $dbw->select(
 			'page',
-			array_merge(
-				[ 'page_namespace', 'page_title' ],
-				$wgPageLanguageUseDB ? [ 'page_lang' ] : []
-			),
+			[ 'page_namespace', 'page_title' ],
 			[ 'page_id' => $pageIds, 'page_touched' => $dbw->timestamp( $touchTimestamp ) ],
 			__METHOD__
 		) );
@@ -174,20 +164,6 @@ class HTMLCacheUpdateJob extends Job {
 				HTMLFileCache::clearFileCache( $title );
 			}
 		}
-	}
-
-	public function getDeduplicationInfo() {
-		$info = parent::getDeduplicationInfo();
-		if ( is_array( $info['params'] ) ) {
-			// For per-pages jobs, the job title is that of the template that changed
-			// (or similar), so remove that since it ruins duplicate detection
-			if ( isset( $info['params']['pages'] ) ) {
-				unset( $info['namespace'] );
-				unset( $info['title'] );
-			}
-		}
-
-		return $info;
 	}
 
 	public function workItemCount() {

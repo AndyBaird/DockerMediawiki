@@ -18,7 +18,6 @@ class ContribsPagerTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @covers ContribsPager::processDateFilter
 	 * @dataProvider dateFilterOptionProcessingProvider
 	 * @param array $inputOpts Input options
 	 * @param array $expectedOpts Expected options

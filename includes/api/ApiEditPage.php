@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on August 16, 2007
+ *
  * Copyright © 2007 Iker Labarga "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -133,7 +137,7 @@ class ApiEditPage extends ApiBase {
 					}
 
 					try {
-						$content = ContentHandler::makeContent( $text, $titleObj );
+						$content = ContentHandler::makeContent( $text, $this->getTitle() );
 					} catch ( MWContentSerializationException $ex ) {
 						$this->dieWithException( $ex, [
 							'wrap' => ApiMessage::create( 'apierror-contentserializationexception', 'parseerror' )
@@ -330,7 +334,7 @@ class ApiEditPage extends ApiBase {
 		}
 
 		// Apply change tags
-		if ( $params['tags'] ) {
+		if ( count( $params['tags'] ) ) {
 			$tagStatus = ChangeTags::canAddTagsAccompanyingChange( $params['tags'], $user );
 			if ( $tagStatus->isOK() ) {
 				$requestArray['wpChangeTags'] = implode( ',', $params['tags'] );
@@ -402,17 +406,10 @@ class ApiEditPage extends ApiBase {
 					return;
 				}
 				if ( !$status->getErrors() ) {
-					// This appears to be unreachable right now, because all
-					// code paths will set an error.  Could change, though.
-					$status->fatal( 'hookaborted' ); //@codeCoverageIgnore
+					$status->fatal( 'hookaborted' );
 				}
 				$this->dieStatus( $status );
 
-			// These two cases will normally have been caught earlier, and will
-			// only occur if something blocks the user between the earlier
-			// check and the check in EditPage (presumably a hook).  It's not
-			// obvious that this is even possible.
-			// @codeCoverageIgnoreStart
 			case EditPage::AS_BLOCKED_PAGE_FOR_USER:
 				$this->dieWithError(
 					'apierror-blocked',
@@ -422,7 +419,6 @@ class ApiEditPage extends ApiBase {
 
 			case EditPage::AS_READ_ONLY_PAGE:
 				$this->dieReadOnly();
-			// @codeCoverageIgnoreEnd
 
 			case EditPage::AS_SUCCESS_NEW_ARTICLE:
 				$r['new'] = true;
@@ -454,7 +450,7 @@ class ApiEditPage extends ApiBase {
 							$status->fatal( 'apierror-noimageredirect-anon' );
 							break;
 						case EditPage::AS_IMAGE_REDIRECT_LOGGED:
-							$status->fatal( 'apierror-noimageredirect' );
+							$status->fatal( 'apierror-noimageredirect-logged' );
 							break;
 						case EditPage::AS_CONTENT_TOO_BIG:
 						case EditPage::AS_MAX_ARTICLE_SIZE_EXCEEDED:
@@ -476,7 +472,6 @@ class ApiEditPage extends ApiBase {
 						// Currently shouldn't be needed, but here in case
 						// hooks use them without setting appropriate
 						// errors on the status.
-						// @codeCoverageIgnoreStart
 						case EditPage::AS_SPAM_ERROR:
 							$status->fatal( 'apierror-spamdetected', $result['spam'] );
 							break;
@@ -502,10 +497,10 @@ class ApiEditPage extends ApiBase {
 							wfWarn( __METHOD__ . ": Unknown EditPage code {$status->value} with no message" );
 							$status->fatal( 'apierror-unknownerror-editpage', $status->value );
 							break;
-						// @codeCoverageIgnoreEnd
 					}
 				}
 				$this->dieStatus( $status );
+				break;
 		}
 		$apiResult->addValue( null, $this->getModuleName(), $r );
 	}
@@ -575,14 +570,10 @@ class ApiEditPage extends ApiBase {
 				ApiBase::PARAM_TYPE => 'text',
 			],
 			'undo' => [
-				ApiBase::PARAM_TYPE => 'integer',
-				ApiBase::PARAM_MIN => 0,
-				ApiBase::PARAM_RANGE_ENFORCE => true,
+				ApiBase::PARAM_TYPE => 'integer'
 			],
 			'undoafter' => [
-				ApiBase::PARAM_TYPE => 'integer',
-				ApiBase::PARAM_MIN => 0,
-				ApiBase::PARAM_RANGE_ENFORCE => true,
+				ApiBase::PARAM_TYPE => 'integer'
 			],
 			'redirect' => [
 				ApiBase::PARAM_TYPE => 'boolean',

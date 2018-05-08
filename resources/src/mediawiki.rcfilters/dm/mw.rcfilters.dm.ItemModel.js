@@ -14,13 +14,13 @@
 	 *  with 'default' and 'inverted' as keys.
 	 * @cfg {boolean} [active=true] The filter is active and affecting the result
 	 * @cfg {boolean} [selected] The item is selected
-	 * @cfg {*} [value] The value of this item
+	 * @cfg {boolean} [inverted] The item is inverted, meaning the search is excluding
+	 *  this parameter.
 	 * @cfg {string} [namePrefix='item_'] A prefix to add to the param name to act as a unique
 	 *  identifier
 	 * @cfg {string} [cssClass] The class identifying the results that match this filter
 	 * @cfg {string[]} [identifiers] An array of identifiers for this item. They will be
 	 *  added and considered in the view.
-	 * @cfg {string} [defaultHighlightColor] If set, highlight this filter by default with this color
 	 */
 	mw.rcfilters.dm.ItemModel = function MwRcfiltersDmItemModel( param, config ) {
 		config = config || {};
@@ -35,13 +35,15 @@
 		this.label = config.label || this.name;
 		this.labelPrefixKey = config.labelPrefixKey;
 		this.description = config.description || '';
-		this.setValue( config.value || config.selected );
+		this.selected = !!config.selected;
 
+		this.inverted = !!config.inverted;
 		this.identifiers = config.identifiers || [];
 
 		// Highlight
 		this.cssClass = config.cssClass;
-		this.highlightColor = config.defaultHighlightColor;
+		this.highlightColor = null;
+		this.highlightEnabled = false;
 	};
 
 	/* Initialization */
@@ -66,7 +68,8 @@
 	 */
 	mw.rcfilters.dm.ItemModel.prototype.getState = function () {
 		return {
-			selected: this.isSelected()
+			selected: this.isSelected(),
+			inverted: this.isInverted()
 		};
 	};
 
@@ -80,24 +83,28 @@
 	};
 
 	/**
-	 * Get the message key to use to wrap the label. This message takes the label as a parameter.
+	 * Get a prefixed label
 	 *
-	 * @param {boolean} inverted Whether this item should be considered inverted
-	 * @return {string|null} Message key, or null if no message
+	 * @return {string} Prefixed label
 	 */
-	mw.rcfilters.dm.ItemModel.prototype.getLabelMessageKey = function ( inverted ) {
+	mw.rcfilters.dm.ItemModel.prototype.getPrefixedLabel = function () {
 		if ( this.labelPrefixKey ) {
 			if ( typeof this.labelPrefixKey === 'string' ) {
-				return this.labelPrefixKey;
+				return mw.message( this.labelPrefixKey, this.getLabel() ).parse();
+			} else {
+				return mw.message(
+					this.labelPrefixKey[
+						// Only use inverted-prefix if the item is selected
+						// Highlight-only an inverted item makes no sense
+						this.isInverted() && this.isSelected() ?
+							'inverted' : 'default'
+					],
+					this.getLabel()
+				).parse();
 			}
-			return this.labelPrefixKey[
-				// Only use inverted-prefix if the item is selected
-				// Highlight-only an inverted item makes no sense
-				inverted && this.isSelected() ?
-					'inverted' : 'default'
-			];
+		} else {
+			return this.getLabel();
 		}
-		return null;
 	};
 
 	/**
@@ -152,7 +159,7 @@
 	 * @return {boolean} Filter is selected
 	 */
 	mw.rcfilters.dm.ItemModel.prototype.isSelected = function () {
-		return !!this.value;
+		return this.selected;
 	};
 
 	/**
@@ -162,38 +169,34 @@
 	 * @fires update
 	 */
 	mw.rcfilters.dm.ItemModel.prototype.toggleSelected = function ( isSelected ) {
-		isSelected = isSelected === undefined ? !this.isSelected() : isSelected;
-		this.setValue( isSelected );
+		isSelected = isSelected === undefined ? !this.selected : isSelected;
+
+		if ( this.selected !== isSelected ) {
+			this.selected = isSelected;
+			this.emit( 'update' );
+		}
 	};
 
 	/**
-	 * Get the value
+	 * Get the inverted state of this item
 	 *
-	 * @return {*}
+	 * @return {boolean} Item is inverted
 	 */
-	mw.rcfilters.dm.ItemModel.prototype.getValue = function () {
-		return this.value;
+	mw.rcfilters.dm.ItemModel.prototype.isInverted = function () {
+		return this.inverted;
 	};
 
 	/**
-	 * Convert a given value to the appropriate representation based on group type
+	 * Toggle the inverted state of the item
 	 *
-	 * @param {*} value
-	 * @return {*}
+	 * @param {boolean} [isInverted] Item is inverted
+	 * @fires update
 	 */
-	mw.rcfilters.dm.ItemModel.prototype.coerceValue = function ( value ) {
-		return this.getGroupModel().getType() === 'any_value' ? value : !!value;
-	};
+	mw.rcfilters.dm.ItemModel.prototype.toggleInverted = function ( isInverted ) {
+		isInverted = isInverted === undefined ? !this.inverted : isInverted;
 
-	/**
-	 * Set the value
-	 *
-	 * @param {*} newValue
-	 */
-	mw.rcfilters.dm.ItemModel.prototype.setValue = function ( newValue ) {
-		newValue = this.coerceValue( newValue );
-		if ( this.value !== newValue ) {
-			this.value = newValue;
+		if ( this.inverted !== isInverted ) {
+			this.inverted = isInverted;
 			this.emit( 'update' );
 		}
 	};
@@ -204,10 +207,6 @@
 	 * @param {string|null} highlightColor
 	 */
 	mw.rcfilters.dm.ItemModel.prototype.setHighlightColor = function ( highlightColor ) {
-		if ( !this.isHighlightSupported() ) {
-			return;
-		}
-
 		if ( this.highlightColor !== highlightColor ) {
 			this.highlightColor = highlightColor;
 			this.emit( 'update' );
@@ -250,6 +249,36 @@
 	};
 
 	/**
+	 * Toggle the highlight feature on and off for this filter.
+	 * It only works if highlight is supported for this filter.
+	 *
+	 * @param {boolean} enable Highlight should be enabled
+	 */
+	mw.rcfilters.dm.ItemModel.prototype.toggleHighlight = function ( enable ) {
+		enable = enable === undefined ? !this.highlightEnabled : enable;
+
+		if ( !this.isHighlightSupported() ) {
+			return;
+		}
+
+		if ( enable === this.highlightEnabled ) {
+			return;
+		}
+
+		this.highlightEnabled = enable;
+		this.emit( 'update' );
+	};
+
+	/**
+	 * Check if the highlight feature is currently enabled for this filter
+	 *
+	 * @return {boolean}
+	 */
+	mw.rcfilters.dm.ItemModel.prototype.isHighlightEnabled = function () {
+		return !!this.highlightEnabled;
+	};
+
+	/**
 	 * Check if the highlight feature is supported for this filter
 	 *
 	 * @return {boolean}
@@ -264,6 +293,6 @@
 	 * @return {boolean}
 	 */
 	mw.rcfilters.dm.ItemModel.prototype.isHighlighted = function () {
-		return !!this.getHighlightColor();
+		return this.isHighlightEnabled() && !!this.getHighlightColor();
 	};
 }( mediaWiki ) );

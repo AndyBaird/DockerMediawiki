@@ -88,8 +88,6 @@ class CommandLineInstaller extends Maintenance {
 			false, true );
 		*/
 		$this->addOption( 'env-checks', "Run environment checks only, don't change anything" );
-
-		$this->addOption( 'with-extensions', "Detect and include extensions" );
 	}
 
 	public function getDbType() {
@@ -134,11 +132,11 @@ class CommandLineInstaller extends Maintenance {
 				$this->error( 'WARNING: You have provided the options "dbpass" and "dbpassfile". '
 					. 'The content of "dbpassfile" overrides "dbpass".' );
 			}
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$dbpass = file_get_contents( $dbpassfile ); // returns false on failure
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( $dbpass === false ) {
-				$this->fatalError( "Couldn't open $dbpassfile" );
+				$this->error( "Couldn't open $dbpassfile", true );
 			}
 			$this->mOptions['dbpass'] = trim( $dbpass, "\r\n" );
 		}
@@ -151,15 +149,15 @@ class CommandLineInstaller extends Maintenance {
 				$this->error( 'WARNING: You have provided the options "pass" and "passfile". '
 					. 'The content of "passfile" overrides "pass".' );
 			}
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$pass = file_get_contents( $passfile ); // returns false on failure
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( $pass === false ) {
-				$this->fatalError( "Couldn't open $passfile" );
+				$this->error( "Couldn't open $passfile", true );
 			}
 			$this->mOptions['pass'] = trim( $pass, "\r\n" );
 		} elseif ( $this->getOption( 'pass' ) === null ) {
-			$this->fatalError( 'You need to provide the option "pass" or "passfile"' );
+			$this->error( 'You need to provide the option "pass" or "passfile"', true );
 		}
 	}
 
@@ -170,6 +168,6 @@ class CommandLineInstaller extends Maintenance {
 	}
 }
 
-$maintClass = CommandLineInstaller::class;
+$maintClass = 'CommandLineInstaller';
 
 require_once RUN_MAINTENANCE_IF_MAIN;

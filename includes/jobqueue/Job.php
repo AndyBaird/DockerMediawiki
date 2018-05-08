@@ -50,12 +50,6 @@ abstract class Job implements IJobSpecification {
 	/** @var callable[] */
 	protected $teardownCallbacks = [];
 
-	/** @var int Bitfield of JOB_* class constants */
-	protected $executionFlags = 0;
-
-	/** @var int Job must not be wrapped in the usual explicit LBFactory transaction round */
-	const JOB_NO_EXPLICIT_TRX_ROUND = 1;
-
 	/**
 	 * Run the job
 	 * @return bool Success
@@ -112,15 +106,6 @@ abstract class Job implements IJobSpecification {
 		if ( !isset( $this->params['requestId'] ) ) {
 			$this->params['requestId'] = WebRequest::getRequestId();
 		}
-	}
-
-	/**
-	 * @param int $flag JOB_* class constant
-	 * @return bool
-	 * @since 1.31
-	 */
-	public function hasExecutionFlag( $flag ) {
-		return ( $this->executionFlags && $flag ) === $flag;
 	}
 
 	/**
@@ -352,7 +337,6 @@ abstract class Job implements IJobSpecification {
 	 * @deprecated since 1.21
 	 */
 	public function insert() {
-		wfDeprecated( __METHOD__, '1.21' );
 		JobQueueGroup::singleton()->push( $this );
 		return true;
 	}

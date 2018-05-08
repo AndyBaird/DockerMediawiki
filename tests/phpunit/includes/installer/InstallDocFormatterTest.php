@@ -1,8 +1,12 @@
 <?php
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 
 class InstallDocFormatterTest extends MediaWikiTestCase {
 	/**
-	 * @covers InstallDocFormatter
+	 * @covers InstallDocFormatter::format
 	 * @dataProvider provideDocFormattingTests
 	 */
 	public function testFormat( $expected, $unformattedText, $message = '' ) {

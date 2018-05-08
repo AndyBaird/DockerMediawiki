@@ -517,7 +517,7 @@ class MWDebug {
 			return [];
 		}
 
-		global $wgVersion;
+		global $wgVersion, $wgRequestTime;
 		$request = $context->getRequest();
 
 		// HHVM's reported memory usage from memory_get_peak_usage()
@@ -540,7 +540,7 @@ class MWDebug {
 			'gitRevision' => GitInfo::headSHA1(),
 			'gitBranch' => $branch,
 			'gitViewUrl' => GitInfo::headViewUrl(),
-			'time' => $request->getElapsedTime(),
+			'time' => microtime( true ) - $wgRequestTime,
 			'log' => self::$log,
 			'debugLog' => self::$debug,
 			'queries' => self::$query,

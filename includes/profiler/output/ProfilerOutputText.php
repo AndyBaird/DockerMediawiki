@@ -59,7 +59,7 @@ class ProfilerOutputText extends ProfilerOutput {
 			);
 
 			$contentType = $this->collector->getContentType();
-			if ( wfIsCLI() ) {
+			if ( PHP_SAPI === 'cli' ) {
 				print "<!--\n{$out}\n-->\n";
 			} elseif ( $contentType === 'text/html' ) {
 				$visible = isset( $this->params['visible'] ) ?

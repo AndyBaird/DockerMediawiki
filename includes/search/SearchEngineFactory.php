@@ -49,17 +49,17 @@ class SearchEngineFactory {
 	public static function getSearchEngineClass( IDatabase $db ) {
 		switch ( $db->getType() ) {
 			case 'sqlite':
-				return SearchSqlite::class;
+				return 'SearchSqlite';
 			case 'mysql':
-				return SearchMySQL::class;
+				return 'SearchMySQL';
 			case 'postgres':
-				return SearchPostgres::class;
+				return 'SearchPostgres';
 			case 'mssql':
-				return SearchMssql::class;
+				return 'SearchMssql';
 			case 'oracle':
-				return SearchOracle::class;
+				return 'SearchOracle';
 			default:
-				return SearchEngineDummy::class;
+				return 'SearchEngineDummy';
 		}
 	}
 }

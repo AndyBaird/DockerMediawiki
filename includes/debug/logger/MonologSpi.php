@@ -22,7 +22,7 @@ namespace MediaWiki\Logger;
 
 use MediaWiki\Logger\Monolog\BufferHandler;
 use Monolog\Logger;
-use Wikimedia\ObjectFactory;
+use ObjectFactory;
 
 /**
  * LoggerFactory service provider that creates loggers implemented by
@@ -40,7 +40,7 @@ use Wikimedia\ObjectFactory;
  * default SPI provider:
  * @code
  * $wgMWLoggerDefaultSpi = [
- *   'class' => \MediaWiki\Logger\MonologSpi::class,
+ *   'class' => '\\MediaWiki\\Logger\\MonologSpi',
  *   'args' => [ [
  *       'loggers' => [
  *           '@default' => [
@@ -54,29 +54,29 @@ use Wikimedia\ObjectFactory;
  *       ],
  *       'processors' => [
  *           'wiki' => [
- *               'class' => \MediaWiki\Logger\Monolog\WikiProcessor::class,
+ *               'class' => '\\MediaWiki\\Logger\\Monolog\\WikiProcessor',
  *           ],
  *           'psr' => [
- *               'class' => \Monolog\Processor\PsrLogMessageProcessor::class,
+ *               'class' => '\\Monolog\\Processor\\PsrLogMessageProcessor',
  *           ],
  *           'pid' => [
- *               'class' => \Monolog\Processor\ProcessIdProcessor::class,
+ *               'class' => '\\Monolog\\Processor\\ProcessIdProcessor',
  *           ],
  *           'uid' => [
- *               'class' => \Monolog\Processor\UidProcessor::class,
+ *               'class' => '\\Monolog\\Processor\\UidProcessor',
  *           ],
  *           'web' => [
- *               'class' => \Monolog\Processor\WebProcessor::class,
+ *               'class' => '\\Monolog\\Processor\\WebProcessor',
  *           ],
  *       ],
  *       'handlers' => [
  *           'stream' => [
- *               'class'     => \Monolog\Handler\StreamHandler::class,
+ *               'class'     => '\\Monolog\\Handler\\StreamHandler',
  *               'args'      => [ 'path/to/your.log' ],
  *               'formatter' => 'line',
  *           ],
  *           'redis' => [
- *               'class'     => \Monolog\Handler\RedisHandler::class,
+ *               'class'     => '\\Monolog\\Handler\\RedisHandler',
  *               'args'      => [ function() {
  *                       $redis = new Redis();
  *                       $redis->connect( '127.0.0.1', 6379 );
@@ -88,7 +88,7 @@ use Wikimedia\ObjectFactory;
  *               'buffer' => true,
  *           ],
  *           'udp2log' => [
- *               'class' => \MediaWiki\Logger\Monolog\LegacyHandler::class,
+ *               'class' => '\\MediaWiki\\Logger\\Monolog\\LegacyHandler',
  *               'args' => [
  *                   'udp://127.0.0.1:8420/mediawiki
  *               ],
@@ -97,10 +97,10 @@ use Wikimedia\ObjectFactory;
  *       ],
  *       'formatters' => [
  *           'line' => [
- *               'class' => \Monolog\Formatter\LineFormatter::class,
+ *               'class' => '\\Monolog\\Formatter\\LineFormatter',
  *            ],
  *            'logstash' => [
- *                'class' => \Monolog\Formatter\LogstashFormatter::class,
+ *                'class' => '\\Monolog\\Formatter\\LogstashFormatter',
  *                'args'  => [ 'mediawiki', php_uname( 'n' ), null, '', 1 ],
  *            ],
  *       ],

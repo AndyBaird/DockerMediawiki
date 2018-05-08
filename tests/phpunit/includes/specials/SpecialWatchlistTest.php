@@ -56,7 +56,7 @@ class SpecialWatchlistTest extends SpecialPageTestBase {
 	}
 
 	public function testNotLoggedIn_throwsException() {
-		$this->setExpectedException( UserNotLoggedIn::class );
+		$this->setExpectedException( 'UserNotLoggedIn' );
 		$this->executeSpecialPage();
 	}
 
@@ -149,7 +149,6 @@ class SpecialWatchlistTest extends SpecialPageTestBase {
 					// Second two overriden
 					'hideanons' => false,
 					'hideliu' => true,
-					'userExpLevel' => 'registered'
 				] + $wikiDefaults,
 				[
 					'watchlisthideminor' => 1,
@@ -172,14 +171,12 @@ class SpecialWatchlistTest extends SpecialPageTestBase {
 					'hidebots' => true,
 					'hideanons' => false,
 					'hideliu' => true,
-					'userExpLevel' => 'unregistered'
 				] + $allFalse,
 				[
 					'watchlisthideminor' => 0,
 					'watchlisthidebots' => 1,
-
-					'watchlisthideanons' => 0,
-					'watchlisthideliu' => 1,
+					'watchlisthideanons' => 1,
+					'watchlisthideliu' => 0,
 				],
 				[
 					'hidebots' => 1,

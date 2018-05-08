@@ -43,15 +43,14 @@ class RevDelArchiveList extends RevDelRevisionList {
 			$timestamps[] = $db->timestamp( $id );
 		}
 
-		$arQuery = Revision::getArchiveQueryInfo();
-		$tables = $arQuery['tables'];
-		$fields = $arQuery['fields'];
+		$tables = [ 'archive' ];
+		$fields = Revision::selectArchiveFields();
 		$conds = [
 			'ar_namespace' => $this->title->getNamespace(),
 			'ar_title' => $this->title->getDBkey(),
 			'ar_timestamp' => $timestamps,
 		];
-		$join_conds = $arQuery['joins'];
+		$join_conds = [];
 		$options = [ 'ORDER BY' => 'ar_timestamp DESC' ];
 
 		ChangeTags::modifyDisplayQuery(

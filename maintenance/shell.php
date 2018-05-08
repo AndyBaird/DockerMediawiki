@@ -58,7 +58,7 @@ class MediaWikiShell extends Maintenance {
 
 	public function execute() {
 		if ( !class_exists( \Psy\Shell::class ) ) {
-			$this->fatalError( 'PsySH not found. Please run composer with the --dev option.' );
+			$this->error( 'PsySH not found. Please run composer with the --dev option.', 1 );
 		}
 
 		$traverser = new \PhpParser\NodeTraverser();
@@ -96,5 +96,5 @@ class MediaWikiShell extends Maintenance {
 
 }
 
-$maintClass = MediaWikiShell::class;
+$maintClass = 'MediaWikiShell';
 require_once RUN_MAINTENANCE_IF_MAIN;

@@ -1,14 +1,16 @@
 <?php
-
+/**
+ * MediaWiki Widgets – UsersMultiselectWidget class.
+ *
+ * @copyright 2017 MediaWiki Widgets Team and others; see AUTHORS.txt
+ * @license The MIT License (MIT); see LICENSE.txt
+ */
 namespace MediaWiki\Widget;
 
-use OOUI\MultilineTextInputWidget;
+use \OOUI\TextInputWidget;
 
 /**
  * Widget to select multiple users.
- *
- * @copyright 2017 MediaWiki Widgets Team and others; see AUTHORS.txt
- * @license MIT
  */
 class UsersMultiselectWidget extends \OOUI\Widget {
 
@@ -18,9 +20,9 @@ class UsersMultiselectWidget extends \OOUI\Widget {
 
 	/**
 	 * @param array $config Configuration options
-	 *   - array $config['users'] Array of usernames to use as preset data
-	 *   - array $config['placeholder'] Placeholder message for input
-	 *   - array $config['name'] Name attribute (used in forms)
+	 * @param array $config['users'] Array of usernames to use as preset data
+	 * @param array $config['placeholder'] Placeholder message for input
+	 * @param array $config['name'] Name attribute (used in forms)
 	 */
 	public function __construct( array $config = [] ) {
 		parent::__construct( $config );
@@ -36,8 +38,9 @@ class UsersMultiselectWidget extends \OOUI\Widget {
 			$this->inputPlaceholder = $config['placeholder'];
 		}
 
-		$textarea = new MultilineTextInputWidget( [
+		$textarea = new TextInputWidget( [
 			'name' => $this->inputName,
+			'multiline' => true,
 			'value' => implode( "\n", $this->usersArray ),
 			'rows' => 25,
 		] );
@@ -59,7 +62,6 @@ class UsersMultiselectWidget extends \OOUI\Widget {
 			$config['placeholder'] = $this->inputPlaceholder;
 		}
 
-		$config['$overlay'] = true;
 		return parent::getConfig( $config );
 	}
 

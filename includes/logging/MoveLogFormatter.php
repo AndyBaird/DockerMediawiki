@@ -71,9 +71,9 @@ class MoveLogFormatter extends LogFormatter {
 			return '';
 		}
 
-		$revert = $this->getLinkRenderer()->makeKnownLink(
+		$revert = Linker::linkKnown(
 			SpecialPage::getTitleFor( 'Movepage' ),
-			$this->msg( 'revertmove' )->text(),
+			$this->msg( 'revertmove' )->escaped(),
 			[],
 			[
 				'wpOldTitle' => $destTitle->getPrefixedDBkey(),

@@ -58,32 +58,14 @@ class DumpCategoriesAsRdf extends Maintenance {
 	public function getCategoryIterator( IDatabase $dbr ) {
 		$it = new BatchRowIterator(
 			$dbr,
-			[ 'page', 'page_props', 'category' ],
+			'page',
 			[ 'page_title' ],
-			$this->getBatchSize()
+			$this->mBatchSize
 		);
 		$it->addConditions( [
 			'page_namespace' => NS_CATEGORY,
 		] );
-		$it->setFetchColumns( [
-			'page_title',
-			'page_id',
-			'pp_propname',
-			'cat_pages',
-			'cat_subcats',
-			'cat_files'
-		] );
-		$it->addJoinConditions(
-			[
-				'page_props' => [
-					'LEFT JOIN', [ 'pp_propname' => 'hiddencat', 'pp_page = page_id' ]
-				],
-				'category' => [
-					'LEFT JOIN', [ 'cat_title = page_title' ]
-				]
-			]
-
-		);
+		$it->setFetchColumns( [ 'page_title', 'page_id' ] );
 		return $it;
 	}
 
@@ -98,7 +80,7 @@ class DumpCategoriesAsRdf extends Maintenance {
 			$dbr,
 			'categorylinks',
 			[ 'cl_from', 'cl_to' ],
-			$this->getBatchSize()
+			$this->mBatchSize
 		);
 		$it->addConditions( [
 			'cl_type' => 'subcat',
@@ -108,16 +90,13 @@ class DumpCategoriesAsRdf extends Maintenance {
 		return new RecursiveIteratorIterator( $it );
 	}
 
-	/**
-	 * @param int $timestamp
-	 */
 	public function addDumpHeader( $timestamp ) {
 		global $wgRightsUrl;
 		$licenseUrl = $wgRightsUrl;
 		if ( substr( $licenseUrl, 0, 2 ) == '//' ) {
 			$licenseUrl = 'https:' . $licenseUrl;
 		}
-		$this->rdfWriter->about( $this->categoriesRdf->getDumpURI() )
+		$this->rdfWriter->about( wfExpandUrl( '/categoriesDump', PROTO_CANONICAL ) )
 			->a( 'schema', 'Dataset' )
 			->a( 'owl', 'Ontology' )
 			->say( 'cc', 'license' )->is( $licenseUrl )
@@ -150,12 +129,7 @@ class DumpCategoriesAsRdf extends Maintenance {
 		foreach ( $this->getCategoryIterator( $dbr ) as $batch ) {
 			$pages = [];
 			foreach ( $batch as $row ) {
-				$this->categoriesRdf->writeCategoryData(
-					$row->page_title,
-					$row->pp_propname === 'hiddencat',
-					(int)$row->cat_pages - (int)$row->cat_subcats - (int)$row->cat_files,
-					(int)$row->cat_subcats
-				);
+				$this->categoriesRdf->writeCategoryData( $row->page_title );
 				$pages[$row->page_id] = $row->page_title;
 			}
 
@@ -180,5 +154,5 @@ class DumpCategoriesAsRdf extends Maintenance {
 	}
 }
 
-$maintClass = DumpCategoriesAsRdf::class;
+$maintClass = "DumpCategoriesAsRdf";
 require_once RUN_MAINTENANCE_IF_MAIN;

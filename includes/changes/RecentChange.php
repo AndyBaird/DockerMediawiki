@@ -34,7 +34,6 @@
  *  rc_cur_id       page_id of associated page entry
  *  rc_user         user id who made the entry
  *  rc_user_text    user name who made the entry
- *  rc_actor        actor id who made the entry
  *  rc_comment      edit summary
  *  rc_this_oldid   rev_id associated with this entry (or zero)
  *  rc_last_oldid   rev_id associated with the entry before this one (or zero)
@@ -73,20 +72,6 @@ class RecentChange {
 	const SRC_LOG = 'mw.log';
 	const SRC_EXTERNAL = 'mw.external'; // obsolete
 	const SRC_CATEGORIZE = 'mw.categorize';
-
-	const PRC_UNPATROLLED = 0;
-	const PRC_PATROLLED = 1;
-	const PRC_AUTOPATROLLED = 2;
-
-	/**
-	 * @var bool For save() - save to the database only, without any events.
-	 */
-	const SEND_NONE = true;
-
-	/**
-	 * @var bool For save() - do emit the change to RCFeeds (usually public).
-	 */
-	const SEND_FEED = false;
 
 	public $mAttribs = [];
 	public $mExtra = [];
@@ -207,10 +192,7 @@ class RecentChange {
 		$dbType = DB_REPLICA
 	) {
 		$db = wfGetDB( $dbType );
-		$rcQuery = self::getQueryInfo();
-		$row = $db->selectRow(
-			$rcQuery['tables'], $rcQuery['fields'], $conds, $fname, [], $rcQuery['joins']
-		);
+		$row = $db->selectRow( 'recentchanges', self::selectFields(), $conds, $fname );
 		if ( $row !== false ) {
 			return self::newFromRow( $row );
 		} else {
@@ -221,29 +203,16 @@ class RecentChange {
 	/**
 	 * Return the list of recentchanges fields that should be selected to create
 	 * a new recentchanges object.
-	 * @deprecated since 1.31, use self::getQueryInfo() instead.
+	 * @todo Deprecate this in favor of a method that returns tables and joins
+	 *  as well, and use CommentStore::getJoin().
 	 * @return array
 	 */
 	public static function selectFields() {
-		global $wgActorTableSchemaMigrationStage;
-
-		wfDeprecated( __METHOD__, '1.31' );
-		if ( $wgActorTableSchemaMigrationStage > MIGRATION_WRITE_BOTH ) {
-			// If code is using this instead of self::getQueryInfo(), there's a
-			// decent chance it's going to try to directly access
-			// $row->rc_user or $row->rc_user_text and we can't give it
-			// useful values here once those aren't being written anymore.
-			throw new BadMethodCallException(
-				'Cannot use ' . __METHOD__ . ' when $wgActorTableSchemaMigrationStage > MIGRATION_WRITE_BOTH'
-			);
-		}
-
 		return [
 			'rc_id',
 			'rc_timestamp',
 			'rc_user',
 			'rc_user_text',
-			'rc_actor' => 'NULL',
 			'rc_namespace',
 			'rc_title',
 			'rc_minor',
@@ -263,48 +232,7 @@ class RecentChange {
 			'rc_log_type',
 			'rc_log_action',
 			'rc_params',
-		] + CommentStore::getStore()->getFields( 'rc_comment' );
-	}
-
-	/**
-	 * Return the tables, fields, and join conditions to be selected to create
-	 * a new recentchanges object.
-	 * @since 1.31
-	 * @return array With three keys:
-	 *   - tables: (string[]) to include in the `$table` to `IDatabase->select()`
-	 *   - fields: (string[]) to include in the `$vars` to `IDatabase->select()`
-	 *   - joins: (array) to include in the `$join_conds` to `IDatabase->select()`
-	 */
-	public static function getQueryInfo() {
-		$commentQuery = CommentStore::getStore()->getJoin( 'rc_comment' );
-		$actorQuery = ActorMigration::newMigration()->getJoin( 'rc_user' );
-		return [
-			'tables' => [ 'recentchanges' ] + $commentQuery['tables'] + $actorQuery['tables'],
-			'fields' => [
-				'rc_id',
-				'rc_timestamp',
-				'rc_namespace',
-				'rc_title',
-				'rc_minor',
-				'rc_bot',
-				'rc_new',
-				'rc_cur_id',
-				'rc_this_oldid',
-				'rc_last_oldid',
-				'rc_type',
-				'rc_source',
-				'rc_patrolled',
-				'rc_ip',
-				'rc_old_len',
-				'rc_new_len',
-				'rc_deleted',
-				'rc_logid',
-				'rc_log_type',
-				'rc_log_action',
-				'rc_params',
-			] + $commentQuery['fields'] + $actorQuery['fields'],
-			'joins' => $commentQuery['joins'] + $actorQuery['joins'],
-		];
+		] + CommentStore::newKey( 'rc_comment' )->getFields();
 	}
 
 	# Accessors
@@ -341,14 +269,10 @@ class RecentChange {
 	 */
 	public function getPerformer() {
 		if ( $this->mPerformer === false ) {
-			if ( !empty( $this->mAttribs['rc_actor'] ) ) {
-				$this->mPerformer = User::newFromActorId( $this->mAttribs['rc_actor'] );
-			} elseif ( !empty( $this->mAttribs['rc_user'] ) ) {
+			if ( $this->mAttribs['rc_user'] ) {
 				$this->mPerformer = User::newFromId( $this->mAttribs['rc_user'] );
-			} elseif ( !empty( $this->mAttribs['rc_user_text'] ) ) {
-				$this->mPerformer = User::newFromName( $this->mAttribs['rc_user_text'], false );
 			} else {
-				throw new MWException( 'RecentChange object lacks rc_actor, rc_user, and rc_user_text' );
+				$this->mPerformer = User::newFromName( $this->mAttribs['rc_user_text'], false );
 			}
 		}
 
@@ -357,22 +281,10 @@ class RecentChange {
 
 	/**
 	 * Writes the data in this object to the database
-	 *
-	 * For compatibility reasons, the SEND_ constants internally reference a value
-	 * that may seem negated from their purpose (none=true, feed=false). This is
-	 * because the parameter used to be called "$noudp", defaulting to false.
-	 *
-	 * @param bool $send self::SEND_FEED or self::SEND_NONE
+	 * @param bool $noudp
 	 */
-	public function save( $send = self::SEND_FEED ) {
+	public function save( $noudp = false ) {
 		global $wgPutIPinRC, $wgUseEnotif, $wgShowUpdatedMarker;
-
-		if ( is_string( $send ) ) {
-			// Callers used to pass undocumented strings like 'noudp'
-			// or 'pleasedontudp' instead of self::SEND_NONE (true).
-			// @deprecated since 1.31 Use SEND_NONE instead.
-			$send = self::SEND_NONE;
-		}
 
 		$dbw = wfGetDB( DB_MASTER );
 		if ( !is_array( $this->mExtra ) ) {
@@ -411,21 +323,11 @@ class RecentChange {
 			unset( $this->mAttribs['rc_cur_id'] );
 		}
 
-		$row = $this->mAttribs;
-
 		# Convert mAttribs['rc_comment'] for CommentStore
+		$row = $this->mAttribs;
 		$comment = $row['rc_comment'];
 		unset( $row['rc_comment'], $row['rc_comment_text'], $row['rc_comment_data'] );
-		$row += CommentStore::getStore()->insert( $dbw, 'rc_comment', $comment );
-
-		# Convert mAttribs['rc_user'] etc for ActorMigration
-		$user = User::newFromAnyId(
-			isset( $row['rc_user'] ) ? $row['rc_user'] : null,
-			isset( $row['rc_user_text'] ) ? $row['rc_user_text'] : null,
-			isset( $row['rc_actor'] ) ? $row['rc_actor'] : null
-		);
-		unset( $row['rc_user'], $row['rc_user_text'], $row['rc_actor'] );
-		$row += ActorMigration::newMigration()->getInsertValues( $dbw, 'rc_user', $user );
+		$row += CommentStore::newKey( 'rc_comment' )->insert( $dbw, $comment );
 
 		# Don't reuse an existing rc_id for the new row, if one happens to be
 		# set for some reason.
@@ -447,8 +349,8 @@ class RecentChange {
 				$this->mAttribs['rc_this_oldid'], $this->mAttribs['rc_logid'], null, $this );
 		}
 
-		if ( $send === self::SEND_FEED ) {
-			// Emit the change to external applications via RCFeeds.
+		# Notify external application via UDP
+		if ( !$noudp ) {
 			$this->notifyRCFeeds();
 		}
 
@@ -644,7 +546,7 @@ class RecentChange {
 		$dbw->update(
 			'recentchanges',
 			[
-				'rc_patrolled' => self::PRC_PATROLLED
+				'rc_patrolled' => 1
 			],
 			[
 				'rc_id' => $this->getAttribute( 'rc_id' )
@@ -695,7 +597,6 @@ class RecentChange {
 			'rc_cur_id' => $title->getArticleID(),
 			'rc_user' => $user->getId(),
 			'rc_user_text' => $user->getName(),
-			'rc_actor' => $user->getActorId(),
 			'rc_comment' => &$comment,
 			'rc_comment_text' => &$comment,
 			'rc_comment_data' => null,
@@ -726,6 +627,9 @@ class RecentChange {
 			function () use ( $rc, $tags ) {
 				$rc->addTags( $tags );
 				$rc->save();
+				if ( $rc->mAttribs['rc_patrolled'] ) {
+					PatrolLog::record( $rc, true, $rc->getPerformer() );
+				}
 			},
 			DeferredUpdates::POSTSEND,
 			wfGetDB( DB_MASTER )
@@ -768,7 +672,6 @@ class RecentChange {
 			'rc_cur_id' => $title->getArticleID(),
 			'rc_user' => $user->getId(),
 			'rc_user_text' => $user->getName(),
-			'rc_actor' => $user->getActorId(),
 			'rc_comment' => &$comment,
 			'rc_comment_text' => &$comment,
 			'rc_comment_data' => null,
@@ -799,6 +702,9 @@ class RecentChange {
 			function () use ( $rc, $tags ) {
 				$rc->addTags( $tags );
 				$rc->save();
+				if ( $rc->mAttribs['rc_patrolled'] ) {
+					PatrolLog::record( $rc, true, $rc->getPerformer() );
+				}
 			},
 			DeferredUpdates::POSTSEND,
 			wfGetDB( DB_MASTER )
@@ -898,7 +804,6 @@ class RecentChange {
 			'rc_cur_id' => $target->getArticleID(),
 			'rc_user' => $user->getId(),
 			'rc_user_text' => $user->getName(),
-			'rc_actor' => $user->getActorId(),
 			'rc_comment' => &$logComment,
 			'rc_comment_text' => &$logComment,
 			'rc_comment_data' => null,
@@ -906,7 +811,7 @@ class RecentChange {
 			'rc_last_oldid' => 0,
 			'rc_bot' => $user->isAllowed( 'bot' ) ? (int)$wgRequest->getBool( 'bot', true ) : 0,
 			'rc_ip' => self::checkIPAddress( $ip ),
-			'rc_patrolled' => $markPatrolled ? self::PRC_AUTOPATROLLED : self::PRC_UNPATROLLED,
+			'rc_patrolled' => $markPatrolled ? 1 : 0,
 			'rc_new' => 0, # obsolete
 			'rc_old_len' => null,
 			'rc_new_len' => null,
@@ -984,7 +889,6 @@ class RecentChange {
 			'rc_cur_id' => $pageTitle->getArticleID(),
 			'rc_user' => $user ? $user->getId() : 0,
 			'rc_user_text' => $user ? $user->getName() : '',
-			'rc_actor' => $user ? $user->getActorId() : null,
 			'rc_comment' => &$comment,
 			'rc_comment_text' => &$comment,
 			'rc_comment_data' => null,
@@ -992,7 +896,7 @@ class RecentChange {
 			'rc_last_oldid' => $oldRevId,
 			'rc_bot' => $bot ? 1 : 0,
 			'rc_ip' => self::checkIPAddress( $ip ),
-			'rc_patrolled' => self::PRC_AUTOPATROLLED, // Always patrolled, just like log entries
+			'rc_patrolled' => 1, // Always patrolled, just like log entries
 			'rc_new' => 0, # obsolete
 			'rc_old_len' => null,
 			'rc_new_len' => null,
@@ -1046,22 +950,12 @@ class RecentChange {
 			}
 		}
 
-		$comment = CommentStore::getStore()
-			// Legacy because $row may have come from self::selectFields()
-			->getCommentLegacy( wfGetDB( DB_REPLICA ), 'rc_comment', $row, true )
-			->text;
+		$comment = CommentStore::newKey( 'rc_comment' )
+			// Legacy because $row probably came from self::selectFields()
+			->getCommentLegacy( wfGetDB( DB_REPLICA ), $row, true )->text;
 		$this->mAttribs['rc_comment'] = &$comment;
 		$this->mAttribs['rc_comment_text'] = &$comment;
 		$this->mAttribs['rc_comment_data'] = null;
-
-		$user = User::newFromAnyId(
-			isset( $this->mAttribs['rc_user'] ) ? $this->mAttribs['rc_user'] : null,
-			isset( $this->mAttribs['rc_user_text'] ) ? $this->mAttribs['rc_user_text'] : null,
-			isset( $this->mAttribs['rc_actor'] ) ? $this->mAttribs['rc_actor'] : null
-		);
-		$this->mAttribs['rc_user'] = $user->getId();
-		$this->mAttribs['rc_user_text'] = $user->getName();
-		$this->mAttribs['rc_actor'] = $user->getActorId();
 	}
 
 	/**
@@ -1072,27 +966,8 @@ class RecentChange {
 	 */
 	public function getAttribute( $name ) {
 		if ( $name === 'rc_comment' ) {
-			return CommentStore::getStore()
-				->getComment( 'rc_comment', $this->mAttribs, true )->text;
+			return CommentStore::newKey( 'rc_comment' )->getComment( $this->mAttribs, true )->text;
 		}
-
-		if ( $name === 'rc_user' || $name === 'rc_user_text' || $name === 'rc_actor' ) {
-			$user = User::newFromAnyId(
-				isset( $this->mAttribs['rc_user'] ) ? $this->mAttribs['rc_user'] : null,
-				isset( $this->mAttribs['rc_user_text'] ) ? $this->mAttribs['rc_user_text'] : null,
-				isset( $this->mAttribs['rc_actor'] ) ? $this->mAttribs['rc_actor'] : null
-			);
-			if ( $name === 'rc_user' ) {
-				return $user->getId();
-			}
-			if ( $name === 'rc_user_text' ) {
-				return $user->getName();
-			}
-			if ( $name === 'rc_actor' ) {
-				return $user->getActorId();
-			}
-		}
-
 		return isset( $this->mAttribs[$name] ) ? $this->mAttribs[$name] : null;
 	}
 
@@ -1188,9 +1063,9 @@ class RecentChange {
 	public function parseParams() {
 		$rcParams = $this->getAttribute( 'rc_params' );
 
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		$unserializedParams = unserialize( $rcParams );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		return $unserializedParams;
 	}

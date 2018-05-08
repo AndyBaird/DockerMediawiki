@@ -22,7 +22,7 @@ class SwiftFileBackendTest extends MediaWikiTestCase {
 		$this->backend = TestingAccessWrapper::newFromObject(
 			new SwiftFileBackend( [
 				'name'             => 'local-swift-testing',
-				'class'            => SwiftFileBackend::class,
+				'class'            => 'SwiftFileBackend',
 				'wikiId'           => 'unit-testing',
 				'lockManager'      => LockManagerGroup::singleton()->get( 'fsLockManager' ),
 				'swiftAuthUrl'     => 'http://127.0.0.1:8080/auth', // unused
@@ -31,68 +31,6 @@ class SwiftFileBackendTest extends MediaWikiTestCase {
 				'swiftTempUrlKey'  => 'b3968d0207b54ece87cccc06515a89d4' // unused
 			] )
 		);
-	}
-
-	/**
-	 * @dataProvider provider_testSanitizeHdrsStrict
-	 */
-	public function testSanitizeHdrsStrict( $raw, $sanitized ) {
-		$hdrs = $this->backend->sanitizeHdrsStrict( [ 'headers' => $raw ] );
-
-		$this->assertEquals( $hdrs, $sanitized, 'sanitizeHdrsStrict() has expected result' );
-	}
-
-	public static function provider_testSanitizeHdrsStrict() {
-		return [
-			[
-				[
-					'content-length' => 345,
-					'content-type'   => 'image+bitmap/jpeg',
-					'content-disposition' => 'inline',
-					'content-duration' => 35.6363,
-					'content-Custom' => 'hello',
-					'x-content-custom' => 'hello'
-				],
-				[
-					'content-disposition' => 'inline',
-					'content-duration' => 35.6363,
-					'content-custom' => 'hello',
-					'x-content-custom' => 'hello'
-				]
-			],
-			[
-				[
-					'content-length' => 345,
-					'content-type'   => 'image+bitmap/jpeg',
-					'content-Disposition' => 'inline; filename=xxx; ' . str_repeat( 'o', 1024 ),
-					'content-duration' => 35.6363,
-					'content-custom' => 'hello',
-					'x-content-custom' => 'hello'
-				],
-				[
-					'content-disposition' => 'inline;filename=xxx',
-					'content-duration' => 35.6363,
-					'content-custom' => 'hello',
-					'x-content-custom' => 'hello'
-				]
-			],
-			[
-				[
-					'content-length' => 345,
-					'content-type'   => 'image+bitmap/jpeg',
-					'content-disposition' => 'filename=' . str_repeat( 'o', 1024 ) . ';inline',
-					'content-duration' => 35.6363,
-					'content-custom' => 'hello',
-					'x-content-custom' => 'hello'
-				],
-				[
-					'content-disposition' => '',
-					'content-duration' => 35.6363,
-					'content-custom' => 'hello',
-					'x-content-custom' => 'hello'
-				]
-			]
-		];
 	}
 
 	/**
@@ -116,7 +54,6 @@ class SwiftFileBackendTest extends MediaWikiTestCase {
 					'x-content-custom' => 'hello'
 				],
 				[
-					'content-type'   => 'image+bitmap/jpeg',
 					'content-disposition' => 'inline',
 					'content-duration' => 35.6363,
 					'content-custom' => 'hello',
@@ -133,7 +70,6 @@ class SwiftFileBackendTest extends MediaWikiTestCase {
 					'x-content-custom' => 'hello'
 				],
 				[
-					'content-type'   => 'image+bitmap/jpeg',
 					'content-disposition' => 'inline;filename=xxx',
 					'content-duration' => 35.6363,
 					'content-custom' => 'hello',
@@ -150,7 +86,6 @@ class SwiftFileBackendTest extends MediaWikiTestCase {
 					'x-content-custom' => 'hello'
 				],
 				[
-					'content-type'   => 'image+bitmap/jpeg',
 					'content-disposition' => '',
 					'content-duration' => 35.6363,
 					'content-custom' => 'hello',

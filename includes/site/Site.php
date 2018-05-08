@@ -382,10 +382,8 @@ class Site implements Serializable {
 	}
 
 	/**
-	 * Attempt to normalize the page name in some fashion.
-	 * May return false to indicate various kinds of failure.
-	 *
-	 * This implementation returns $pageName without changes.
+	 * Returns $pageName without changes.
+	 * Subclasses may override this to apply some kind of normalization.
 	 *
 	 * @see Site::normalizePageName
 	 *
@@ -393,7 +391,7 @@ class Site implements Serializable {
 	 *
 	 * @param string $pageName
 	 *
-	 * @return string|false
+	 * @return string
 	 */
 	public function normalizePageName( $pageName ) {
 		return $pageName;

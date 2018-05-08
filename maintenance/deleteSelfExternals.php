@@ -33,7 +33,7 @@ class DeleteSelfExternals extends Maintenance {
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( 'Delete self-references to $wgServer from externallinks' );
-		$this->setBatchSize( 1000 );
+		$this->mBatchSize = 1000;
 	}
 
 	public function execute() {
@@ -41,9 +41,10 @@ class DeleteSelfExternals extends Maintenance {
 		$this->output( "Deleting self externals from $wgServer\n" );
 		$db = $this->getDB( DB_MASTER );
 		while ( 1 ) {
+			wfWaitForSlaves();
 			$this->commitTransaction( $db, __METHOD__ );
 			$q = $db->limitResult( "DELETE /* deleteSelfExternals */ FROM externallinks WHERE el_to"
-				. $db->buildLike( $wgServer . '/', $db->anyString() ), $this->getBatchSize() );
+				. $db->buildLike( $wgServer . '/', $db->anyString() ), $this->mBatchSize );
 			$this->output( "Deleting a batch\n" );
 			$db->query( $q );
 			if ( !$db->affectedRows() ) {
@@ -53,5 +54,5 @@ class DeleteSelfExternals extends Maintenance {
 	}
 }
 
-$maintClass = DeleteSelfExternals::class;
+$maintClass = "DeleteSelfExternals";
 require_once RUN_MAINTENANCE_IF_MAIN;

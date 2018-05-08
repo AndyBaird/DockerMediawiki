@@ -25,7 +25,8 @@
 		// Parent
 		mw.rcfilters.ui.SaveFiltersPopupButtonWidget.parent.call( this, $.extend( {
 			framed: false,
-			icon: 'bookmark',
+			icon: 'unClip',
+			$overlay: this.$overlay,
 			title: mw.msg( 'rcfilters-savedqueries-add-new-title' ),
 			popup: {
 				classes: [ 'mw-rcfilters-ui-saveFiltersPopupButtonWidget-popup' ],
@@ -36,7 +37,7 @@
 			}
 		}, config ) );
 		// // HACK: Add an icon to the popup head label
-		this.popup.$head.prepend( ( new OO.ui.IconWidget( { icon: 'bookmark' } ) ).$element );
+		this.popup.$head.prepend( ( new OO.ui.IconWidget( { icon: 'unClip' } ) ).$element );
 
 		this.input = new OO.ui.TextInputWidget( {
 			placeholder: mw.msg( 'rcfilters-savedqueries-new-name-placeholder' )

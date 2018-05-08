@@ -1,17 +1,17 @@
 /*!
- * QUnit 2.6.0
+ * QUnit 2.4.0
  * https://qunitjs.com/
  *
  * Copyright jQuery Foundation and other contributors
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-03-27T02:18Z
+ * Date: 2017-07-08T15:20Z
  */
 (function (global$1) {
   'use strict';
 
-  global$1 = global$1 && global$1.hasOwnProperty('default') ? global$1['default'] : global$1;
+  global$1 = global$1 && 'default' in global$1 ? global$1['default'] : global$1;
 
   var window = global$1.window;
   var self$1 = global$1.self;
@@ -1097,89 +1097,58 @@
   var priorityCount = 0;
   var unitSampler = void 0;
 
-  // This is a queue of functions that are tasks within a single test.
-  // After tests are dequeued from config.queue they are expanded into
-  // a set of tasks in this queue.
-  var taskQueue = [];
-
   /**
-   * Advances the taskQueue to the next task. If the taskQueue is empty,
-   * process the testQueue
+   * Advances the ProcessingQueue to the next item if it is ready.
+   * @param {Boolean} last
    */
   function advance() {
-  	advanceTaskQueue();
-
-  	if (!taskQueue.length) {
-  		advanceTestQueue();
-  	}
-  }
-
-  /**
-   * Advances the taskQueue to the next task if it is ready and not empty.
-   */
-  function advanceTaskQueue() {
   	var start = now();
   	config.depth = (config.depth || 0) + 1;
 
-  	while (taskQueue.length && !config.blocking) {
+  	while (config.queue.length && !config.blocking) {
   		var elapsedTime = now() - start;
 
   		if (!defined.setTimeout || config.updateRate <= 0 || elapsedTime < config.updateRate) {
-  			var task = taskQueue.shift();
-  			task();
+  			if (priorityCount > 0) {
+  				priorityCount--;
+  			}
+
+  			config.queue.shift()();
   		} else {
-  			setTimeout(advance);
+  			setTimeout(advance, 13);
   			break;
   		}
   	}
 
   	config.depth--;
-  }
 
-  /**
-   * Advance the testQueue to the next test to process. Call done() if testQueue completes.
-   */
-  function advanceTestQueue() {
   	if (!config.blocking && !config.queue.length && config.depth === 0) {
   		done();
+  	}
+  }
+
+  function addToQueueImmediate(callback) {
+  	if (objectType(callback) === "array") {
+  		while (callback.length) {
+  			addToQueueImmediate(callback.pop());
+  		}
+
   		return;
   	}
 
-  	var testTasks = config.queue.shift();
-  	addToTaskQueue(testTasks());
-
-  	if (priorityCount > 0) {
-  		priorityCount--;
-  	}
-
-  	advance();
+  	config.queue.unshift(callback);
+  	priorityCount++;
   }
 
   /**
-   * Enqueue the tasks for a test into the task queue.
-   * @param {Array} tasksArray
-   */
-  function addToTaskQueue(tasksArray) {
-  	taskQueue.push.apply(taskQueue, toConsumableArray(tasksArray));
-  }
-
-  /**
-   * Return the number of tasks remaining in the task queue to be processed.
-   * @return {Number}
-   */
-  function taskQueueLength() {
-  	return taskQueue.length;
-  }
-
-  /**
-   * Adds a test to the TestQueue for execution.
-   * @param {Function} testTasksFunc
-   * @param {Boolean} prioritize
+   * Adds a function to the ProcessingQueue for execution.
+   * @param {Function|Array} callback
+   * @param {Boolean} priority
    * @param {String} seed
    */
-  function addToTestQueue(testTasksFunc, prioritize, seed) {
+  function addToQueue(callback, prioritize, seed) {
   	if (prioritize) {
-  		config.queue.splice(priorityCount++, 0, testTasksFunc);
+  		config.queue.splice(priorityCount++, 0, callback);
   	} else if (seed) {
   		if (!unitSampler) {
   			unitSampler = unitSamplerGenerator(seed);
@@ -1187,9 +1156,9 @@
 
   		// Insert into a random position after all prioritized items
   		var index = Math.floor(unitSampler() * (config.queue.length - priorityCount + 1));
-  		config.queue.splice(priorityCount + index, 0, testTasksFunc);
+  		config.queue.splice(priorityCount + index, 0, callback);
   	} else {
-  		config.queue.push(testTasksFunc);
+  		config.queue.push(callback);
   	}
   }
 
@@ -1227,27 +1196,6 @@
   	var runtime = now() - config.started;
   	var passed = config.stats.all - config.stats.bad;
 
-  	if (config.stats.all === 0) {
-
-  		if (config.filter && config.filter.length) {
-  			throw new Error("No tests matched the filter \"" + config.filter + "\".");
-  		}
-
-  		if (config.module && config.module.length) {
-  			throw new Error("No tests matched the module \"" + config.module + "\".");
-  		}
-
-  		if (config.moduleId && config.moduleId.length) {
-  			throw new Error("No tests matched the moduleId \"" + config.moduleId + "\".");
-  		}
-
-  		if (config.testId && config.testId.length) {
-  			throw new Error("No tests matched the testId \"" + config.testId + "\".");
-  		}
-
-  		throw new Error("No tests were run.");
-  	}
-
   	emit("runEnd", globalSuite.end(true));
   	runLoggingCallbacks("done", {
   		passed: passed,
@@ -1270,9 +1218,9 @@
 
   var ProcessingQueue = {
   	finished: false,
-  	add: addToTestQueue,
-  	advance: advance,
-  	taskCount: taskQueueLength
+  	add: addToQueue,
+  	addImmediate: addToQueueImmediate,
+  	advance: advance
   };
 
   var TestReport = function () {
@@ -1440,13 +1388,6 @@
   		this.async = false;
   		this.expected = 0;
   	} else {
-  		if (typeof this.callback !== "function") {
-  			var method = this.todo ? "todo" : "test";
-
-  			// eslint-disable-next-line max-len
-  			throw new TypeError("You must provide a function as a test callback to QUnit." + method + "(\"" + settings.testName + "\")");
-  		}
-
   		this.assert = new Assert(this);
   	}
   }
@@ -1559,9 +1500,7 @@
   				_this.preserveEnvironment = true;
   			}
 
-  			// The 'after' hook should only execute when there are not tests left and
-  			// when the 'after' and 'finish' tasks are the only tasks left to process
-  			if (hookName === "after" && hookOwner.unskippedTestsRun !== numberOfUnskippedTests(hookOwner) - 1 && (config.queue.length > 0 || ProcessingQueue.taskCount() > 2)) {
+  			if (hookName === "after" && hookOwner.unskippedTestsRun !== numberOfUnskippedTests(hookOwner) - 1 && config.queue.length > 2) {
   				return;
   			}
 
@@ -1608,12 +1547,6 @@
 
   	finish: function finish() {
   		config.current = this;
-
-  		if (this.steps.length) {
-  			var stepsList = this.steps.join(", ");
-  			this.pushFailure("Expected assert.verifySteps() to be called before end of test " + ("after using assert.step(). Unverified steps: " + stepsList), this.stack);
-  		}
-
   		if (config.requireExpects && this.expected === null) {
   			this.pushFailure("Expected number of assertions to be defined, but expect() was " + "not called.", this.stack);
   		} else if (this.expected !== null && this.expected !== this.assertions.length) {
@@ -1720,13 +1653,15 @@
   		}
 
   		function runTest() {
-  			return [function () {
+
+  			// Each of these can by async
+  			ProcessingQueue.addImmediate([function () {
   				test.before();
-  			}].concat(toConsumableArray(test.hooks("before")), [function () {
+  			}, test.hooks("before"), function () {
   				test.preserveTestEnvironment();
-  			}], toConsumableArray(test.hooks("beforeEach")), [function () {
+  			}, test.hooks("beforeEach"), function () {
   				test.run();
-  			}], toConsumableArray(test.hooks("afterEach").reverse()), toConsumableArray(test.hooks("after").reverse()), [function () {
+  			}, test.hooks("afterEach").reverse(), test.hooks("after").reverse(), function () {
   				test.after();
   			}, function () {
   				test.finish();
@@ -1751,7 +1686,7 @@
 
   	pushResult: function pushResult(resultInfo) {
   		if (this !== config.current) {
-  			throw new Error("Assertion occurred after test had finished.");
+  			throw new Error("Assertion occured after test had finished.");
   		}
 
   		// Destructure of resultInfo = { result, actual, expected, message, negative }
@@ -1762,15 +1697,12 @@
   			result: resultInfo.result,
   			message: resultInfo.message,
   			actual: resultInfo.actual,
+  			expected: resultInfo.expected,
   			testId: this.testId,
   			negative: resultInfo.negative || false,
   			runtime: now() - this.started,
   			todo: !!this.todo
   		};
-
-  		if (hasOwn.call(resultInfo, "expected")) {
-  			details.expected = resultInfo.expected;
-  		}
 
   		if (!resultInfo.result) {
   			source = resultInfo.source || sourceFromStacktrace();
@@ -1797,6 +1729,7 @@
   			result: false,
   			message: message || "error",
   			actual: actual || null,
+  			expected: null,
   			source: source
   		});
   	},
@@ -1832,24 +1765,18 @@
   			then = promise.then;
   			if (objectType(then) === "function") {
   				resume = internalStop(test);
-  				if (config.notrycatch) {
-  					then.call(promise, function () {
-  						resume();
-  					});
-  				} else {
-  					then.call(promise, function () {
-  						resume();
-  					}, function (error) {
-  						message = "Promise rejected " + (!phase ? "during" : phase.replace(/Each$/, "")) + " \"" + test.testName + "\": " + (error && error.message || error);
-  						test.pushFailure(message, extractStacktrace(error, 0));
+  				then.call(promise, function () {
+  					resume();
+  				}, function (error) {
+  					message = "Promise rejected " + (!phase ? "during" : phase.replace(/Each$/, "")) + " \"" + test.testName + "\": " + (error && error.message || error);
+  					test.pushFailure(message, extractStacktrace(error, 0));
 
-  						// Else next test will carry the responsibility
-  						saveGlobal();
+  					// Else next test will carry the responsibility
+  					saveGlobal();
 
-  						// Unblock
-  						internalRecover(test);
-  					});
-  				}
+  					// Unblock
+  					resume();
+  				});
   			}
   		}
   	},
@@ -2113,7 +2040,7 @@
   			}
 
   			begin();
-  		});
+  		}, 13);
   	} else {
   		begin();
   	}
@@ -2198,21 +2125,13 @@
   	}, {
   		key: "step",
   		value: function step(message) {
-  			var assertionMessage = message;
   			var result = !!message;
 
   			this.test.steps.push(message);
 
-  			if (objectType(message) === "undefined" || message === "") {
-  				assertionMessage = "You must provide a message to assert.step";
-  			} else if (objectType(message) !== "string") {
-  				assertionMessage = "You must provide a string value to assert.step";
-  				result = false;
-  			}
-
   			return this.pushResult({
   				result: result,
-  				message: assertionMessage
+  				message: message || "You must provide a message to assert.step"
   			});
   		}
 
@@ -2221,11 +2140,7 @@
   	}, {
   		key: "verifySteps",
   		value: function verifySteps(steps, message) {
-
-  			// Since the steps array is just string values, we can clone with slice
-  			var actualStepsClone = this.test.steps.slice();
-  			this.deepEqual(actualStepsClone, steps, message);
-  			this.test.steps.length = 0;
+  			this.deepEqual(this.test.steps, steps, message);
   		}
 
   		// Specify the number of expected assertions to guarantee that failed test
@@ -2503,98 +2418,6 @@
   				message: message
   			});
   		}
-  	}, {
-  		key: "rejects",
-  		value: function rejects(promise, expected, message) {
-  			var result = false;
-
-  			var currentTest = this instanceof Assert && this.test || config.current;
-
-  			// 'expected' is optional unless doing string comparison
-  			if (objectType(expected) === "string") {
-  				if (message === undefined) {
-  					message = expected;
-  					expected = undefined;
-  				} else {
-  					message = "assert.rejects does not accept a string value for the expected " + "argument.\nUse a non-string object value (e.g. validator function) instead " + "if necessary.";
-
-  					currentTest.assert.pushResult({
-  						result: false,
-  						message: message
-  					});
-
-  					return;
-  				}
-  			}
-
-  			var then = promise && promise.then;
-  			if (objectType(then) !== "function") {
-  				var _message = "The value provided to `assert.rejects` in " + "\"" + currentTest.testName + "\" was not a promise.";
-
-  				currentTest.assert.pushResult({
-  					result: false,
-  					message: _message,
-  					actual: promise
-  				});
-
-  				return;
-  			}
-
-  			var done = this.async();
-
-  			return then.call(promise, function handleFulfillment() {
-  				var message = "The promise returned by the `assert.rejects` callback in " + "\"" + currentTest.testName + "\" did not reject.";
-
-  				currentTest.assert.pushResult({
-  					result: false,
-  					message: message,
-  					actual: promise
-  				});
-
-  				done();
-  			}, function handleRejection(actual) {
-  				var expectedType = objectType(expected);
-
-  				// We don't want to validate
-  				if (expected === undefined) {
-  					result = true;
-  					expected = actual;
-
-  					// Expected is a regexp
-  				} else if (expectedType === "regexp") {
-  					result = expected.test(errorString(actual));
-
-  					// Expected is a constructor, maybe an Error constructor
-  				} else if (expectedType === "function" && actual instanceof expected) {
-  					result = true;
-
-  					// Expected is an Error object
-  				} else if (expectedType === "object") {
-  					result = actual instanceof expected.constructor && actual.name === expected.name && actual.message === expected.message;
-
-  					// Expected is a validation function which returns true if validation passed
-  				} else {
-  					if (expectedType === "function") {
-  						result = expected.call({}, actual) === true;
-  						expected = null;
-
-  						// Expected is some other invalid type
-  					} else {
-  						result = false;
-  						message = "invalid expected value provided to `assert.rejects` " + "callback in \"" + currentTest.testName + "\": " + expectedType + ".";
-  					}
-  				}
-
-  				currentTest.assert.pushResult({
-  					result: result,
-  					actual: actual,
-  					expected: expected,
-  					message: message
-  				});
-
-  				done();
-  			});
-  		}
   	}]);
   	return Assert;
   }();
@@ -2810,25 +2633,6 @@
   	return false;
   }
 
-  // Handle an unhandled rejection
-  function onUnhandledRejection(reason) {
-  	var resultInfo = {
-  		result: false,
-  		message: reason.message || "error",
-  		actual: reason,
-  		source: reason.stack || sourceFromStacktrace(3)
-  	};
-
-  	var currentTest = config.current;
-  	if (currentTest) {
-  		currentTest.assert.pushResult(resultInfo);
-  	} else {
-  		test("global failure", extend(function (assert) {
-  			assert.pushResult(resultInfo);
-  		}, { validTest: true }));
-  	}
-  }
-
   var focused = false;
   var QUnit = {};
   var globalSuite = new SuiteReport();
@@ -2846,7 +2650,7 @@
   QUnit.isLocal = !(defined.document && window.location.protocol !== "file:");
 
   // Expose the current QUnit version
-  QUnit.version = "2.6.0";
+  QUnit.version = "2.4.0";
 
   function createModule(name, testEnvironment, modifiers) {
   	var parentModule = moduleStack.length ? moduleStack.slice(-1)[0] : null;
@@ -3064,9 +2868,7 @@
   		return sourceFromStacktrace(offset);
   	},
 
-  	onError: onError,
-
-  	onUnhandledRejection: onUnhandledRejection
+  	onError: onError
   });
 
   QUnit.pushFailure = pushFailure;
@@ -3084,7 +2886,7 @@
   	if (defined.setTimeout) {
   		setTimeout(function () {
   			begin();
-  		});
+  		}, 13);
   	} else {
   		begin();
   	}
@@ -3153,7 +2955,7 @@
 
   		var fixture = document.getElementById("qunit-fixture");
   		if (fixture) {
-  			config.fixture = fixture.cloneNode(true);
+  			config.fixture = fixture.innerHTML;
   		}
   	}
 
@@ -3166,17 +2968,8 @@
   		}
 
   		var fixture = document.getElementById("qunit-fixture");
-  		var resetFixtureType = _typeof(config.fixture);
-  		if (resetFixtureType === "string") {
-
-  			// support user defined values for `config.fixture`
-  			var newFixture = document.createElement("div");
-  			newFixture.setAttribute("id", "qunit-fixture");
-  			newFixture.innerHTML = config.fixture;
-  			fixture.parentNode.replaceChild(newFixture, fixture);
-  		} else {
-  			var clonedFixture = config.fixture.cloneNode(true);
-  			fixture.parentNode.replaceChild(clonedFixture, fixture);
+  		if (fixture) {
+  			fixture.innerHTML = config.fixture;
   		}
   	}
 
@@ -3491,8 +3284,7 @@
   			// Skip inherited or undefined properties
   			if (hasOwn.call(params, key) && params[key] !== undefined) {
 
-  				// Output a parameter for each value of this key
-  				// (but usually just one)
+  				// Output a parameter for each value of this key (but usually just one)
   				arrValue = [].concat(params[key]);
   				for (i = 0; i < arrValue.length; i++) {
   					querystring += encodeURIComponent(key);
@@ -3913,8 +3705,7 @@
   		if (config.altertitle && document$$1.title) {
 
   			// Show ✖ for good, ✔ for bad suite result in title
-  			// use escape sequences in case file gets loaded with non-utf-8
-  			// charset
+  			// use escape sequences in case file gets loaded with non-utf-8-charset
   			document$$1.title = [stats.failedTests ? "\u2716" : "\u2714", document$$1.title.replace(/^[\u2714\u2716] /i, "")].join(" ");
   		}
 
@@ -3952,7 +3743,7 @@
   		if (running) {
   			bad = QUnit.config.reorder && details.previousFailure;
 
-  			running.innerHTML = [bad ? "Rerunning previously failed test: <br />" : "Running: <br />", getNameHtml(details.name, details.module)].join("");
+  			running.innerHTML = (bad ? "Rerunning previously failed test: <br />" : "Running: <br />") + getNameHtml(details.name, details.module);
   		}
   	});
 
@@ -4183,11 +3974,6 @@
 
   		return ret;
   	};
-
-  	// Listen for unhandled rejections, and call QUnit.onUnhandledRejection
-  	window.addEventListener("unhandledrejection", function (event) {
-  		QUnit.onUnhandledRejection(event.reason);
-  	});
   })();
 
   /*
@@ -5088,9 +4874,7 @@
   				line = text.substring(lineStart, lineEnd + 1);
   				lineStart = lineEnd + 1;
 
-  				var lineHashExists = lineHash.hasOwnProperty ? lineHash.hasOwnProperty(line) : lineHash[line] !== undefined;
-
-  				if (lineHashExists) {
+  				if (lineHash.hasOwnProperty ? lineHash.hasOwnProperty(line) : lineHash[line] !== undefined) {
   					chars += String.fromCharCode(lineHash[line]);
   				} else {
   					chars += String.fromCharCode(lineArrayLength);

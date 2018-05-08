@@ -13,8 +13,6 @@ use Html;
  * Renders one or more SearchResultSets into a sidebar grouped by
  * interwiki prefix. Includes a per-wiki header indicating where
  * the results are from.
- *
- * @deprecated since 1.31. Use InterwikiSearchResultSetWidget
  */
 class SimpleSearchResultSetWidget implements SearchResultSetWidget {
 	/** @var SpecialSearch */
@@ -34,7 +32,6 @@ class SimpleSearchResultSetWidget implements SearchResultSetWidget {
 		LinkRenderer $linkRenderer,
 		InterwikiLookup $iwLookup
 	) {
-		wfDeprecated( __METHOD__, '1.31' );
 		$this->specialSearch = $specialSearch;
 		$this->resultWidget = $resultWidget;
 		$this->linkRenderer = $linkRenderer;
@@ -77,12 +74,13 @@ class SimpleSearchResultSetWidget implements SearchResultSetWidget {
 			$out .= "</ul>";
 		}
 
-		return "<div id='mw-search-interwiki'>" .
-			"<div id='mw-search-interwiki-caption'>" .
-				$this->specialSearch->msg( 'search-interwiki-caption' )->parse() .
-			'</div>' .
-			$out .
-		"</div>";
+		return
+			"<div id='mw-search-interwiki'>" .
+				"<div id='mw-search-interwiki-caption'>" .
+					$this->specialSearch->msg( 'search-interwiki-caption' )->parse() .
+				'</div>' .
+				$out .
+			"</div>";
 	}
 
 	/**
@@ -110,9 +108,10 @@ class SimpleSearchResultSetWidget implements SearchResultSetWidget {
 			$this->specialSearch->msg( 'search-interwiki-more' )->escaped()
 		);
 
-		return "<div class='mw-search-interwiki-project'>" .
-			"<span class='mw-search-interwiki-more'>{$searchLink}</span>" .
-			$caption .
+		return
+			"<div class='mw-search-interwiki-project'>" .
+				"<span class='mw-search-interwiki-more'>{$searchLink}</span>" .
+				$caption .
 		"</div>";
 	}
 

@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on July 6, 2007
+ *
  * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -499,36 +503,32 @@ class ApiQueryImageInfo extends ApiQueryBase {
 		}
 
 		if ( $url ) {
-			if ( $file->exists() ) {
-				if ( !is_null( $thumbParams ) ) {
-					$mto = $file->transform( $thumbParams );
-					self::$transformCount++;
-					if ( $mto && !$mto->isError() ) {
-						$vals['thumburl'] = wfExpandUrl( $mto->getUrl(), PROTO_CURRENT );
+			if ( !is_null( $thumbParams ) ) {
+				$mto = $file->transform( $thumbParams );
+				self::$transformCount++;
+				if ( $mto && !$mto->isError() ) {
+					$vals['thumburl'] = wfExpandUrl( $mto->getUrl(), PROTO_CURRENT );
 
-						// T25834 - If the URLs are the same, we haven't resized it, so shouldn't give the wanted
-						// thumbnail sizes for the thumbnail actual size
-						if ( $mto->getUrl() !== $file->getUrl() ) {
-							$vals['thumbwidth'] = intval( $mto->getWidth() );
-							$vals['thumbheight'] = intval( $mto->getHeight() );
-						} else {
-							$vals['thumbwidth'] = intval( $file->getWidth() );
-							$vals['thumbheight'] = intval( $file->getHeight() );
-						}
-
-						if ( isset( $prop['thumbmime'] ) && $file->getHandler() ) {
-							list( , $mime ) = $file->getHandler()->getThumbType(
-								$mto->getExtension(), $file->getMimeType(), $thumbParams );
-							$vals['thumbmime'] = $mime;
-						}
-					} elseif ( $mto && $mto->isError() ) {
-						$vals['thumberror'] = $mto->toText();
+					// T25834 - If the URLs are the same, we haven't resized it, so shouldn't give the wanted
+					// thumbnail sizes for the thumbnail actual size
+					if ( $mto->getUrl() !== $file->getUrl() ) {
+						$vals['thumbwidth'] = intval( $mto->getWidth() );
+						$vals['thumbheight'] = intval( $mto->getHeight() );
+					} else {
+						$vals['thumbwidth'] = intval( $file->getWidth() );
+						$vals['thumbheight'] = intval( $file->getHeight() );
 					}
+
+					if ( isset( $prop['thumbmime'] ) && $file->getHandler() ) {
+						list( , $mime ) = $file->getHandler()->getThumbType(
+							$mto->getExtension(), $file->getMimeType(), $thumbParams );
+						$vals['thumbmime'] = $mime;
+					}
+				} elseif ( $mto && $mto->isError() ) {
+					$vals['thumberror'] = $mto->toText();
 				}
-				$vals['url'] = wfExpandUrl( $file->getFullUrl(), PROTO_CURRENT );
-			} else {
-				$vals['filemissing'] = true;
 			}
+			$vals['url'] = wfExpandUrl( $file->getFullUrl(), PROTO_CURRENT );
 			$vals['descriptionurl'] = wfExpandUrl( $file->getDescriptionUrl(), PROTO_CURRENT );
 
 			$shortDescriptionUrl = $file->getDescriptionShortUrl();
@@ -542,9 +542,9 @@ class ApiQueryImageInfo extends ApiQueryBase {
 		}
 
 		if ( $meta ) {
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$metadata = unserialize( $file->getMetadata() );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			if ( $metadata && $version !== 'latest' ) {
 				$metadata = $file->convertMetadataVersion( $metadata, $version );
 			}

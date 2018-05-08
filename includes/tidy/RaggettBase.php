@@ -2,8 +2,6 @@
 
 namespace MediaWiki\Tidy;
 
-use MWException;
-
 abstract class RaggettBase extends TidyDriverBase {
 	/**
 	 * Generic interface for wrapping and unwrapping HTML for Dave Raggett's tidy.

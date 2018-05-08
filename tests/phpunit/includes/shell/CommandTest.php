@@ -4,13 +4,9 @@ use MediaWiki\Shell\Command;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers \MediaWiki\Shell\Command
  * @group Shell
  */
-class CommandTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
-
+class CommandTest extends PHPUnit_Framework_TestCase {
 	private function requirePosix() {
 		if ( wfIsWindows() ) {
 			$this->markTestSkipped( 'This test requires a POSIX environment.' );
@@ -51,61 +47,23 @@ class CommandTest extends PHPUnit\Framework\TestCase {
 		$this->assertSame( "bar\n", $result->getStdout() );
 	}
 
-	public function testStdout() {
-		$this->requirePosix();
-
-		$command = new Command();
-
-		$result = $command
-			->params( 'bash', '-c', 'echo ThisIsStderr 1>&2' )
-			->execute();
-
-		$this->assertNotContains( 'ThisIsStderr', $result->getStdout() );
-		$this->assertEquals( "ThisIsStderr\n", $result->getStderr() );
-	}
-
-	public function testStdoutRedirection() {
-		$this->requirePosix();
-
-		$command = new Command();
-
-		$result = $command
-			->params( 'bash', '-c', 'echo ThisIsStderr 1>&2' )
-			->includeStderr( true )
-			->execute();
-
-		$this->assertEquals( "ThisIsStderr\n", $result->getStdout() );
-		$this->assertNull( $result->getStderr() );
-	}
-
 	public function testOutput() {
 		global $IP;
 
 		$this->requirePosix();
-		chdir( $IP );
 
 		$command = new Command();
 		$result = $command
-			->params( [ 'ls', 'index.php' ] )
+			->params( [ 'ls', "$IP/index.php" ] )
 			->execute();
-		$this->assertRegExp( '/^index.php$/m', $result->getStdout() );
-		$this->assertSame( null, $result->getStderr() );
+		$this->assertSame( "$IP/index.php", trim( $result->getStdout() ) );
 
 		$command = new Command();
 		$result = $command
 			->params( [ 'ls', 'index.php', 'no-such-file' ] )
 			->includeStderr()
 			->execute();
-		$this->assertRegExp( '/^index.php$/m', $result->getStdout() );
 		$this->assertRegExp( '/^.+no-such-file.*$/m', $result->getStdout() );
-		$this->assertSame( null, $result->getStderr() );
-
-		$command = new Command();
-		$result = $command
-			->params( [ 'ls', 'index.php', 'no-such-file' ] )
-			->execute();
-		$this->assertRegExp( '/^index.php$/m', $result->getStdout() );
-		$this->assertRegExp( '/^.+no-such-file.*$/m', $result->getStderr() );
 	}
 
 	/**
@@ -132,50 +90,5 @@ class CommandTest extends PHPUnit\Framework\TestCase {
 				->getStdout();
 			$this->assertEquals( 333333, strlen( $output ) );
 		}
-	}
-
-	public function testLogStderr() {
-		$this->requirePosix();
-
-		$logger = new TestLogger( true, function ( $message, $level, $context ) {
-			return $level === Psr\Log\LogLevel::ERROR ? '1' : null;
-		}, true );
-		$command = new Command();
-		$command->setLogger( $logger );
-		$command->params( 'bash', '-c', 'echo ThisIsStderr 1>&2' );
-		$command->execute();
-		$this->assertEmpty( $logger->getBuffer() );
-
-		$command = new Command();
-		$command->setLogger( $logger );
-		$command->logStderr();
-		$command->params( 'bash', '-c', 'echo ThisIsStderr 1>&2' );
-		$command->execute();
-		$this->assertSame( 1, count( $logger->getBuffer() ) );
-		$this->assertSame( trim( $logger->getBuffer()[0][2]['error'] ), 'ThisIsStderr' );
-	}
-
-	public function testInput() {
-		$this->requirePosix();
-
-		$command = new Command();
-		$command->params( 'cat' );
-		$command->input( 'abc' );
-		$result = $command->execute();
-		$this->assertSame( 'abc', $result->getStdout() );
-
-		// now try it with something that does not fit into a single block
-		$command = new Command();
-		$command->params( 'cat' );
-		$command->input( str_repeat( '!', 1000000 ) );
-		$result = $command->execute();
-		$this->assertSame( 1000000, strlen( $result->getStdout() ) );
-
-		// And try it with empty input
-		$command = new Command();
-		$command->params( 'cat' );
-		$command->input( '' );
-		$result = $command->execute();
-		$this->assertSame( '', $result->getStdout() );
 	}
 }

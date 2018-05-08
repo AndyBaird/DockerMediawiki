@@ -52,7 +52,7 @@ class HashBagOStuff extends BagOStuff {
 
 	protected function expire( $key ) {
 		$et = $this->bag[$key][self::KEY_EXP];
-		if ( $et == self::TTL_INDEFINITE || $et > $this->getCurrentTime() ) {
+		if ( $et == self::TTL_INDEFINITE || $et > time() ) {
 			return false;
 		}
 
@@ -114,9 +114,5 @@ class HashBagOStuff extends BagOStuff {
 
 	public function clear() {
 		$this->bag = [];
-	}
-
-	protected function getCurrentTime() {
-		return time();
 	}
 }

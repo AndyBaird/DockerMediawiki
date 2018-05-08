@@ -1,8 +1,6 @@
 <?php
 
-class StringUtilsTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class StringUtilsTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @covers StringUtils::isUtf8

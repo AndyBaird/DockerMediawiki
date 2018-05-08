@@ -152,7 +152,7 @@ class PoolCounterRedis extends PoolCounter {
 		}
 		$conn = $status->value;
 
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Generic.Files.LineLength
 		static $script =
 		/** @lang Lua */
 <<<LUA
@@ -191,7 +191,7 @@ class PoolCounterRedis extends PoolCounter {
 		end
 		return 1
 LUA;
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 
 		try {
 			$conn->luaEval( $script,

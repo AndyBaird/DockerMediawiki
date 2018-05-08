@@ -165,30 +165,35 @@ class OracleInstaller extends DatabaseInstaller {
 	}
 
 	public function openConnection() {
-		return $this->doOpenConnection();
+		$status = Status::newGood();
+		try {
+			$db = new DatabaseOracle(
+				$this->getVar( 'wgDBserver' ),
+				$this->getVar( '_InstallUser' ),
+				$this->getVar( '_InstallPassword' ),
+				$this->getVar( '_InstallDBname' ),
+				0,
+				$this->getVar( 'wgDBprefix' )
+			);
+			$status->value = $db;
+		} catch ( DBConnectionError $e ) {
+			$this->connError = $e->db->lastErrno();
+			$status->fatal( 'config-connection-error', $e->getMessage() );
+		}
+
+		return $status;
 	}
 
 	public function openSYSDBAConnection() {
-		return $this->doOpenConnection( DatabaseOracle::DBO_SYSDBA );
-	}
-
-	/**
-	 * @param int $flags
-	 * @return Status Status with DatabaseOracle or null as the value
-	 */
-	private function doOpenConnection( $flags = 0 ) {
 		$status = Status::newGood();
 		try {
-			$db = Database::factory(
-				'oracle',
-				[
-					'host' => $this->getVar( 'wgDBserver' ),
-					'user' => $this->getVar( '_InstallUser' ),
-					'password' => $this->getVar( '_InstallPassword' ),
-					'dbname' => $this->getVar( '_InstallDBname' ),
-					'tablePrefix' => $this->getVar( 'wgDBprefix' ),
-					'flags' => $flags
-				]
+			$db = new DatabaseOracle(
+				$this->getVar( 'wgDBserver' ),
+				$this->getVar( '_InstallUser' ),
+				$this->getVar( '_InstallPassword' ),
+				$this->getVar( '_InstallDBname' ),
+				DBO_SYSDBA,
+				$this->getVar( 'wgDBprefix' )
 			);
 			$status->value = $db;
 		} catch ( DBConnectionError $e ) {
@@ -330,11 +335,11 @@ class OracleInstaller extends DatabaseInstaller {
 	 * @return bool Whether the connection string is valid.
 	 */
 	public static function checkConnectStringFormat( $connect_string ) {
-		// phpcs:disable Generic.Files.LineLength
+		// @@codingStandardsIgnoreStart Long lines with regular expressions.
 		// @todo Very long regular expression. Make more readable?
 		$isValid = preg_match( '/^[[:alpha:]][\w\-]*(?:\.[[:alpha:]][\w\-]*){0,2}$/', $connect_string ); // TNS name
 		$isValid |= preg_match( '/^(?:\/\/)?[\w\-\.]+(?::[\d]+)?(?:\/(?:[\w\-\.]+(?::(pooled|dedicated|shared))?)?(?:\/[\w\-\.]+)?)?$/', $connect_string ); // EZConnect
-		// phpcs:enable
+		// @@codingStandardsIgnoreEnd
 		return (bool)$isValid;
 	}
 }

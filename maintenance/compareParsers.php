@@ -97,7 +97,7 @@ class CompareParsers extends DumpIterator {
 		if ( $this->hasOption( 'tidy' ) ) {
 			global $wgUseTidy;
 			if ( !$wgUseTidy ) {
-				$this->fatalError( 'Tidy was requested but $wgUseTidy is not set in LocalSettings.php' );
+				$this->error( 'Tidy was requested but $wgUseTidy is not set in LocalSettings.php', true );
 			}
 			$this->options->setTidy( true );
 		}
@@ -185,5 +185,5 @@ class CompareParsers extends DumpIterator {
 	}
 }
 
-$maintClass = CompareParsers::class;
+$maintClass = "CompareParsers";
 require_once RUN_MAINTENANCE_IF_MAIN;

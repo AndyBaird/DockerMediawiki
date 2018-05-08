@@ -128,14 +128,14 @@ class SVGMetadataExtractorTest extends MediaWikiTestCase {
 
 	public static function provideSvgFilesWithXMLMetadata() {
 		$base = __DIR__ . '/../../data/media';
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Ignore Generic.Files.LineLength.TooLong
 		$metadata = '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
       <ns4:Work xmlns:ns4="http://creativecommons.org/ns#" rdf:about="">
         <ns5:format xmlns:ns5="http://purl.org/dc/elements/1.1/">image/svg+xml</ns5:format>
         <ns5:type xmlns:ns5="http://purl.org/dc/elements/1.1/" rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
       </ns4:Work>
     </rdf:RDF>';
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 
 		$metadata = str_replace( "\r", '', $metadata ); // Windows compat
 		return [

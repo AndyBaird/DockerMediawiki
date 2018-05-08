@@ -10,7 +10,7 @@ class ResourceLoaderOOUIImageModuleTest extends ResourceLoaderTestCase {
 	 */
 	public function testNonDefaultSkin() {
 		$module = new ResourceLoaderOOUIImageModule( [
-			'class' => ResourceLoaderOOUIImageModule::class,
+			'class' => 'ResourceLoaderOOUIImageModule',
 			'name' => 'icons',
 			'rootPath' => 'tests/phpunit/data/resourceloader/oouiimagemodule',
 		] );
@@ -22,7 +22,7 @@ class ResourceLoaderOOUIImageModuleTest extends ResourceLoaderTestCase {
 			function () {
 			}
 		);
-		$r = new ReflectionMethod( ExtensionRegistry::class, 'exportExtractedData' );
+		$r = new ReflectionMethod( 'ExtensionRegistry', 'exportExtractedData' );
 		$r->setAccessible( true );
 		$r->invoke( ExtensionRegistry::getInstance(), [
 			'globals' => [],

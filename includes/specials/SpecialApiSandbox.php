@@ -33,7 +33,10 @@ class SpecialApiSandbox extends SpecialPage {
 	public function execute( $par ) {
 		$this->setHeaders();
 		$out = $this->getOutput();
-		$this->addHelpLink( 'Help:ApiSandbox' );
+
+		if ( !$this->getConfig()->get( 'EnableAPI' ) ) {
+			$out->showErrorPage( 'error', 'apisandbox-api-disabled' );
+		}
 
 		$out->addJsConfigVars( 'apihighlimits', $this->getUser()->isAllowed( 'apihighlimits' ) );
 		$out->addModuleStyles( [

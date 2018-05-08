@@ -49,7 +49,6 @@ class ChangesListBooleanFilterTest extends MediaWikiTestCase {
 				'default' => 1,
 				'priority' => 1,
 				'cssClass' => null,
-				'defaultHighlightColor' => null,
 				'conflicts' => [
 					[
 						'group' => 'group',
@@ -86,7 +85,6 @@ class ChangesListBooleanFilterTest extends MediaWikiTestCase {
 				'default' => 1,
 				'priority' => 1,
 				'cssClass' => null,
-				'defaultHighlightColor' => null,
 				'conflicts' => [
 					[
 						'group' => 'group',

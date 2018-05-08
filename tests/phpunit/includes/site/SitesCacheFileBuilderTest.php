@@ -27,9 +27,7 @@
  *
  * @author Katie Filbert < aude.wiki@gmail.com >
  */
-class SitesCacheFileBuilderTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class SitesCacheFileBuilderTest extends PHPUnit_Framework_TestCase {
 
 	protected function setUp() {
 		$this->cacheFile = $this->getCacheFile();
@@ -100,7 +98,7 @@ class SitesCacheFileBuilderTest extends PHPUnit\Framework\TestCase {
 	}
 
 	private function getSiteLookup( SiteList $sites ) {
-		$siteLookup = $this->getMockBuilder( SiteLookup::class )
+		$siteLookup = $this->getMockBuilder( 'SiteLookup' )
 			->disableOriginalConstructor()
 			->getMock();
 

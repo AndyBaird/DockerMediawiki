@@ -30,8 +30,6 @@ define( 'MW_PARSER_TEST', true );
 
 require __DIR__ . '/../../maintenance/Maintenance.php';
 
-use MediaWiki\MediaWikiServices;
-
 class ParserTestsMaintenance extends Maintenance {
 	function __construct() {
 		parent::__construct();
@@ -147,8 +145,7 @@ class ParserTestsMaintenance extends Maintenance {
 
 		$recorderLB = false;
 		if ( $record || $compare ) {
-			$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-			$recorderLB = $lbFactory->newMainLB();
+			$recorderLB = wfGetLBFactory()->newMainLB();
 			// This connection will have the wiki's table prefix, not parsertest_
 			$recorderDB = $recorderLB->getConnection( DB_MASTER );
 

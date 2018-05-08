@@ -10,7 +10,6 @@
 ( function ( mw, $ ) {
 
 	var inspect,
-		byteLength = require( 'mediawiki.String' ).byteLength,
 		hasOwn = Object.prototype.hasOwnProperty;
 
 	function sortByProperty( array, prop, descending ) {
@@ -48,7 +47,7 @@
 			var modules = inspect.getLoadedModules(),
 				graph = {};
 
-			modules.forEach( function ( moduleName ) {
+			$.each( modules, function ( moduleIndex, moduleName ) {
 				var dependencies = mw.loader.moduleRegistry[ moduleName ].dependencies || [];
 
 				if ( !hasOwn.call( graph, moduleName ) ) {
@@ -56,7 +55,7 @@
 				}
 				graph[ moduleName ].requires = dependencies;
 
-				dependencies.forEach( function ( depName ) {
+				$.each( dependencies, function ( depIndex, depName ) {
 					if ( !hasOwn.call( graph, depName ) ) {
 						graph[ depName ] = { requiredBy: [] };
 					}
@@ -118,9 +117,9 @@
 			size = 0;
 			for ( i = 0; i < args.length; i++ ) {
 				if ( typeof args[ i ] === 'function' ) {
-					size += byteLength( getFunctionBody( args[ i ] ) );
+					size += $.byteLength( getFunctionBody( args[ i ] ) );
 				} else {
-					size += byteLength( JSON.stringify( args[ i ] ) );
+					size += $.byteLength( JSON.stringify( args[ i ] ) );
 				}
 			}
 
@@ -165,7 +164,7 @@
 		 * @return {Array} List of module names
 		 */
 		getLoadedModules: function () {
-			return mw.loader.getModuleNames().filter( function ( module ) {
+			return $.grep( mw.loader.getModuleNames(), function ( module ) {
 				return mw.loader.getState( module ) === 'ready';
 			} );
 		},
@@ -207,7 +206,7 @@
 				Array.prototype.slice.call( arguments ) :
 				$.map( inspect.reports, function ( v, k ) { return k; } );
 
-			reports.forEach( function ( name ) {
+			$.each( reports, function ( index, name ) {
 				inspect.dumpTable( inspect.reports[ name ]() );
 			} );
 		},
@@ -225,7 +224,7 @@
 			 */
 			size: function () {
 				// Map each module to a descriptor object.
-				var modules = inspect.getLoadedModules().map( function ( module ) {
+				var modules = $.map( inspect.getLoadedModules(), function ( module ) {
 					return {
 						name: module,
 						size: inspect.getModuleSize( module )
@@ -236,7 +235,7 @@
 				sortByProperty( modules, 'size', true );
 
 				// Convert size to human-readable string.
-				modules.forEach( function ( module ) {
+				$.each( modules, function ( i, module ) {
 					module.sizeInBytes = module.size;
 					module.size = humanSize( module.size );
 				} );
@@ -253,7 +252,7 @@
 			css: function () {
 				var modules = [];
 
-				inspect.getLoadedModules().forEach( function ( name ) {
+				$.each( inspect.getLoadedModules(), function ( index, name ) {
 					var css, stats, module = mw.loader.moduleRegistry[ name ];
 
 					try {
@@ -286,8 +285,8 @@
 					$.extend( stats, mw.loader.store.stats );
 					try {
 						raw = localStorage.getItem( mw.loader.store.getStoreKey() );
-						stats.totalSizeInBytes = byteLength( raw );
-						stats.totalSize = humanSize( byteLength( raw ) );
+						stats.totalSizeInBytes = $.byteLength( raw );
+						stats.totalSize = humanSize( $.byteLength( raw ) );
 					} catch ( e ) {}
 				}
 				return [ stats ];
@@ -307,7 +306,7 @@
 				pattern = new RegExp( mw.RegExp.escape( pattern ), 'g' );
 			}
 
-			return inspect.getLoadedModules().filter( function ( moduleName ) {
+			return $.grep( inspect.getLoadedModules(), function ( moduleName ) {
 				var module = mw.loader.moduleRegistry[ moduleName ];
 
 				// Grep module's JavaScript

@@ -14,13 +14,14 @@ class UploadStashTest extends MediaWikiTestCase {
 	/**
 	 * @var string
 	 */
-	private $tmpFile;
+	private $bug29408File;
 
 	protected function setUp() {
 		parent::setUp();
 
-		$this->tmpFile = $this->getNewTempFile();
-		file_put_contents( $this->tmpFile, "\x00" );
+		// Setup a file for T31408
+		$this->bug29408File = wfTempDir() . '/bug29408';
+		file_put_contents( $this->bug29408File, "\x00" );
 
 		self::$users = [
 			'sysop' => new TestUser(
@@ -38,6 +39,18 @@ class UploadStashTest extends MediaWikiTestCase {
 		];
 	}
 
+	protected function tearDown() {
+		if ( file_exists( $this->bug29408File . "." ) ) {
+			unlink( $this->bug29408File . "." );
+		}
+
+		if ( file_exists( $this->bug29408File ) ) {
+			unlink( $this->bug29408File );
+		}
+
+		parent::tearDown();
+	}
+
 	/**
 	 * @todo give this test a real name explaining what is being tested here
 	 */
@@ -48,7 +61,7 @@ class UploadStashTest extends MediaWikiTestCase {
 		$stash = new UploadStash( $repo );
 
 		// Throws exception caught by PHPUnit on failure
-		$file = $stash->stashFile( $this->tmpFile );
+		$file = $stash->stashFile( $this->bug29408File );
 		// We'll never reach this point if we hit T31408
 		$this->assertTrue( true, 'Unrecognized file without extension' );
 
@@ -91,23 +104,4 @@ class UploadStashTest extends MediaWikiTestCase {
 		$this->assertTrue( UploadFromStash::isValidRequest( $request ) );
 	}
 
-	public function testExceptionWhenStoreTempFails() {
-		$mockRepoStoreStatusResult = Status::newFatal( 'TEST_ERROR' );
-		$mockRepo = $this->getMockBuilder( FileRepo::class )
-			->disableOriginalConstructor()
-			->getMock();
-		$mockRepo->expects( $this->once() )
-			->method( 'storeTemp' )
-			->willReturn( $mockRepoStoreStatusResult );
-
-		$stash = new UploadStash( $mockRepo );
-		try {
-			$stash->stashFile( $this->tmpFile );
-			$this->fail( 'Expected UploadStashFileException not thrown' );
-		} catch ( UploadStashFileException $e ) {
-			$this->assertInstanceOf( ILocalizedException::class, $e );
-		} catch ( Exception $e ) {
-			$this->fail( 'Unexpected exception class ' . get_class( $e ) );
-		}
-	}
 }

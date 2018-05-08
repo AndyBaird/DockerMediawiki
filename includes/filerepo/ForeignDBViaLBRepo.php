@@ -37,10 +37,10 @@ class ForeignDBViaLBRepo extends LocalRepo {
 	protected $tablePrefix;
 
 	/** @var array */
-	protected $fileFactory = [ ForeignDBFile::class, 'newFromTitle' ];
+	protected $fileFactory = [ 'ForeignDBFile', 'newFromTitle' ];
 
 	/** @var array */
-	protected $fileFromRowFactory = [ ForeignDBFile::class, 'newFromRow' ];
+	protected $fileFromRowFactory = [ 'ForeignDBFile', 'newFromRow' ];
 
 	/** @var bool */
 	protected $hasSharedCache;

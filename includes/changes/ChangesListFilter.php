@@ -18,6 +18,7 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
+ * @license GPL 2+
  * @author Matthew Flaschen
  */
 
@@ -102,12 +103,6 @@ abstract class ChangesListFilter {
 	 */
 	protected $priority;
 
-	/**
-	 *
-	 * @var string $defaultHighlightColor
-	 */
-	protected $defaultHighlightColor;
-
 	const RESERVED_NAME_CHAR = '_';
 
 	/**
@@ -183,7 +178,8 @@ abstract class ChangesListFilter {
 	 * (not filtered out), even for the hide-based filters.  So e.g. conflicting with
 	 * 'hideanons' means there is a conflict if only anonymous users are *shown*.
 	 *
-	 * @param ChangesListFilterGroup|ChangesListFilter $other
+	 * @param ChangesListFilterGroup|ChangesListFilter $other Other
+	 *  ChangesListFilterGroup or ChangesListFilter
 	 * @param string $globalKey i18n key for top-level conflict message
 	 * @param string $forwardKey i18n key for conflict message in this
 	 *  direction (when in UI context of $this object)
@@ -214,7 +210,8 @@ abstract class ChangesListFilter {
 	 *
 	 * Internal use ONLY.
 	 *
-	 * @param ChangesListFilterGroup|ChangesListFilter $other
+	 * @param ChangesListFilterGroup|ChangesListFilter $other Other
+	 *  ChangesListFilterGroup or ChangesListFilter
 	 * @param string $globalDescription i18n key for top-level conflict message
 	 * @param string $contextDescription i18n key for conflict message in this
 	 *  direction (when in UI context of $this object)
@@ -371,7 +368,6 @@ abstract class ChangesListFilter {
 			'priority' => $this->priority,
 			'subset' => $this->subsetFilters,
 			'conflicts' => [],
-			'defaultHighlightColor' => $this->defaultHighlightColor
 		];
 
 		$output['messageKeys'] = [
@@ -465,7 +461,7 @@ abstract class ChangesListFilter {
 	 * @param FormOptions $opts
 	 * @return bool
 	 */
-	public function activelyInConflictWithFilter( ChangesListFilter $filter, FormOptions $opts ) {
+	public function activelyInConflictWithFilter( ChangeslistFilter $filter, FormOptions $opts ) {
 		if ( $this->isSelected( $opts ) && $filter->isSelected( $opts ) ) {
 			/** @var ChangesListFilter $siblingFilter */
 			foreach ( $this->getSiblings() as $siblingFilter ) {
@@ -481,7 +477,7 @@ abstract class ChangesListFilter {
 		return false;
 	}
 
-	private function hasConflictWithFilter( ChangesListFilter $filter ) {
+	private function hasConflictWithFilter( ChangeslistFilter $filter ) {
 		return in_array( $filter, $this->getConflictingFilters() );
 	}
 
@@ -497,12 +493,5 @@ abstract class ChangesListFilter {
 				return $filter !== $this;
 			}
 		);
-	}
-
-	/**
-	 * @param string $defaultHighlightColor
-	 */
-	public function setDefaultHighlightColor( $defaultHighlightColor ) {
-		$this->defaultHighlightColor = $defaultHighlightColor;
 	}
 }

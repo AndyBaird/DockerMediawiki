@@ -20,11 +20,11 @@
  * @file
  */
 
-use Wikimedia\Rdbms\IResultWrapper;
+use Wikimedia\Rdbms\ResultWrapper;
 
 abstract class UserArray implements Iterator {
 	/**
-	 * @param IResultWrapper $res
+	 * @param ResultWrapper $res
 	 * @return UserArrayFromResult
 	 */
 	static function newFromResult( $res ) {
@@ -49,14 +49,11 @@ abstract class UserArray implements Iterator {
 			return new ArrayIterator( [] );
 		}
 		$dbr = wfGetDB( DB_REPLICA );
-		$userQuery = User::getQueryInfo();
 		$res = $dbr->select(
-			$userQuery['tables'],
-			$userQuery['fields'],
+			'user',
+			User::selectFields(),
 			[ 'user_id' => array_unique( $ids ) ],
-			__METHOD__,
-			[],
-			$userQuery['joins']
+			__METHOD__
 		);
 		return self::newFromResult( $res );
 	}
@@ -73,20 +70,17 @@ abstract class UserArray implements Iterator {
 			return new ArrayIterator( [] );
 		}
 		$dbr = wfGetDB( DB_REPLICA );
-		$userQuery = User::getQueryInfo();
 		$res = $dbr->select(
-			$userQuery['tables'],
-			$userQuery['fields'],
+			'user',
+			User::selectFields(),
 			[ 'user_name' => array_unique( $names ) ],
-			__METHOD__,
-			[],
-			$userQuery['joins']
+			__METHOD__
 		);
 		return self::newFromResult( $res );
 	}
 
 	/**
-	 * @param IResultWrapper $res
+	 * @param ResultWrapper $res
 	 * @return UserArrayFromResult
 	 */
 	protected static function newFromResult_internal( $res ) {

@@ -332,8 +332,9 @@ ENDS;
 			return $blacklist;
 		}
 
-		// phpcs:ignore MediaWiki.NamingConventions.ValidGlobalName.wgPrefix
+		// @codingStandardsIgnoreStart Ignore that globals should have a "wg" prefix.
 		global $checkBlacklist;
+		// @codingStandardsIgnoreEnd
 
 		$blacklist = $checkBlacklist;
 
@@ -516,7 +517,7 @@ ENDS;
 		$tableRows = implode( "\n|-\n", $rows );
 
 		$version = SpecialVersion::getVersion( 'nodb' );
-		// phpcs:disable Generic.Files.LineLength
+		// @codingStandardsIgnoreStart Long line.
 		echo <<<EOL
 '''Check results are for:''' <code>$version</code>
 
@@ -528,7 +529,7 @@ $tableRows
 $detailText
 
 EOL;
-		// phpcs:enable
+		// @codingStandardsIgnoreEnd
 	}
 
 	/**

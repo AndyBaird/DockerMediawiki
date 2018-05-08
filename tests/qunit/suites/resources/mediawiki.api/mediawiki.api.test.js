@@ -18,7 +18,7 @@
 	}
 
 	function sequenceBodies( status, headers, bodies ) {
-		bodies.forEach( function ( body, i ) {
+		jQuery.each( bodies, function ( i, body ) {
 			bodies[ i ] = [ status, headers, body ];
 		} );
 		return sequence( bodies );
@@ -203,36 +203,13 @@
 
 		// Don't cache error (T67268)
 		return api.getToken( 'testerror' )
-			.catch( function ( err ) {
+			.then( null, function ( err ) {
 				assert.equal( err, 'bite-me', 'Expected error' );
 
 				return api.getToken( 'testerror' );
 			} )
 			.then( function ( token ) {
 				assert.equal( token, 'good', 'The token' );
-			} );
-	} );
-
-	QUnit.test( 'getToken() - no query', function ( assert ) {
-		var api = new mw.Api(),
-			// Same-origin warning and missing query in response.
-			serverRsp = {
-				warnings: {
-					tokens: {
-						'*': 'Tokens may not be obtained when the same-origin policy is not applied.'
-					}
-				}
-			};
-
-		this.server.respondWith( /type=testnoquery/, [ 200, { 'Content-Type': 'application/json' },
-			JSON.stringify( serverRsp )
-		] );
-
-		return api.getToken( 'testnoquery' )
-			.then( function () { assert.fail( 'Expected response missing a query to be rejected' ); } )
-			.catch( function ( err, rsp ) {
-				assert.equal( err, 'query-missing', 'Expected no query error code' );
-				assert.deepEqual( rsp, serverRsp );
 			} );
 	} );
 
@@ -472,7 +449,7 @@
 		} );
 		this.api.abort();
 		assert.ok( this.requests.length === 2, 'Check both requests triggered' );
-		this.requests.forEach( function ( request, i ) {
+		$.each( this.requests, function ( i, request ) {
 			assert.ok( request.abort.calledOnce, 'abort request number ' + i );
 		} );
 	} );

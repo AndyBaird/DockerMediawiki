@@ -11,6 +11,9 @@
 			"color": "#36c",
 			"global": true
 		},
+		"constructive": {
+			"color": "#36c"
+		},
 		"destructive": {
 			"color": "#d33"
 		},
@@ -20,38 +23,36 @@
 	},
 	"images": {
 		"arrowNext": { "file": {
-			"ltr": "images/icons/arrowNext-ltr.svg",
-			"rtl": "images/icons/arrowNext-rtl.svg"
+			"ltr": "images/icons/arrow-ltr.svg",
+			"rtl": "images/icons/arrow-rtl.svg"
 		} },
-		"arrowPrevious": { "file": {
-			"ltr": "images/icons/arrowPrevious-ltr.svg",
-			"rtl": "images/icons/arrowPrevious-rtl.svg"
+		"arrowLast": { "file": {
+			"ltr": "images/icons/arrow-rtl.svg",
+			"rtl": "images/icons/arrow-ltr.svg"
 		} },
 		"collapse": { "file": "images/icons/collapse.svg" },
 		"downTriangle": { "file": "images/icons/downTriangle.svg" },
 		"draggable": { "file": "images/icons/draggable.svg" },
 		"expand": { "file": "images/icons/expand.svg" },
-		"move": {
-			"file": "images/icons/move.svg"
-		},
+		"move": { "file": "images/icons/move.svg" },
 		"next": { "file": {
-			"ltr": "images/icons/next-ltr.svg",
-			"rtl": "images/icons/next-rtl.svg"
+			"ltr": "images/icons/move-ltr.svg",
+			"rtl": "images/icons/move-rtl.svg"
 			}
 		},
 		"previous": { "file": {
-			"ltr": "images/icons/previous-ltr.svg",
-			"rtl": "images/icons/previous-rtl.svg"
+			"ltr": "images/icons/move-rtl.svg",
+			"rtl": "images/icons/move-ltr.svg"
 			}
 		},
 		"last": { "file": {
-			"ltr": "images/icons/moveLast-ltr.svg",
-			"rtl": "images/icons/moveLast-rtl.svg"
+			"ltr": "images/icons/move-end-ltr.svg",
+			"rtl": "images/icons/move-end-rtl.svg"
 			}
 		},
 		"first": { "file": {
-			"ltr": "images/icons/moveFirst-ltr.svg",
-			"rtl": "images/icons/moveFirst-rtl.svg"
+			"ltr": "images/icons/move-end-rtl.svg",
+			"rtl": "images/icons/move-end-ltr.svg"
 			}
 		},
 		"upTriangle": { "file": "images/icons/upTriangle.svg" }

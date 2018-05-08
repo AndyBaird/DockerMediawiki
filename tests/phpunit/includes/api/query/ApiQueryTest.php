@@ -9,6 +9,7 @@
 class ApiQueryTest extends ApiTestCase {
 	protected function setUp() {
 		parent::setUp();
+		$this->doLogin();
 
 		// Setup apiquerytestiw: as interwiki prefix
 		$this->setMwGlobals( 'wgHooks', [
@@ -77,19 +78,6 @@ class ApiQueryTest extends ApiTestCase {
 		$this->assertArrayHasKey( -1, $data[0]['query']['pages'] );
 
 		$this->assertArrayHasKey( 'missing', $data[0]['query']['pages'][-2] );
-		$this->assertArrayHasKey( 'invalid', $data[0]['query']['pages'][-1] );
-	}
-
-	public function testTitlesWithWhitespaces() {
-		$data = $this->doApiRequest( [
-			'action' => 'query',
-			'titles' => ' '
-		] );
-
-		$this->assertArrayHasKey( 'query', $data[0] );
-		$this->assertArrayHasKey( 'pages', $data[0]['query'] );
-		$this->assertEquals( 1, count( $data[0]['query']['pages'] ) );
-		$this->assertArrayHasKey( -1, $data[0]['query']['pages'] );
 		$this->assertArrayHasKey( 'invalid', $data[0]['query']['pages'][-1] );
 	}
 

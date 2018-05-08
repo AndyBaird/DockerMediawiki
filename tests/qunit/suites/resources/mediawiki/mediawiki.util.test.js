@@ -53,7 +53,7 @@
 		];
 
 	Array.prototype.push.apply( IPV6_CASES,
-		[
+		$.map( [
 			'fc:100::',
 			'fc:100:a::',
 			'fc:100:a:d::',
@@ -69,8 +69,8 @@
 			'::fc:100:a:d:1:e',
 			'::fc:100:a:d:1:e:ac',
 			'fc:100:a:d:1:e:ac:0'
-		].map( function ( el ) {
-			return [ true, el, el + ' is a valid IP' ];
+		], function ( el ) {
+			return [ [ true, el, el + ' is a valid IP' ] ];
 		} )
 	);
 
@@ -122,14 +122,17 @@
 		var text = 'foo тест_#%!\'()[]:<>',
 			legacyEncoded = 'foo_.D1.82.D0.B5.D1.81.D1.82_.23.25.21.27.28.29.5B.5D:.3C.3E',
 			html5Encoded = 'foo_тест_#%!\'()[]:<>',
+			html5Experimental = 'foo_тест_!_()[]:<>',
 			// Settings: this is $wgFragmentMode
 			legacy = [ 'legacy' ],
 			legacyNew = [ 'legacy', 'html5' ],
 			newLegacy = [ 'html5', 'legacy' ],
-			allNew = [ 'html5' ];
+			allNew = [ 'html5' ],
+			experimentalLegacy = [ 'html5-legacy', 'legacy' ],
+			newExperimental = [ 'html5', 'html5-legacy' ];
 
 		// Test cases are kept in sync with SanitizerTest.php
-		[
+		$.each( [
 			// Pure legacy: how MW worked before 2017
 			[ legacy, text, legacyEncoded ],
 			// Transition to a new world: legacy links with HTML5 fallback
@@ -137,8 +140,12 @@
 			// New world: HTML5 links, legacy fallbacks
 			[ newLegacy, text, html5Encoded ],
 			// Distant future: no legacy fallbacks
-			[ allNew, text, html5Encoded ]
-		].forEach( function ( testCase ) {
+			[ allNew, text, html5Encoded ],
+			// Someone flipped $wgExperimentalHtmlIds on
+			[ experimentalLegacy, text, html5Experimental ],
+			// Migration from $wgExperimentalHtmlIds to modern HTML5
+			[ newExperimental, text, html5Encoded ]
+		], function ( index, testCase ) {
 			mw.config.set( 'wgFragmentMode', testCase[ 0 ] );
 
 			assert.equal( util.escapeIdForAttribute( testCase[ 1 ] ), testCase[ 2 ] );
@@ -150,13 +157,16 @@
 		var text = 'foo тест_#%!\'()[]:<>',
 			legacyEncoded = 'foo_.D1.82.D0.B5.D1.81.D1.82_.23.25.21.27.28.29.5B.5D:.3C.3E',
 			html5Encoded = 'foo_тест_#%!\'()[]:<>',
+			html5Experimental = 'foo_тест_!_()[]:<>',
 			// Settings: this is wgFragmentMode
 			legacy = [ 'legacy' ],
 			legacyNew = [ 'legacy', 'html5' ],
 			newLegacy = [ 'html5', 'legacy' ],
-			allNew = [ 'html5' ];
+			allNew = [ 'html5' ],
+			experimentalLegacy = [ 'html5-legacy', 'legacy' ],
+			newExperimental = [ 'html5', 'html5-legacy' ];
 
-		[
+		$.each( [
 			// Pure legacy: how MW worked before 2017
 			[ legacy, text, legacyEncoded ],
 			// Transition to a new world: legacy links with HTML5 fallback
@@ -164,8 +174,12 @@
 			// New world: HTML5 links, legacy fallbacks
 			[ newLegacy, text, html5Encoded ],
 			// Distant future: no legacy fallbacks
-			[ allNew, text, html5Encoded ]
-		].forEach( function ( testCase ) {
+			[ allNew, text, html5Encoded ],
+			// Someone flipped wgExperimentalHtmlIds on
+			[ experimentalLegacy, text, html5Experimental ],
+			// Migration from wgExperimentalHtmlIds to modern HTML5
+			[ newExperimental, text, html5Encoded ]
+		], function ( index, testCase ) {
 			mw.config.set( 'wgFragmentMode', testCase[ 0 ] );
 
 			assert.equal( util.escapeIdForLink( testCase[ 1 ] ), testCase[ 2 ] );
@@ -232,26 +246,16 @@
 		assert.equal( href, '/wiki/#Fragment', 'empty title with fragment' );
 
 		href = util.getUrl( '#Fragment', { action: 'edit' } );
-		assert.equal( href, '/w/index.php?action=edit#Fragment', 'empty title with query string and fragment' );
+		assert.equal( href, '/w/index.php?action=edit#Fragment', 'epmty title with query string and fragment' );
 
-		mw.config.set( 'wgFragmentMode', [ 'legacy' ] );
 		href = util.getUrl( 'Foo:Sandbox \xC4#Fragment \xC4', { action: 'edit' } );
 		assert.equal( href, '/w/index.php?title=Foo:Sandbox_%C3%84&action=edit#Fragment_.C3.84', 'title with query string, fragment, and special characters' );
-
-		mw.config.set( 'wgFragmentMode', [ 'html5' ] );
-		href = util.getUrl( 'Foo:Sandbox \xC4#Fragment \xC4', { action: 'edit' } );
-		assert.equal( href, '/w/index.php?title=Foo:Sandbox_%C3%84&action=edit#Fragment_Ä', 'title with query string, fragment, and special characters' );
 
 		href = util.getUrl( 'Foo:%23#Fragment', { action: 'edit' } );
 		assert.equal( href, '/w/index.php?title=Foo:%2523&action=edit#Fragment', 'title containing %23 (#), fragment, and a query string' );
 
-		mw.config.set( 'wgFragmentMode', [ 'legacy' ] );
 		href = util.getUrl( '#+&=:;@$-_.!*/[]<>\'§', { action: 'edit' } );
 		assert.equal( href, '/w/index.php?action=edit#.2B.26.3D:.3B.40.24-_..21.2A.2F.5B.5D.3C.3E.27.C2.A7', 'fragment with various characters' );
-
-		mw.config.set( 'wgFragmentMode', [ 'html5' ] );
-		href = util.getUrl( '#+&=:;@$-_.!*/[]<>\'§', { action: 'edit' } );
-		assert.equal( href, '/w/index.php?action=edit#+&=:;@$-_.!*/[]<>\'§', 'fragment with various characters' );
 	} );
 
 	QUnit.test( 'wikiScript', function ( assert ) {
@@ -428,23 +432,23 @@
 	} );
 
 	QUnit.test( 'isIPv6Address', function ( assert ) {
-		IPV6_CASES.forEach( function ( ipCase ) {
+		$.each( IPV6_CASES, function ( i, ipCase ) {
 			assert.strictEqual( util.isIPv6Address( ipCase[ 1 ] ), ipCase[ 0 ], ipCase[ 2 ] );
 		} );
 	} );
 
 	QUnit.test( 'isIPv4Address', function ( assert ) {
-		IPV4_CASES.forEach( function ( ipCase ) {
+		$.each( IPV4_CASES, function ( i, ipCase ) {
 			assert.strictEqual( util.isIPv4Address( ipCase[ 1 ] ), ipCase[ 0 ], ipCase[ 2 ] );
 		} );
 	} );
 
 	QUnit.test( 'isIPAddress', function ( assert ) {
-		IPV4_CASES.forEach( function ( ipCase ) {
+		$.each( IPV4_CASES, function ( i, ipCase ) {
 			assert.strictEqual( util.isIPv4Address( ipCase[ 1 ] ), ipCase[ 0 ], ipCase[ 2 ] );
 		} );
 
-		IPV6_CASES.forEach( function ( ipCase ) {
+		$.each( IPV6_CASES, function ( i, ipCase ) {
 			assert.strictEqual( util.isIPv6Address( ipCase[ 1 ] ), ipCase[ 0 ], ipCase[ 2 ] );
 		} );
 	} );

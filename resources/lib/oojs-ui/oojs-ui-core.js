@@ -1,12 +1,12 @@
 /*!
- * OOUI v0.26.5
- * https://www.mediawiki.org/wiki/OOUI
+ * OOjs UI v0.23.0
+ * https://www.mediawiki.org/wiki/OOjs_UI
  *
- * Copyright 2011–2018 OOUI Team and other contributors.
+ * Copyright 2011–2017 OOjs UI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2018-04-24T23:29:01Z
+ * Date: 2017-09-05T21:23:58Z
  */
 ( function ( OO ) {
 
@@ -68,7 +68,7 @@ OO.ui.elementId = 0;
  */
 OO.ui.generateElementId = function () {
 	OO.ui.elementId++;
-	return 'ooui-' + OO.ui.elementId;
+	return 'oojsui-' + OO.ui.elementId;
 };
 
 /**
@@ -411,7 +411,7 @@ OO.ui.infuse = function ( idOrNode ) {
 	 *
 	 *     $.i18n().load( languageMap ).done( function() {
 	 *         // Replace the built-in `msg` only once we've loaded the internationalization.
-	 *         // OOUI uses `OO.ui.deferMsg` for all initially-loaded messages. So long as
+	 *         // OOjs UI uses `OO.ui.deferMsg` for all initially-loaded messages. So long as
 	 *         // you put off creating any widgets until this promise is complete, no English
 	 *         // will be displayed.
 	 *         OO.ui.msg = $.i18n;
@@ -533,41 +533,10 @@ OO.ui.isSafeUrl = function ( url ) {
  * It is left up to implementors to decide how to compute this
  * so the default implementation always returns false.
  *
- * @return {boolean} User is on a mobile device
+ * @return {boolean} Use is on a mobile device
  */
 OO.ui.isMobile = function () {
 	return false;
-};
-
-/**
- * Get the additional spacing that should be taken into account when displaying elements that are
- * clipped to the viewport, e.g. dropdown menus and popups. This is meant to be overridden to avoid
- * such menus overlapping any fixed headers/toolbars/navigation used by the site.
- *
- * @return {Object} Object with the properties 'top', 'right', 'bottom', 'left', each representing
- *     the extra spacing from that edge of viewport (in pixels)
- */
-OO.ui.getViewportSpacing = function () {
-	return {
-		top: 0,
-		right: 0,
-		bottom: 0,
-		left: 0
-	};
-};
-
-/**
- * Get the default overlay, which is used by various widgets when they are passed `$overlay: true`.
- * See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
- *
- * @return {jQuery} Default overlay node
- */
-OO.ui.getDefaultOverlay = function () {
-	if ( !OO.ui.$defaultOverlay ) {
-		OO.ui.$defaultOverlay = $( '<div>' ).addClass( 'oo-ui-defaultOverlay' );
-		$( 'body' ).append( OO.ui.$defaultOverlay );
-	}
-	return OO.ui.$defaultOverlay;
 };
 
 /*!
@@ -575,7 +544,7 @@ OO.ui.getDefaultOverlay = function () {
  */
 
 /**
- * Namespace for OOUI mixins.
+ * Namespace for OOjs UI mixins.
  *
  * Mixins are named according to the type of object they are intended to
  * be mixed in to.  For example, OO.ui.mixin.GroupElement is intended to be
@@ -598,9 +567,9 @@ OO.ui.mixin = {};
  * @constructor
  * @param {Object} [config] Configuration options
  * @cfg {string[]} [classes] The names of the CSS classes to apply to the element. CSS styles are added
- *  to the top level (e.g., the outermost div) of the element. See the [OOUI documentation on MediaWiki][2]
+ *  to the top level (e.g., the outermost div) of the element. See the [OOjs UI documentation on MediaWiki][2]
  *  for an example.
- *  [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Buttons_and_Switches#cssExample
+ *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Buttons_and_Switches#cssExample
  * @cfg {string} [id] The HTML id attribute used in the rendered tag.
  * @cfg {string} [text] Text to insert
  * @cfg {Array} [content] An array of content elements to append (after #text).
@@ -612,9 +581,7 @@ OO.ui.mixin = {};
  *  Data can also be specified with the #setData method.
  */
 OO.ui.Element = function OoUiElement( config ) {
-	if ( OO.ui.isDemo ) {
-		this.initialConfig = config;
-	}
+	this.initialConfig = config;
 	// Configuration initialization
 	config = config || {};
 
@@ -826,16 +793,16 @@ OO.ui.Element.static.unsafeInfuse = function ( idOrNode, domPromise ) {
 	// rebuild widget
 	// eslint-disable-next-line new-cap
 	obj = new cls( data );
-	// If anyone is holding a reference to the old DOM element,
-	// let's allow them to OO.ui.infuse() it and do what they expect, see T105828.
-	// Do not use jQuery.data(), as using it on detached nodes leaks memory in 1.x line by design.
-	$elem[ 0 ].oouiInfused = obj.$element;
 	// now replace old DOM with this new DOM.
 	if ( top ) {
 		// An efficient constructor might be able to reuse the entire DOM tree of the original element,
 		// so only mutate the DOM if we need to.
 		if ( $elem[ 0 ] !== obj.$element[ 0 ] ) {
 			$elem.replaceWith( obj.$element );
+			// This element is now gone from the DOM, but if anyone is holding a reference to it,
+			// let's allow them to OO.ui.infuse() it and do what they expect, see T105828.
+			// Do not use jQuery.data(), as using it on detached nodes leaks memory in 1.x line by design.
+			$elem[ 0 ].oouiInfused = obj.$element;
 		}
 		top.resolve();
 	}
@@ -1634,7 +1601,7 @@ OO.inheritClass( OO.ui.Layout, OO.ui.Element );
 OO.mixinClass( OO.ui.Layout, OO.EventEmitter );
 
 /**
- * Widgets are compositions of one or more OOUI elements that users can both view
+ * Widgets are compositions of one or more OOjs UI elements that users can both view
  * and interact with. All widgets can be configured and modified via a standard API,
  * and their state can change dynamically according to a model.
  *
@@ -2083,9 +2050,9 @@ OO.ui.mixin.TabIndexedElement.prototype.simulateLabelClick = function () {
 /**
  * ButtonElement is often mixed into other classes to generate a button, which is a clickable
  * interface element that can be configured with access keys for accessibility.
- * See the [OOUI documentation on MediaWiki] [1] for examples.
+ * See the [OOjs UI documentation on MediaWiki] [1] for examples.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Buttons_and_Switches#Buttons
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Buttons_and_Switches#Buttons
  *
  * @abstract
  * @class
@@ -2340,12 +2307,12 @@ OO.ui.mixin.ButtonElement.prototype.isActive = function () {
 };
 
 /**
- * Any OOUI widget that contains other widgets (such as {@link OO.ui.ButtonWidget buttons} or
+ * Any OOjs UI widget that contains other widgets (such as {@link OO.ui.ButtonWidget buttons} or
  * {@link OO.ui.OptionWidget options}) mixes in GroupElement. Adding, removing, and clearing
  * items from the group is done through the interface the class provides.
- * For more information, please see the [OOUI documentation on MediaWiki] [1].
+ * For more information, please see the [OOjs UI documentation on MediaWiki] [1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Elements/Groups
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Elements/Groups
  *
  * @abstract
  * @mixins OO.EmitterList
@@ -2403,15 +2370,15 @@ OO.ui.mixin.GroupElement.prototype.setGroupElement = function ( $group ) {
 };
 
 /**
- * Find an item by its data.
+ * Get an item by its data.
  *
  * Only the first item with matching data will be returned. To return all matching items,
- * use the #findItemsFromData method.
+ * use the #getItemsFromData method.
  *
  * @param {Object} data Item data to search for
  * @return {OO.ui.Element|null} Item with equivalent data, `null` if none exists
  */
-OO.ui.mixin.GroupElement.prototype.findItemFromData = function ( data ) {
+OO.ui.mixin.GroupElement.prototype.getItemFromData = function ( data ) {
 	var i, len, item,
 		hash = OO.getHash( data );
 
@@ -2426,26 +2393,14 @@ OO.ui.mixin.GroupElement.prototype.findItemFromData = function ( data ) {
 };
 
 /**
- * Get an item by its data.
+ * Get items by their data.
  *
- * @deprecated Since v0.25.0; use {@link #findItemFromData} instead.
- * @param {Object} data Item data to search for
- * @return {OO.ui.Element|null} Item with equivalent data, `null` if none exists
- */
-OO.ui.mixin.GroupElement.prototype.getItemFromData = function ( data ) {
-	OO.ui.warnDeprecation( 'GroupElement#getItemFromData. Deprecated function. Use findItemFromData instead. See T76630' );
-	return this.findItemFromData( data );
-};
-
-/**
- * Find items by their data.
- *
- * All items with matching data will be returned. To return only the first match, use the #findItemFromData method instead.
+ * All items with matching data will be returned. To return only the first match, use the #getItemFromData method instead.
  *
  * @param {Object} data Item data to search for
  * @return {OO.ui.Element[]} Items with equivalent data
  */
-OO.ui.mixin.GroupElement.prototype.findItemsFromData = function ( data ) {
+OO.ui.mixin.GroupElement.prototype.getItemsFromData = function ( data ) {
 	var i, len, item,
 		hash = OO.getHash( data ),
 		items = [];
@@ -2458,18 +2413,6 @@ OO.ui.mixin.GroupElement.prototype.findItemsFromData = function ( data ) {
 	}
 
 	return items;
-};
-
-/**
- * Find items by their data.
- *
- * @deprecated Since v0.25.0; use {@link #findItemsFromData} instead.
- * @param {Object} data Item data to search for
- * @return {OO.ui.Element[]} Items with equivalent data
- */
-OO.ui.mixin.GroupElement.prototype.getItemsFromData = function ( data ) {
-	OO.ui.warnDeprecation( 'GroupElement#getItemsFromData. Deprecated function. Use findItemsFromData instead. See T76630' );
-	return this.findItemsFromData( data );
 };
 
 /**
@@ -2590,10 +2533,10 @@ OO.ui.mixin.GroupElement.prototype.clearItems = function () {
  * IconElement is often mixed into other classes to generate an icon.
  * Icons are graphics, about the size of normal text. They are used to aid the user
  * in locating a control or to convey information in a space-efficient way. See the
- * [OOUI documentation on MediaWiki] [1] for a list of icons
+ * [OOjs UI documentation on MediaWiki] [1] for a list of icons
  * included in the library.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Icons
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Icons
  *
  * @abstract
  * @class
@@ -2619,8 +2562,8 @@ OO.ui.mixin.GroupElement.prototype.clearItems = function () {
  *  Example of an i18n map:
  *
  *     { default: 'bold-a', en: 'bold-b', de: 'bold-f' }
- *  See the [OOUI documentation on MediaWiki] [2] for a list of icons included in the library.
- * [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Icons
+ *  See the [OOjs UI documentation on MediaWiki] [2] for a list of icons included in the library.
+ * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Icons
  * @cfg {string|Function} [iconTitle] A text string used as the icon title, or a function that returns title
  *  text. The icon title is displayed when users move the mouse over the icon.
  */
@@ -2786,9 +2729,9 @@ OO.ui.mixin.IconElement.prototype.getIconTitle = function () {
  *   that opens a menu instead of performing an action directly, for example).
  *
  * For a list of indicators included in the library, please see the
- * [OOUI documentation on MediaWiki] [1].
+ * [OOjs UI documentation on MediaWiki] [1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Indicators
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Indicators
  *
  * @abstract
  * @class
@@ -2797,10 +2740,10 @@ OO.ui.mixin.IconElement.prototype.getIconTitle = function () {
  * @param {Object} [config] Configuration options
  * @cfg {jQuery} [$indicator] The indicator element created by the class. If this
  *  configuration is omitted, the indicator element will use a generated `<span>`.
- * @cfg {string} [indicator] Symbolic name of the indicator (e.g., ‘clear’ or ‘down’).
- *  See the [OOUI documentation on MediaWiki][2] for a list of indicators included
+ * @cfg {string} [indicator] Symbolic name of the indicator (e.g., ‘alert’ or  ‘down’).
+ *  See the [OOjs UI documentation on MediaWiki][2] for a list of indicators included
  *  in the library.
- * [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Indicators
+ * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Indicators
  * @cfg {string|Function} [indicatorTitle] A text string used as the indicator title,
  *  or a function that returns title text. The indicator title is displayed when users move
  *  the mouse over the indicator.
@@ -2827,7 +2770,7 @@ OO.initClass( OO.ui.mixin.IndicatorElement );
 /* Static Properties */
 
 /**
- * Symbolic name of the indicator (e.g., ‘clear’ or  ‘down’).
+ * Symbolic name of the indicator (e.g., ‘alert’ or  ‘down’).
  * The static property will be overridden if the #indicator configuration is used.
  *
  * @static
@@ -2873,7 +2816,7 @@ OO.ui.mixin.IndicatorElement.prototype.setIndicatorElement = function ( $indicat
 };
 
 /**
- * Set the indicator by its symbolic name: ‘clear’, ‘down’, ‘required’, ‘search’, ‘up’. Use `null` to remove the indicator.
+ * Set the indicator by its symbolic name: ‘alert’, ‘down’, ‘next’, ‘previous’, ‘required’, ‘up’. Use `null` to remove the indicator.
  *
  * @param {string|null} indicator Symbolic name of indicator, or `null` for no indicator
  * @chainable
@@ -2928,7 +2871,7 @@ OO.ui.mixin.IndicatorElement.prototype.setIndicatorTitle = function ( indicatorT
 };
 
 /**
- * Get the symbolic name of the indicator (e.g., ‘clear’ or  ‘down’).
+ * Get the symbolic name of the indicator (e.g., ‘alert’ or  ‘down’).
  *
  * @return {string} Symbolic name of indicator
  */
@@ -2950,9 +2893,9 @@ OO.ui.mixin.IndicatorElement.prototype.getIndicatorTitle = function () {
 /**
  * LabelElement is often mixed into other classes to generate a label, which
  * helps identify the function of an interface element.
- * See the [OOUI documentation on MediaWiki] [1] for more information.
+ * See the [OOjs UI documentation on MediaWiki] [1] for more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Labels
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Labels
  *
  * @abstract
  * @class
@@ -2963,8 +2906,8 @@ OO.ui.mixin.IndicatorElement.prototype.getIndicatorTitle = function () {
  *  configuration is omitted, the label element will use a generated `<span>`.
  * @cfg {jQuery|string|Function|OO.ui.HtmlSnippet} [label] The label text. The label can be specified
  *  as a plaintext string, a jQuery selection of elements, or a function that will produce a string
- *  in the future. See the [OOUI documentation on MediaWiki] [2] for examples.
- *  [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Labels
+ *  in the future. See the [OOjs UI documentation on MediaWiki] [2] for examples.
+ *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Labels
  */
 OO.ui.mixin.LabelElement = function OoUiMixinLabelElement( config ) {
 	// Configuration initialization
@@ -3010,38 +2953,23 @@ OO.ui.mixin.LabelElement.static.label = null;
  *
  * @param {string} text Text
  * @param {string} query Query to find
- * @param {Function} [compare] Optional string comparator, e.g. Intl.Collator().compare
  * @return {jQuery} Text with the first match of the query
  *  sub-string wrapped in highlighted span
  */
-OO.ui.mixin.LabelElement.static.highlightQuery = function ( text, query, compare ) {
-	var i, tLen, qLen,
-		offset = -1,
-		$result = $( '<span>' );
-
-	if ( compare ) {
-		tLen = text.length;
-		qLen = query.length;
-		for ( i = 0; offset === -1 && i <= tLen - qLen; i++ ) {
-			if ( compare( query, text.slice( i, i + qLen ) ) === 0 ) {
-				offset = i;
-			}
-		}
-	} else {
+OO.ui.mixin.LabelElement.static.highlightQuery = function ( text, query ) {
+	var $result = $( '<span>' ),
 		offset = text.toLowerCase().indexOf( query.toLowerCase() );
-	}
 
 	if ( !query.length || offset === -1 ) {
-		$result.text( text );
-	} else {
-		$result.append(
-			document.createTextNode( text.slice( 0, offset ) ),
-			$( '<span>' )
-				.addClass( 'oo-ui-labelElement-label-highlight' )
-				.text( text.slice( offset, offset + query.length ) ),
-			document.createTextNode( text.slice( offset + query.length ) )
-		);
+		return $result.text( text );
 	}
+	$result.append(
+		document.createTextNode( text.slice( 0, offset ) ),
+		$( '<span>' )
+			.addClass( 'oo-ui-labelElement-label-highlight' )
+			.text( text.slice( offset, offset + query.length ) ),
+		document.createTextNode( text.slice( offset + query.length ) )
+	);
 	return $result.contents();
 };
 
@@ -3095,11 +3023,10 @@ OO.ui.mixin.LabelElement.prototype.setLabel = function ( label ) {
  *
  * @param {string} text Text label to set
  * @param {string} query Substring of text to highlight
- * @param {Function} [compare] Optional string comparator, e.g. Intl.Collator().compare
  * @chainable
  */
-OO.ui.mixin.LabelElement.prototype.setHighlightedQuery = function ( text, query, compare ) {
-	return this.setLabel( this.constructor.static.highlightQuery( text, query, compare ) );
+OO.ui.mixin.LabelElement.prototype.setHighlightedQuery = function ( text, query ) {
+	return this.setLabel( this.constructor.static.highlightQuery( text, query ) );
 };
 
 /**
@@ -3149,34 +3076,39 @@ OO.ui.mixin.LabelElement.prototype.setLabelContent = function ( label ) {
  *
  * - **progressive**:  Progressive styling is applied to convey that the widget will move the user forward in a process.
  * - **destructive**: Destructive styling is applied to convey that the widget will remove something.
+ * - **constructive**: Constructive styling is applied to convey that the widget will create something.
  *
  * The flags affect the appearance of the buttons:
  *
  *     @example
  *     // FlaggedElement is mixed into ButtonWidget to provide styling flags
  *     var button1 = new OO.ui.ButtonWidget( {
- *         label: 'Progressive',
- *         flags: 'progressive'
+ *         label: 'Constructive',
+ *         flags: 'constructive'
  *     } );
  *     var button2 = new OO.ui.ButtonWidget( {
  *         label: 'Destructive',
  *         flags: 'destructive'
  *     } );
- *     $( 'body' ).append( button1.$element, button2.$element );
+ *     var button3 = new OO.ui.ButtonWidget( {
+ *         label: 'Progressive',
+ *         flags: 'progressive'
+ *     } );
+ *     $( 'body' ).append( button1.$element, button2.$element, button3.$element );
  *
  * {@link OO.ui.ActionWidget ActionWidgets}, which are a special kind of button that execute an action, use these flags: **primary** and **safe**.
- * Please see the [OOUI documentation on MediaWiki] [1] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Elements/Flagged
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Elements/Flagged
  *
  * @abstract
  * @class
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @cfg {string|string[]} [flags] The name or names of the flags (e.g., 'progressive' or 'primary') to apply.
- *  Please see the [OOUI documentation on MediaWiki] [2] for more information about available flags.
- *  [2]: https://www.mediawiki.org/wiki/OOUI/Elements/Flagged
+ * @cfg {string|string[]} [flags] The name or names of the flags (e.g., 'constructive' or 'primary') to apply.
+ *  Please see the [OOjs UI documentation on MediaWiki] [2] for more information about available flags.
+ *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Elements/Flagged
  * @cfg {jQuery} [$flagged] The flagged element. By default,
  *  the flagged functionality is applied to the element created by the class ($element).
  *  If a different element is specified, the flagged functionality will be applied to it instead.
@@ -3616,10 +3548,10 @@ OO.ui.mixin.AccessKeyedElement.prototype.formatTitleWithAccessKey = function ( t
 /**
  * ButtonWidget is a generic widget for buttons. A wide variety of looks,
  * feels, and functionality can be customized via the class’s configuration options
- * and methods. Please see the [OOUI documentation on MediaWiki] [1] for more information
+ * and methods. Please see the [OOjs UI documentation on MediaWiki] [1] for more information
  * and examples.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Buttons_and_Switches
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Buttons_and_Switches
  *
  *     @example
  *     // A button widget
@@ -3924,7 +3856,7 @@ OO.ui.ButtonGroupWidget.prototype.simulateLabelClick = function () {
 
 /**
  * IconWidget is a generic widget for {@link OO.ui.mixin.IconElement icons}. In general, IconWidgets should be used with OO.ui.LabelWidget,
- * which creates a label that identifies the icon’s function. See the [OOUI documentation on MediaWiki] [1]
+ * which creates a label that identifies the icon’s function. See the [OOjs UI documentation on MediaWiki] [1]
  * for a list of icons included in the library.
  *
  *     @example
@@ -3939,7 +3871,7 @@ OO.ui.ButtonGroupWidget.prototype.simulateLabelClick = function () {
  *      } );
  *      $( 'body' ).append( myIcon.$element, iconLabel.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Icons
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Icons
  *
  * @class
  * @extends OO.ui.Widget
@@ -3983,23 +3915,23 @@ OO.ui.IconWidget.static.tagName = 'span';
 
 /**
  * IndicatorWidgets create indicators, which are small graphics that are generally used to draw
- * attention to the status of an item or to clarify the function within a control. For a list of
- * indicators included in the library, please see the [OOUI documentation on MediaWiki][1].
+ * attention to the status of an item or to clarify the function of a control. For a list of
+ * indicators included in the library, please see the [OOjs UI documentation on MediaWiki][1].
  *
  *     @example
  *     // Example of an indicator widget
  *     var indicator1 = new OO.ui.IndicatorWidget( {
- *         indicator: 'required'
+ *         indicator: 'alert'
  *     } );
  *
  *     // Create a fieldset layout to add a label
  *     var fieldset = new OO.ui.FieldsetLayout();
  *     fieldset.addItems( [
- *         new OO.ui.FieldLayout( indicator1, { label: 'A required indicator:' } )
+ *         new OO.ui.FieldLayout( indicator1, { label: 'An alert indicator:' } )
  *     ] );
  *     $( 'body' ).append( fieldset.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Icons,_Indicators,_and_Labels#Indicators
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Icons,_Indicators,_and_Labels#Indicators
  *
  * @class
  * @extends OO.ui.Widget
@@ -4098,6 +4030,7 @@ OO.ui.LabelWidget = function OoUiLabelWidget( config ) {
 		} else {
 			this.$label.on( 'click', function () {
 				this.input.simulateLabelClick();
+				return false;
 			}.bind( this ) );
 		}
 	}
@@ -4294,7 +4227,6 @@ OO.ui.mixin.FloatableElement = function OoUiMixinFloatableElement( config ) {
 	this.$floatableContainer = null;
 	this.$floatableWindow = null;
 	this.$floatableClosestScrollable = null;
-	this.floatableOutOfView = false;
 	this.onFloatableScrollHandler = this.position.bind( this );
 	this.onFloatableWindowResizeHandler = this.position.bind( this );
 
@@ -4447,22 +4379,17 @@ OO.ui.mixin.FloatableElement.prototype.togglePositioning = function ( positionin
  */
 OO.ui.mixin.FloatableElement.prototype.isElementInViewport = function ( $element, $container ) {
 	var elemRect, contRect, topEdgeInBounds, bottomEdgeInBounds, leftEdgeInBounds, rightEdgeInBounds,
-		startEdgeInBounds, endEdgeInBounds, viewportSpacing,
+		startEdgeInBounds, endEdgeInBounds,
 		direction = $element.css( 'direction' );
 
 	elemRect = $element[ 0 ].getBoundingClientRect();
 	if ( $container[ 0 ] === window ) {
-		viewportSpacing = OO.ui.getViewportSpacing();
 		contRect = {
 			top: 0,
 			left: 0,
 			right: document.documentElement.clientWidth,
 			bottom: document.documentElement.clientHeight
 		};
-		contRect.top += viewportSpacing.top;
-		contRect.left += viewportSpacing.left;
-		contRect.right -= viewportSpacing.right;
-		contRect.bottom -= viewportSpacing.bottom;
 	} else {
 		contRect = $container[ 0 ].getBoundingClientRect();
 	}
@@ -4499,15 +4426,6 @@ OO.ui.mixin.FloatableElement.prototype.isElementInViewport = function ( $element
 };
 
 /**
- * Check if the floatable is hidden to the user because it was offscreen.
- *
- * @return {boolean} Floatable is out of view
- */
-OO.ui.mixin.FloatableElement.prototype.isFloatableOutOfView = function () {
-	return this.floatableOutOfView;
-};
-
-/**
  * Position the floatable below its container.
  *
  * This should only be done when both of them are attached to the DOM and visible.
@@ -4533,8 +4451,7 @@ OO.ui.mixin.FloatableElement.prototype.position = function () {
 		return this;
 	}
 
-	this.floatableOutOfView = this.hideWhenOutOfView && !this.isElementInViewport( this.$floatableContainer, this.$floatableClosestScrollable );
-	if ( this.floatableOutOfView ) {
+	if ( this.hideWhenOutOfView && !this.isElementInViewport( this.$floatableContainer, this.$floatableClosestScrollable ) ) {
 		this.$floatable.addClass( 'oo-ui-element-hidden' );
 		return this;
 	} else {
@@ -4864,50 +4781,6 @@ OO.ui.mixin.ClippableElement.prototype.setIdealSize = function ( width, height )
 };
 
 /**
- * Return the side of the clippable on which it is "anchored" (aligned to something else).
- * ClippableElement will clip the opposite side when reducing element's width.
- *
- * Classes that mix in ClippableElement should override this to return 'right' if their
- * clippable is absolutely positioned and using 'right: Npx' (and not using 'left').
- * If your class also mixes in FloatableElement, this is handled automatically.
- *
- * (This can't be guessed from the actual CSS because the computed values for 'left'/'right' are
- * always in pixels, even if they were unset or set to 'auto'.)
- *
- * When in doubt, 'left' (or 'right' in RTL) is a sane fallback.
- *
- * @return {string} 'left' or 'right'
- */
-OO.ui.mixin.ClippableElement.prototype.getHorizontalAnchorEdge = function () {
-	if ( this.computePosition && this.positioning && this.computePosition().right !== '' ) {
-		return 'right';
-	}
-	return 'left';
-};
-
-/**
- * Return the side of the clippable on which it is "anchored" (aligned to something else).
- * ClippableElement will clip the opposite side when reducing element's width.
- *
- * Classes that mix in ClippableElement should override this to return 'bottom' if their
- * clippable is absolutely positioned and using 'bottom: Npx' (and not using 'top').
- * If your class also mixes in FloatableElement, this is handled automatically.
- *
- * (This can't be guessed from the actual CSS because the computed values for 'left'/'right' are
- * always in pixels, even if they were unset or set to 'auto'.)
- *
- * When in doubt, 'top' is a sane fallback.
- *
- * @return {string} 'top' or 'bottom'
- */
-OO.ui.mixin.ClippableElement.prototype.getVerticalAnchorEdge = function () {
-	if ( this.computePosition && this.positioning && this.computePosition().bottom !== '' ) {
-		return 'bottom';
-	}
-	return 'top';
-};
-
-/**
  * Clip element to visible boundaries and allow scrolling when needed. You should call this method
  * when the element's natural height changes.
  *
@@ -4921,100 +4794,42 @@ OO.ui.mixin.ClippableElement.prototype.getVerticalAnchorEdge = function () {
  * @chainable
  */
 OO.ui.mixin.ClippableElement.prototype.clip = function () {
-	var extraHeight, extraWidth, viewportSpacing,
+	var $container, extraHeight, extraWidth, ccOffset,
+		$scrollableContainer, scOffset, scHeight, scWidth,
+		ccWidth, scrollerIsWindow, scrollTop, scrollLeft,
 		desiredWidth, desiredHeight, allotedWidth, allotedHeight,
 		naturalWidth, naturalHeight, clipWidth, clipHeight,
-		$item, itemRect, $viewport, viewportRect, availableRect,
-		direction, vertScrollbarWidth, horizScrollbarHeight,
-		// Extra tolerance so that the sloppy code below doesn't result in results that are off
-		// by one or two pixels. (And also so that we have space to display drop shadows.)
-		// Chosen by fair dice roll.
-		buffer = 7;
+		buffer = 7; // Chosen by fair dice roll
 
 	if ( !this.clipping ) {
 		// this.$clippableScrollableContainer and this.$clippableWindow are null, so the below will fail
 		return this;
 	}
 
-	function rectIntersection( a, b ) {
-		var out = {};
-		out.top = Math.max( a.top, b.top );
-		out.left = Math.max( a.left, b.left );
-		out.bottom = Math.min( a.bottom, b.bottom );
-		out.right = Math.min( a.right, b.right );
-		return out;
-	}
-
-	viewportSpacing = OO.ui.getViewportSpacing();
-
+	$container = this.$clippableContainer || this.$clippable;
+	extraHeight = $container.outerHeight() - this.$clippable.outerHeight();
+	extraWidth = $container.outerWidth() - this.$clippable.outerWidth();
+	ccOffset = $container.offset();
 	if ( this.$clippableScrollableContainer.is( 'html, body' ) ) {
-		$viewport = $( this.$clippableScrollableContainer[ 0 ].ownerDocument.body );
-		// Dimensions of the browser window, rather than the element!
-		viewportRect = {
-			top: 0,
-			left: 0,
-			right: document.documentElement.clientWidth,
-			bottom: document.documentElement.clientHeight
-		};
-		viewportRect.top += viewportSpacing.top;
-		viewportRect.left += viewportSpacing.left;
-		viewportRect.right -= viewportSpacing.right;
-		viewportRect.bottom -= viewportSpacing.bottom;
+		$scrollableContainer = this.$clippableWindow;
+		scOffset = { top: 0, left: 0 };
 	} else {
-		$viewport = this.$clippableScrollableContainer;
-		viewportRect = $viewport[ 0 ].getBoundingClientRect();
-		// Convert into a plain object
-		viewportRect = $.extend( {}, viewportRect );
+		$scrollableContainer = this.$clippableScrollableContainer;
+		scOffset = $scrollableContainer.offset();
 	}
-
-	// Account for scrollbar gutter
-	direction = $viewport.css( 'direction' );
-	vertScrollbarWidth = $viewport.innerWidth() - $viewport.prop( 'clientWidth' );
-	horizScrollbarHeight = $viewport.innerHeight() - $viewport.prop( 'clientHeight' );
-	viewportRect.bottom -= horizScrollbarHeight;
-	if ( direction === 'rtl' ) {
-		viewportRect.left += vertScrollbarWidth;
-	} else {
-		viewportRect.right -= vertScrollbarWidth;
-	}
-
-	// Add arbitrary tolerance
-	viewportRect.top += buffer;
-	viewportRect.left += buffer;
-	viewportRect.right -= buffer;
-	viewportRect.bottom -= buffer;
-
-	$item = this.$clippableContainer || this.$clippable;
-
-	extraHeight = $item.outerHeight() - this.$clippable.outerHeight();
-	extraWidth = $item.outerWidth() - this.$clippable.outerWidth();
-
-	itemRect = $item[ 0 ].getBoundingClientRect();
-	// Convert into a plain object
-	itemRect = $.extend( {}, itemRect );
-
-	// Item might already be clipped, so we can't just use its dimensions (in case we might need to
-	// make it larger than before). Extend the rectangle to the maximum size we are allowed to take.
-	if ( this.getHorizontalAnchorEdge() === 'right' ) {
-		itemRect.left = viewportRect.left;
-	} else {
-		itemRect.right = viewportRect.right;
-	}
-	if ( this.getVerticalAnchorEdge() === 'bottom' ) {
-		itemRect.top = viewportRect.top;
-	} else {
-		itemRect.bottom = viewportRect.bottom;
-	}
-
-	availableRect = rectIntersection( viewportRect, itemRect );
-
-	desiredWidth = Math.max( 0, availableRect.right - availableRect.left );
-	desiredHeight = Math.max( 0, availableRect.bottom - availableRect.top );
+	scHeight = $scrollableContainer.innerHeight() - buffer;
+	scWidth = $scrollableContainer.innerWidth() - buffer;
+	ccWidth = $container.outerWidth() + buffer;
+	scrollerIsWindow = this.$clippableScroller[ 0 ] === this.$clippableWindow[ 0 ];
+	scrollTop = scrollerIsWindow ? this.$clippableScroller.scrollTop() : 0;
+	scrollLeft = scrollerIsWindow ? this.$clippableScroller.scrollLeft() : 0;
+	desiredWidth = ccOffset.left < 0 ?
+		ccWidth + ccOffset.left :
+		( scOffset.left + scrollLeft + scWidth ) - ccOffset.left;
+	desiredHeight = ( scOffset.top + scrollTop + scHeight ) - ccOffset.top;
 	// It should never be desirable to exceed the dimensions of the browser viewport... right?
-	desiredWidth = Math.min( desiredWidth,
-		document.documentElement.clientWidth - viewportSpacing.left - viewportSpacing.right );
-	desiredHeight = Math.min( desiredHeight,
-		document.documentElement.clientHeight - viewportSpacing.top - viewportSpacing.right );
+	desiredWidth = Math.min( desiredWidth, document.documentElement.clientWidth );
+	desiredHeight = Math.min( desiredHeight, document.documentElement.clientHeight );
 	allotedWidth = Math.ceil( desiredWidth - extraWidth );
 	allotedHeight = Math.ceil( desiredHeight - extraHeight );
 	naturalWidth = this.$clippable.prop( 'scrollWidth' );
@@ -5069,7 +4884,7 @@ OO.ui.mixin.ClippableElement.prototype.clip = function () {
 /**
  * PopupWidget is a container for content. The popup is overlaid and positioned absolutely.
  * By default, each popup has an anchor that points toward its origin.
- * Please see the [OOUI documentation on Mediawiki] [1] for more information and examples.
+ * Please see the [OOjs UI documentation on Mediawiki] [1] for more information and examples.
  *
  * Unlike most widgets, PopupWidget is initially hidden and must be shown by calling #toggle.
  *
@@ -5085,7 +4900,7 @@ OO.ui.mixin.ClippableElement.prototype.clip = function () {
  *     // To display the popup, toggle the visibility to 'true'.
  *     popup.toggle( true );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Popups
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Popups
  *
  * @class
  * @extends OO.ui.Widget
@@ -5118,20 +4933,17 @@ OO.ui.mixin.ClippableElement.prototype.clip = function () {
  *            of the popup with the center of $floatableContainer.
  * 'force-left': Alias for 'forwards' in LTR and 'backwards' in RTL
  * 'force-right': Alias for 'backwards' in RTL and 'forwards' in LTR
- * @cfg {boolean} [autoFlip=true] Whether to automatically switch the popup's position between
- *  'above' and 'below', or between 'before' and 'after', if there is not enough space in the
- *  desired direction to display the popup without clipping
  * @cfg {jQuery} [$container] Constrain the popup to the boundaries of the specified container.
- *  See the [OOUI docs on MediaWiki][3] for an example.
- *  [3]: https://www.mediawiki.org/wiki/OOUI/Widgets/Popups#containerExample
+ *  See the [OOjs UI docs on MediaWiki][3] for an example.
+ *  [3]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Popups#containerExample
  * @cfg {number} [containerPadding=10] Padding between the popup and its container, specified as a number of pixels.
  * @cfg {jQuery} [$content] Content to append to the popup's body
  * @cfg {jQuery} [$footer] Content to append to the popup's footer
  * @cfg {boolean} [autoClose=false] Automatically close the popup when it loses focus.
  * @cfg {jQuery} [$autoCloseIgnore] Elements that will not close the popup when clicked.
- *  This config option is only relevant if #autoClose is set to `true`. See the [OOUI documentation on MediaWiki][2]
+ *  This config option is only relevant if #autoClose is set to `true`. See the [OOjs UI docs on MediaWiki][2]
  *  for an example.
- *  [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Popups#autocloseExample
+ *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Popups#autocloseExample
  * @cfg {boolean} [head=false] Show a popup header that contains a #label (if specified) and close
  *  button.
  * @cfg {boolean} [padded=false] Add padding to the popup's body
@@ -5173,7 +4985,6 @@ OO.ui.PopupWidget = function OoUiPopupWidget( config ) {
 	this.toggleAnchor( config.anchor === undefined || config.anchor );
 	this.setAlignment( config.align || 'center' );
 	this.setPosition( config.position || 'below' );
-	this.setAutoFlip( config.autoFlip === undefined || config.autoFlip );
 	this.$body.addClass( 'oo-ui-popupWidget-body' );
 	this.$anchor.addClass( 'oo-ui-popupWidget-anchor' );
 	this.$popup
@@ -5331,7 +5142,6 @@ OO.ui.PopupWidget.prototype.toggleAnchor = function ( show ) {
 		this.anchored = show;
 	}
 };
-
 /**
  * Change which edge the anchor appears on.
  *
@@ -5372,7 +5182,7 @@ OO.ui.PopupWidget.prototype.hasAnchor = function () {
  * @inheritdoc
  */
 OO.ui.PopupWidget.prototype.toggle = function ( show ) {
-	var change, normalHeight, oppositeHeight, normalWidth, oppositeWidth;
+	var change;
 	show = show === undefined ? !this.isVisible() : !!show;
 
 	change = show !== this.isVisible();
@@ -5384,12 +5194,6 @@ OO.ui.PopupWidget.prototype.toggle = function ( show ) {
 	if ( show && !this.$floatableContainer && this.isElementAttached() ) {
 		// Fall back to the parent node if the floatableContainer is not set
 		this.setFloatableContainer( this.$element.parent() );
-	}
-
-	if ( change && show && this.autoFlip ) {
-		// Reset auto-flipping before showing the popup again. It's possible we no longer need to flip
-		// (e.g. if the user scrolled).
-		this.isAutoFlipped = false;
 	}
 
 	// Parent method
@@ -5405,54 +5209,6 @@ OO.ui.PopupWidget.prototype.toggle = function ( show ) {
 			}
 			this.updateDimensions();
 			this.toggleClipping( true );
-
-			if ( this.autoFlip ) {
-				if ( this.popupPosition === 'above' || this.popupPosition === 'below' ) {
-					if ( this.isClippedVertically() || this.isFloatableOutOfView() ) {
-						// If opening the popup in the normal direction causes it to be clipped, open
-						// in the opposite one instead
-						normalHeight = this.$element.height();
-						this.isAutoFlipped = !this.isAutoFlipped;
-						this.position();
-						if ( this.isClippedVertically() || this.isFloatableOutOfView() ) {
-							// If that also causes it to be clipped, open in whichever direction
-							// we have more space
-							oppositeHeight = this.$element.height();
-							if ( oppositeHeight < normalHeight ) {
-								this.isAutoFlipped = !this.isAutoFlipped;
-								this.position();
-							}
-						}
-					}
-				}
-				if ( this.popupPosition === 'before' || this.popupPosition === 'after' ) {
-					if ( this.isClippedHorizontally() || this.isFloatableOutOfView() ) {
-						// If opening the popup in the normal direction causes it to be clipped, open
-						// in the opposite one instead
-						normalWidth = this.$element.width();
-						this.isAutoFlipped = !this.isAutoFlipped;
-						// Due to T180173 horizontally clipped PopupWidgets have messed up dimensions,
-						// which causes positioning to be off. Toggle clipping back and fort to work around.
-						this.toggleClipping( false );
-						this.position();
-						this.toggleClipping( true );
-						if ( this.isClippedHorizontally() || this.isFloatableOutOfView() ) {
-							// If that also causes it to be clipped, open in whichever direction
-							// we have more space
-							oppositeWidth = this.$element.width();
-							if ( oppositeWidth < normalWidth ) {
-								this.isAutoFlipped = !this.isAutoFlipped;
-								// Due to T180173 horizontally clipped PopupWidgets have messed up dimensions,
-								// which causes positioning to be off. Toggle clipping back and fort to work around.
-								this.toggleClipping( false );
-								this.position();
-								this.toggleClipping( true );
-							}
-						}
-					}
-				}
-			}
-
 			this.emit( 'ready' );
 		} else {
 			this.toggleClipping( false );
@@ -5522,15 +5278,9 @@ OO.ui.PopupWidget.prototype.updateDimensions = function ( transition ) {
 OO.ui.PopupWidget.prototype.computePosition = function () {
 	var direction, align, vertical, start, end, near, far, sizeProp, popupSize, anchorSize, anchorPos,
 		anchorOffset, anchorMargin, parentPosition, positionProp, positionAdjustment, floatablePos,
-		offsetParentPos, containerPos, popupPosition, viewportSpacing,
+		offsetParentPos, containerPos,
 		popupPos = {},
 		anchorCss = { left: '', right: '', top: '', bottom: '' },
-		popupPositionOppositeMap = {
-			above: 'below',
-			below: 'above',
-			before: 'after',
-			after: 'before'
-		},
 		alignMap = {
 			ltr: {
 				'force-left': 'backwards',
@@ -5572,13 +5322,8 @@ OO.ui.PopupWidget.prototype.computePosition = function () {
 	} );
 
 	align = alignMap[ direction ][ this.align ] || this.align;
-	popupPosition = this.popupPosition;
-	if ( this.isAutoFlipped ) {
-		popupPosition = popupPositionOppositeMap[ popupPosition ];
-	}
-
 	// If the popup is positioned before or after, then the anchor positioning is vertical, otherwise horizontal
-	vertical = popupPosition === 'before' || popupPosition === 'after';
+	vertical = this.popupPosition === 'before' || this.popupPosition === 'after';
 	start = vertical ? 'top' : ( direction === 'rtl' ? 'right' : 'left' );
 	end = vertical ? 'bottom' : ( direction === 'rtl' ? 'left' : 'right' );
 	near = vertical ? 'top' : 'left';
@@ -5586,9 +5331,9 @@ OO.ui.PopupWidget.prototype.computePosition = function () {
 	sizeProp = vertical ? 'Height' : 'Width';
 	popupSize = vertical ? ( this.height || this.$popup.height() ) : this.width;
 
-	this.setAnchorEdge( anchorEdgeMap[ popupPosition ] );
-	this.horizontalPosition = vertical ? popupPosition : hPosMap[ align ];
-	this.verticalPosition = vertical ? vPosMap[ align ] : popupPosition;
+	this.setAnchorEdge( anchorEdgeMap[ this.popupPosition ] );
+	this.horizontalPosition = vertical ? this.popupPosition : hPosMap[ align ];
+	this.verticalPosition = vertical ? vPosMap[ align ] : this.popupPosition;
 
 	// Parent method
 	parentPosition = OO.ui.mixin.FloatableElement.prototype.computePosition.call( this );
@@ -5601,9 +5346,7 @@ OO.ui.PopupWidget.prototype.computePosition = function () {
 	floatablePos = this.$floatableContainer.offset();
 	floatablePos[ far ] = floatablePos[ near ] + this.$floatableContainer[ 'outer' + sizeProp ]();
 	// Measure where the offsetParent is and compute our position based on that and parentPosition
-	offsetParentPos = this.$element.offsetParent()[ 0 ] === document.documentElement ?
-		{ top: 0, left: 0 } :
-		this.$element.offsetParent().offset();
+	offsetParentPos = this.$element.offsetParent().offset();
 
 	if ( positionProp === near ) {
 		popupPos[ near ] = offsetParentPos[ near ] + parentPosition[ near ];
@@ -5639,15 +5382,8 @@ OO.ui.PopupWidget.prototype.computePosition = function () {
 	}
 
 	// Check if the popup will go beyond the edge of this.$container
-	containerPos = this.$container[ 0 ] === document.documentElement ?
-		{ top: 0, left: 0 } :
-		this.$container.offset();
+	containerPos = this.$container.offset();
 	containerPos[ far ] = containerPos[ near ] + this.$container[ 'inner' + sizeProp ]();
-	if ( this.$container[ 0 ] === document.documentElement ) {
-		viewportSpacing = OO.ui.getViewportSpacing();
-		containerPos[ near ] += viewportSpacing[ near ];
-		containerPos[ far ] -= viewportSpacing[ far ];
-	}
 	// Take into account how much the popup will move because of the adjustments we're going to make
 	popupPos[ near ] += ( positionProp === near ? 1 : -1 ) * positionAdjustment;
 	popupPos[ far ] += ( positionProp === near ? 1 : -1 ) * positionAdjustment;
@@ -5722,21 +5458,6 @@ OO.ui.PopupWidget.prototype.setPosition = function ( position ) {
  */
 OO.ui.PopupWidget.prototype.getPosition = function () {
 	return this.popupPosition;
-};
-
-/**
- * Set popup auto-flipping.
- *
- * @param {boolean} autoFlip Whether to automatically switch the popup's position between
- *  'above' and 'below', or between 'before' and 'after', if there is not enough space in the
- *  desired direction to display the popup without clipping
- */
-OO.ui.PopupWidget.prototype.setAutoFlip = function ( autoFlip ) {
-	autoFlip = !!autoFlip;
-
-	if ( this.autoFlip !== autoFlip ) {
-		this.autoFlip = autoFlip;
-	}
 };
 
 /**
@@ -5823,7 +5544,7 @@ OO.ui.mixin.PopupElement.prototype.getPopup = function () {
  * @cfg {jQuery} [$overlay] Render the popup into a separate layer. This configuration is useful in cases where
  *  the expanded popup is larger than its containing `<div>`. The specified overlay layer is usually on top of the
  *  containing `<div>` and has a larger area. By default, the popup uses relative positioning.
- *  See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
+ *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  */
 OO.ui.PopupButtonWidget = function OoUiPopupButtonWidget( config ) {
 	// Configuration initialization
@@ -5836,7 +5557,7 @@ OO.ui.PopupButtonWidget = function OoUiPopupButtonWidget( config ) {
 	OO.ui.mixin.PopupElement.call( this, config );
 
 	// Properties
-	this.$overlay = ( config.$overlay === true ? OO.ui.getDefaultOverlay() : config.$overlay ) || this.$element;
+	this.$overlay = config.$overlay || this.$element;
 
 	// Events
 	this.connect( this, { click: 'onAction' } );
@@ -5970,9 +5691,9 @@ OO.ui.mixin.ItemWidget.prototype.setElementGroup = function ( group ) {
  * OptionWidgets are special elements that can be selected and configured with data. The
  * data is often unique for each option, but it does not have to be. OptionWidgets are used
  * with OO.ui.SelectWidget to create a selection of mutually exclusive options. For more information
- * and examples, please see the [OOUI documentation on MediaWiki][1].
+ * and examples, please see the [OOjs UI documentation on MediaWiki][1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
  *
  * @class
  * @extends OO.ui.Widget
@@ -6067,7 +5788,7 @@ OO.ui.OptionWidget.static.scrollIntoViewOnSelect = false;
  * @return {boolean} Item is selectable
  */
 OO.ui.OptionWidget.prototype.isSelectable = function () {
-	return this.constructor.static.selectable && !this.disabled && this.isVisible();
+	return this.constructor.static.selectable && !this.isDisabled() && this.isVisible();
 };
 
 /**
@@ -6078,7 +5799,7 @@ OO.ui.OptionWidget.prototype.isSelectable = function () {
  * @return {boolean} Item is highlightable
  */
 OO.ui.OptionWidget.prototype.isHighlightable = function () {
-	return this.constructor.static.highlightable && !this.disabled && this.isVisible();
+	return this.constructor.static.highlightable && !this.isDisabled() && this.isVisible();
 };
 
 /**
@@ -6088,7 +5809,7 @@ OO.ui.OptionWidget.prototype.isHighlightable = function () {
  * @return {boolean} Item is pressable
  */
 OO.ui.OptionWidget.prototype.isPressable = function () {
-	return this.constructor.static.pressable && !this.disabled && this.isVisible();
+	return this.constructor.static.pressable && !this.isDisabled() && this.isVisible();
 };
 
 /**
@@ -6193,13 +5914,13 @@ OO.ui.OptionWidget.prototype.getMatchText = function () {
 };
 
 /**
- * A SelectWidget is of a generic selection of options. The OOUI library contains several types of
+ * A SelectWidget is of a generic selection of options. The OOjs UI library contains several types of
  * select widgets, including {@link OO.ui.ButtonSelectWidget button selects},
  * {@link OO.ui.RadioSelectWidget radio selects}, and {@link OO.ui.MenuSelectWidget
  * menu selects}.
  *
  * This class should be used together with OO.ui.OptionWidget or OO.ui.DecoratedOptionWidget. For more
- * information, please see the [OOUI documentation on MediaWiki][1].
+ * information, please see the [OOjs UI documentation on MediaWiki][1].
  *
  *     @example
  *     // Example of a select widget with three options
@@ -6221,7 +5942,7 @@ OO.ui.OptionWidget.prototype.getMatchText = function () {
  *     } );
  *     $( 'body' ).append( select.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
  *
  * @abstract
  * @class
@@ -6232,8 +5953,8 @@ OO.ui.OptionWidget.prototype.getMatchText = function () {
  * @param {Object} [config] Configuration options
  * @cfg {OO.ui.OptionWidget[]} [items] An array of options to add to the select.
  *  Options are created with {@link OO.ui.OptionWidget OptionWidget} classes. See
- *  the [OOUI documentation on MediaWiki] [2] for examples.
- *  [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ *  the [OOjs UI documentation on MediaWiki] [2] for examples.
+ *  [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
  */
 OO.ui.SelectWidget = function OoUiSelectWidget( config ) {
 	// Configuration initialization
@@ -6346,20 +6067,13 @@ OO.ui.SelectWidget.prototype.onFocus = function ( event ) {
 	if ( event.target === this.$element[ 0 ] ) {
 		// This widget was focussed, e.g. by the user tabbing to it.
 		// The styles for focus state depend on one of the items being selected.
-		if ( !this.findSelectedItem() ) {
-			item = this.findFirstSelectableItem();
+		if ( !this.getSelectedItem() ) {
+			item = this.getFirstSelectableItem();
 		}
 	} else {
-		if ( event.target.tabIndex === -1 ) {
-			// One of the options got focussed (and the event bubbled up here).
-			// They can't be tabbed to, but they can be activated using accesskeys.
-			// OptionWidgets and focusable UI elements inside them have tabindex="-1" set.
-			item = this.findTargetItem( event );
-		} else {
-			// There is something actually user-focusable in one of the labels of the options, and the
-			// user focussed it (e.g. by tabbing to it). Do nothing (especially, don't change the focus).
-			return;
-		}
+		// One of the options got focussed (and the event bubbled up here).
+		// They can't be tabbed to, but they can be activated using accesskeys.
+		item = this.findTargetItem( event );
 	}
 
 	if ( item ) {
@@ -6483,7 +6197,7 @@ OO.ui.SelectWidget.prototype.onMouseLeave = function () {
 OO.ui.SelectWidget.prototype.onKeyDown = function ( e ) {
 	var nextItem,
 		handled = false,
-		currentItem = this.findHighlightedItem() || this.findSelectedItem();
+		currentItem = this.getHighlightedItem() || this.getSelectedItem();
 
 	if ( !this.isDisabled() && this.isVisible() ) {
 		switch ( e.keyCode ) {
@@ -6497,13 +6211,13 @@ OO.ui.SelectWidget.prototype.onKeyDown = function ( e ) {
 			case OO.ui.Keys.UP:
 			case OO.ui.Keys.LEFT:
 				this.clearKeyPressBuffer();
-				nextItem = this.findRelativeSelectableItem( currentItem, -1 );
+				nextItem = this.getRelativeSelectableItem( currentItem, -1 );
 				handled = true;
 				break;
 			case OO.ui.Keys.DOWN:
 			case OO.ui.Keys.RIGHT:
 				this.clearKeyPressBuffer();
-				nextItem = this.findRelativeSelectableItem( currentItem, 1 );
+				nextItem = this.getRelativeSelectableItem( currentItem, 1 );
 				handled = true;
 				break;
 			case OO.ui.Keys.ESCAPE:
@@ -6609,13 +6323,13 @@ OO.ui.SelectWidget.prototype.onKeyPress = function ( e ) {
 	}
 	this.keyPressBufferTimer = setTimeout( this.clearKeyPressBuffer.bind( this ), 1500 );
 
-	item = this.findHighlightedItem() || this.findSelectedItem();
+	item = this.getHighlightedItem() || this.getSelectedItem();
 
 	if ( this.keyPressBuffer === c ) {
 		// Common (if weird) special case: typing "xxxx" will cycle through all
 		// the items beginning with "x".
 		if ( item ) {
-			item = this.findRelativeSelectableItem( item, 1 );
+			item = this.getRelativeSelectableItem( item, 1 );
 		}
 	} else {
 		this.keyPressBuffer += c;
@@ -6623,7 +6337,7 @@ OO.ui.SelectWidget.prototype.onKeyPress = function ( e ) {
 
 	filter = this.getItemMatcher( this.keyPressBuffer, false );
 	if ( !item || !filter( item ) ) {
-		item = this.findRelativeSelectableItem( item, 1, filter );
+		item = this.getRelativeSelectableItem( item, 1, filter );
 	}
 	if ( item ) {
 		if ( this.isVisible() && item.constructor.static.highlightable ) {
@@ -6717,11 +6431,11 @@ OO.ui.SelectWidget.prototype.findTargetItem = function ( e ) {
 };
 
 /**
- * Find selected item.
+ * Get selected item.
  *
  * @return {OO.ui.OptionWidget|null} Selected item, `null` if no item is selected
  */
-OO.ui.SelectWidget.prototype.findSelectedItem = function () {
+OO.ui.SelectWidget.prototype.getSelectedItem = function () {
 	var i, len;
 
 	for ( i = 0, len = this.items.length; i < len; i++ ) {
@@ -6733,22 +6447,11 @@ OO.ui.SelectWidget.prototype.findSelectedItem = function () {
 };
 
 /**
- * Get selected item.
- *
- * @deprecated Since v0.25.0; use {@link #findSelectedItem} instead.
- * @return {OO.ui.OptionWidget|null} Selected item, `null` if no item is selected
- */
-OO.ui.SelectWidget.prototype.getSelectedItem = function () {
-	OO.ui.warnDeprecation( 'SelectWidget#getSelectedItem: Deprecated function. Use findSelectedItem instead. See T76630.' );
-	return this.findSelectedItem();
-};
-
-/**
- * Find highlighted item.
+ * Get highlighted item.
  *
  * @return {OO.ui.OptionWidget|null} Highlighted item, `null` if no item is highlighted
  */
-OO.ui.SelectWidget.prototype.findHighlightedItem = function () {
+OO.ui.SelectWidget.prototype.getHighlightedItem = function () {
 	var i, len;
 
 	for ( i = 0, len = this.items.length; i < len; i++ ) {
@@ -6876,7 +6579,7 @@ OO.ui.SelectWidget.prototype.selectItemByLabel = function ( label, prefix ) {
  * @chainable
  */
 OO.ui.SelectWidget.prototype.selectItemByData = function ( data ) {
-	var itemFromData = this.findItemFromData( data );
+	var itemFromData = this.getItemFromData( data );
 	if ( data === undefined || !itemFromData ) {
 		return this.selectItem();
 	}
@@ -6969,7 +6672,7 @@ OO.ui.SelectWidget.prototype.chooseItem = function ( item ) {
 };
 
 /**
- * Find an option by its position relative to the specified item (or to the start of the option array,
+ * Get an option by its position relative to the specified item (or to the start of the option array,
  * if item is `null`). The direction in which to search through the option array is specified with a
  * number: -1 for reverse (the default) or 1 for forward. The method will return an option, or
  * `null` if there are no options in the array.
@@ -6980,7 +6683,7 @@ OO.ui.SelectWidget.prototype.chooseItem = function ( item ) {
  *  true. Function takes an OO.ui.OptionWidget and returns a boolean.
  * @return {OO.ui.OptionWidget|null} Item at position, `null` if there are no items in the select
  */
-OO.ui.SelectWidget.prototype.findRelativeSelectableItem = function ( item, direction, filter ) {
+OO.ui.SelectWidget.prototype.getRelativeSelectableItem = function ( item, direction, filter ) {
 	var currentIndex, nextIndex, i,
 		increase = direction > 0 ? 1 : -1,
 		len = this.items.length;
@@ -7008,13 +6711,13 @@ OO.ui.SelectWidget.prototype.findRelativeSelectableItem = function ( item, direc
 };
 
 /**
- * Find the next selectable item or `null` if there are no selectable items.
+ * Get the next selectable item or `null` if there are no selectable items.
  * Disabled options and menu-section markers and breaks are not selectable.
  *
  * @return {OO.ui.OptionWidget|null} Item, `null` if there aren't any selectable items
  */
-OO.ui.SelectWidget.prototype.findFirstSelectableItem = function () {
-	return this.findRelativeSelectableItem( null, 1 );
+OO.ui.SelectWidget.prototype.getFirstSelectableItem = function () {
+	return this.getRelativeSelectableItem( null, 1 );
 };
 
 /**
@@ -7103,7 +6806,7 @@ OO.ui.SelectWidget.prototype.setFocusOwner = function ( $focusOwner ) {
  * with an {@link OO.ui.mixin.IconElement icon} and/or {@link OO.ui.mixin.IndicatorElement indicator}.
  * This class is used with OO.ui.SelectWidget to create a selection of mutually exclusive
  * options. For more information about options and selects, please see the
- * [OOUI documentation on MediaWiki][1].
+ * [OOjs UI documentation on MediaWiki][1].
  *
  *     @example
  *     // Decorated options in a select widget
@@ -7123,7 +6826,7 @@ OO.ui.SelectWidget.prototype.setFocusOwner = function ( $focusOwner ) {
  *     } );
  *     $( 'body' ).append( select.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
  *
  * @class
  * @extends OO.ui.OptionWidget
@@ -7157,9 +6860,9 @@ OO.mixinClass( OO.ui.DecoratedOptionWidget, OO.ui.mixin.IndicatorElement );
 /**
  * MenuOptionWidget is an option widget that looks like a menu item. The class is used with
  * OO.ui.MenuSelectWidget to create a menu of mutually exclusive options. Please see
- * the [OOUI documentation on MediaWiki] [1] for more information.
+ * the [OOjs UI documentation on MediaWiki] [1] for more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options#Menu_selects_and_options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options#Menu_selects_and_options
  *
  * @class
  * @extends OO.ui.DecoratedOptionWidget
@@ -7171,16 +6874,8 @@ OO.ui.MenuOptionWidget = function OoUiMenuOptionWidget( config ) {
 	// Parent constructor
 	OO.ui.MenuOptionWidget.parent.call( this, config );
 
-	// Properties
-	this.checkIcon = new OO.ui.IconWidget( {
-		icon: 'check',
-		classes: [ 'oo-ui-menuOptionWidget-checkIcon' ]
-	} );
-
 	// Initialization
-	this.$element
-		.prepend( this.checkIcon.$element )
-		.addClass( 'oo-ui-menuOptionWidget' );
+	this.$element.addClass( 'oo-ui-menuOptionWidget' );
 };
 
 /* Setup */
@@ -7279,8 +6974,8 @@ OO.ui.MenuSectionOptionWidget.static.highlightable = false;
  *
  * Unlike most widgets, MenuSelectWidget is initially hidden and must be shown by calling #toggle.
  *
- * Please see the [OOUI documentation on MediaWiki][1] for more information.
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information.
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
  *
  * @class
  * @extends OO.ui.SelectWidget
@@ -7380,7 +7075,7 @@ OO.ui.MenuSelectWidget.prototype.onDocumentMouseDown = function ( e ) {
  * @inheritdoc
  */
 OO.ui.MenuSelectWidget.prototype.onKeyDown = function ( e ) {
-	var currentItem = this.findHighlightedItem() || this.findSelectedItem();
+	var currentItem = this.getHighlightedItem() || this.getSelectedItem();
 
 	if ( !this.isDisabled() && this.isVisible() ) {
 		switch ( e.keyCode ) {
@@ -7586,7 +7281,7 @@ OO.ui.MenuSelectWidget.prototype.clearItems = function () {
  * @inheritdoc
  */
 OO.ui.MenuSelectWidget.prototype.toggle = function ( visible ) {
-	var change, belowHeight, aboveHeight;
+	var change;
 
 	visible = ( visible === undefined ? !this.visible : !!visible ) && !!this.items.length;
 	change = visible !== this.isVisible();
@@ -7596,15 +7291,8 @@ OO.ui.MenuSelectWidget.prototype.toggle = function ( visible ) {
 		this.warnedUnattached = true;
 	}
 
-	if ( change ) {
-		if ( visible && ( this.width || this.$floatableContainer ) ) {
-			this.setIdealSize( this.width || this.$floatableContainer.width() );
-		}
-		if ( visible ) {
-			// Reset position before showing the popup again. It's possible we no longer need to flip
-			// (e.g. if the user scrolled).
-			this.setVerticalPosition( 'below' );
-		}
+	if ( change && visible && ( this.width || this.$floatableContainer ) ) {
+		this.setIdealSize( this.width || this.$floatableContainer.width() );
 	}
 
 	// Parent method
@@ -7612,33 +7300,17 @@ OO.ui.MenuSelectWidget.prototype.toggle = function ( visible ) {
 
 	if ( change ) {
 		if ( visible ) {
-			this.togglePositioning( !!this.$floatableContainer );
-			this.toggleClipping( true );
-
 			this.bindKeyDownListener();
 			this.bindKeyPressListener();
 
-			if ( this.isClippedVertically() || this.isFloatableOutOfView() ) {
-				// If opening the menu downwards causes it to be clipped, flip it to open upwards instead
-				belowHeight = this.$element.height();
-				this.setVerticalPosition( 'above' );
-				if ( this.isClippedVertically() || this.isFloatableOutOfView() ) {
-					// If opening upwards also causes it to be clipped, flip it to open in whichever direction
-					// we have more space
-					aboveHeight = this.$element.height();
-					if ( aboveHeight < belowHeight ) {
-						this.setVerticalPosition( 'below' );
-					}
-				}
-			}
-			// Note that we do not flip the menu's opening direction if the clipping changes
-			// later (e.g. after the user scrolls), that seems like it would be annoying
+			this.togglePositioning( !!this.$floatableContainer );
+			this.toggleClipping( true );
 
 			this.$focusOwner.attr( 'aria-expanded', 'true' );
 
-			if ( this.findSelectedItem() ) {
-				this.$focusOwner.attr( 'aria-activedescendant', this.findSelectedItem().getElementId() );
-				this.findSelectedItem().scrollElementIntoView( { duration: 0 } );
+			if ( this.getSelectedItem() ) {
+				this.$focusOwner.attr( 'aria-activedescendant', this.getSelectedItem().getElementId() );
+				this.getSelectedItem().scrollElementIntoView( { duration: 0 } );
 			}
 
 			// Auto-hide
@@ -7695,11 +7367,11 @@ OO.ui.MenuSelectWidget.prototype.toggle = function ( visible ) {
  *
  *     dropDown.getMenu().selectItemByData( 'b' );
  *
- *     dropDown.getMenu().findSelectedItem().getData(); // returns 'b'
+ *     dropDown.getMenu().getSelectedItem().getData(); // returns 'b'
  *
- * For more information, please see the [OOUI documentation on MediaWiki] [1].
+ * For more information, please see the [OOjs UI documentation on MediaWiki] [1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options#Menu_selects_and_options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options#Menu_selects_and_options
  *
  * @class
  * @extends OO.ui.Widget
@@ -7715,7 +7387,7 @@ OO.ui.MenuSelectWidget.prototype.toggle = function ( visible ) {
  * @cfg {jQuery} [$overlay] Render the menu into a separate layer. This configuration is useful in cases where
  *  the expanded menu is larger than its containing `<div>`. The specified overlay layer is usually on top of the
  *  containing `<div>` and has a larger area. By default, the menu uses relative positioning.
- *  See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
+ *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  */
 OO.ui.DropdownWidget = function OoUiDropdownWidget( config ) {
 	// Configuration initialization
@@ -7725,8 +7397,8 @@ OO.ui.DropdownWidget = function OoUiDropdownWidget( config ) {
 	OO.ui.DropdownWidget.parent.call( this, config );
 
 	// Properties (must be set before TabIndexedElement constructor call)
-	this.$handle = $( '<span>' );
-	this.$overlay = ( config.$overlay === true ? OO.ui.getDefaultOverlay() : config.$overlay ) || this.$element;
+	this.$handle = this.$( '<span>' );
+	this.$overlay = config.$overlay || this.$element;
 
 	// Mixin constructors
 	OO.ui.mixin.IconElement.call( this, config );
@@ -7817,7 +7489,7 @@ OO.ui.DropdownWidget.prototype.onMenuSelect = function ( item ) {
  * Handle menu toggle events.
  *
  * @private
- * @param {boolean} isVisible Open state of the menu
+ * @param {boolean} isVisible Menu toggle event
  */
 OO.ui.DropdownWidget.prototype.onMenuToggle = function ( isVisible ) {
 	this.$element.toggleClass( 'oo-ui-dropdownWidget-open', isVisible );
@@ -7852,14 +7524,9 @@ OO.ui.DropdownWidget.prototype.onKeyDown = function ( e ) {
 		(
 			e.which === OO.ui.Keys.ENTER ||
 			(
-				e.which === OO.ui.Keys.SPACE &&
-				// Avoid conflicts with type-to-search, see SelectWidget#onKeyPress.
-				// Space only closes the menu is the user is not typing to search.
-				this.menu.keyPressBuffer === ''
-			) ||
-			(
 				!this.menu.isVisible() &&
 				(
+					e.which === OO.ui.Keys.SPACE ||
 					e.which === OO.ui.Keys.UP ||
 					e.which === OO.ui.Keys.DOWN
 				)
@@ -7874,9 +7541,9 @@ OO.ui.DropdownWidget.prototype.onKeyDown = function ( e ) {
 /**
  * RadioOptionWidget is an option widget that looks like a radio button.
  * The class is used with OO.ui.RadioSelectWidget to create a selection of radio options.
- * Please see the [OOUI documentation on MediaWiki] [1] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options#Button_selects_and_option
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options#Button_selects_and_option
  *
  * @class
  * @extends OO.ui.OptionWidget
@@ -7966,7 +7633,7 @@ OO.ui.RadioOptionWidget.prototype.setDisabled = function ( disabled ) {
  * RadioSelectWidget is a {@link OO.ui.SelectWidget select widget} that contains radio
  * options and is used together with OO.ui.RadioOptionWidget. The RadioSelectWidget provides
  * an interface for adding, removing and selecting options.
- * Please see the [OOUI documentation on MediaWiki][1] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information.
  *
  * If you want to use this within an HTML form, such as a OO.ui.FormLayout, use
  * OO.ui.RadioSelectInputWidget instead.
@@ -7992,7 +7659,7 @@ OO.ui.RadioOptionWidget.prototype.setDisabled = function ( disabled ) {
  *
  *     $( 'body' ).append( radioSelect.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
 
  *
  * @class
@@ -8030,9 +7697,9 @@ OO.mixinClass( OO.ui.RadioSelectWidget, OO.ui.mixin.TabIndexedElement );
  * MultioptionWidgets are special elements that can be selected and configured with data. The
  * data is often unique for each option, but it does not have to be. MultioptionWidgets are used
  * with OO.ui.SelectWidget to create a selection of mutually exclusive options. For more information
- * and examples, please see the [OOUI documentation on MediaWiki][1].
+ * and examples, please see the [OOjs UI documentation on MediaWiki][1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Multioptions
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Multioptions
  *
  * @class
  * @extends OO.ui.Widget
@@ -8112,9 +7779,9 @@ OO.ui.MultioptionWidget.prototype.setSelected = function ( state ) {
 /**
  * MultiselectWidget allows selecting multiple options from a list.
  *
- * For more information about menus and options, please see the [OOUI documentation on MediaWiki][1].
+ * For more information about menus and options, please see the [OOjs UI documentation on MediaWiki][1].
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options#Menu_selects_and_options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options#Menu_selects_and_options
  *
  * @class
  * @abstract
@@ -8172,47 +7839,25 @@ OO.mixinClass( OO.ui.MultiselectWidget, OO.ui.mixin.GroupWidget );
 /* Methods */
 
 /**
- * Find options that are selected.
+ * Get options that are selected.
  *
  * @return {OO.ui.MultioptionWidget[]} Selected options
  */
-OO.ui.MultiselectWidget.prototype.findSelectedItems = function () {
+OO.ui.MultiselectWidget.prototype.getSelectedItems = function () {
 	return this.items.filter( function ( item ) {
 		return item.isSelected();
 	} );
 };
 
 /**
- * Get options that are selected.
- *
- * @deprecated Since v0.25.0; use {@link #findSelectedItems} instead.
- * @return {OO.ui.MultioptionWidget[]} Selected options
- */
-OO.ui.MultiselectWidget.prototype.getSelectedItems = function () {
-	OO.ui.warnDeprecation( 'MultiselectWidget#getSelectedItems: Deprecated function. Use findSelectedItems instead. See T76630.' );
-	return this.findSelectedItems();
-};
-
-/**
- * Find the data of options that are selected.
- *
- * @return {Object[]|string[]} Values of selected options
- */
-OO.ui.MultiselectWidget.prototype.findSelectedItemsData = function () {
-	return this.findSelectedItems().map( function ( item ) {
-		return item.data;
-	} );
-};
-
-/**
  * Get the data of options that are selected.
  *
- * @deprecated Since v0.25.0; use {@link #findSelectedItemsData} instead.
  * @return {Object[]|string[]} Values of selected options
  */
 OO.ui.MultiselectWidget.prototype.getSelectedItemsData = function () {
-	OO.ui.warnDeprecation( 'MultiselectWidget#getSelectedItemsData: Deprecated function. Use findSelectedItemsData instead. See T76630.' );
-	return this.findSelectedItemsData();
+	return this.getSelectedItems().map( function ( item ) {
+		return item.data;
+	} );
 };
 
 /**
@@ -8239,7 +7884,7 @@ OO.ui.MultiselectWidget.prototype.selectItemsByData = function ( datas ) {
 	var items,
 		widget = this;
 	items = datas.map( function ( data ) {
-		return widget.findItemFromData( data );
+		return widget.getItemFromData( data );
 	} );
 	this.selectItems( items );
 	return this;
@@ -8248,9 +7893,9 @@ OO.ui.MultiselectWidget.prototype.selectItemsByData = function ( datas ) {
 /**
  * CheckboxMultioptionWidget is an option widget that looks like a checkbox.
  * The class is used with OO.ui.CheckboxMultiselectWidget to create a selection of checkbox options.
- * Please see the [OOUI documentation on MediaWiki] [1] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options#Button_selects_and_option
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options#Button_selects_and_option
  *
  * @class
  * @extends OO.ui.MultioptionWidget
@@ -8353,7 +7998,7 @@ OO.ui.CheckboxMultioptionWidget.prototype.onKeyDown = function ( e ) {
  * CheckboxMultiselectWidget is a {@link OO.ui.MultiselectWidget multiselect widget} that contains
  * checkboxes and is used together with OO.ui.CheckboxMultioptionWidget. The
  * CheckboxMultiselectWidget provides an interface for adding, removing and selecting options.
- * Please see the [OOUI documentation on MediaWiki][1] for more information.
+ * Please see the [OOjs UI documentation on MediaWiki][1] for more information.
  *
  * If you want to use this within an HTML form, such as a OO.ui.FormLayout, use
  * OO.ui.CheckboxMultiselectInputWidget instead.
@@ -8377,7 +8022,7 @@ OO.ui.CheckboxMultioptionWidget.prototype.onKeyDown = function ( e ) {
  *
  *     $( 'body' ).append( multiselect.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options
  *
  * @class
  * @extends OO.ui.MultiselectWidget
@@ -8615,9 +8260,9 @@ OO.ui.ProgressBarWidget.prototype.setProgress = function ( progress ) {
  * InputWidget is the base class for all input widgets, which
  * include {@link OO.ui.TextInputWidget text inputs}, {@link OO.ui.CheckboxInputWidget checkbox inputs},
  * {@link OO.ui.RadioInputWidget radio inputs}, and {@link OO.ui.ButtonInputWidget button inputs}.
- * See the [OOUI documentation on MediaWiki] [1] for more information and examples.
+ * See the [OOjs UI documentation on MediaWiki] [1] for more information and examples.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @abstract
  * @class
@@ -8794,13 +8439,6 @@ OO.ui.InputWidget.prototype.setValue = function ( value ) {
 		this.value = value;
 		this.emit( 'change', this.value );
 	}
-	// The first time that the value is set (probably while constructing the widget),
-	// remember it in defaultValue. This property can be later used to check whether
-	// the value of the input has been changed since it was created.
-	if ( this.defaultValue === undefined ) {
-		this.defaultValue = this.value;
-		this.$input[ 0 ].defaultValue = this.defaultValue;
-	}
 	return this;
 };
 
@@ -8902,7 +8540,7 @@ OO.ui.HiddenInputWidget.static.tagName = 'input';
  * a OO.ui.FormLayout. If you do not need the button to work with HTML forms, you probably
  * want to use OO.ui.ButtonWidget instead. Button input widgets can be rendered as either an
  * HTML `<button>` (the default) or an HTML `<input>` tags. See the
- * [OOUI documentation on MediaWiki] [1] for more information.
+ * [OOjs UI documentation on MediaWiki] [1] for more information.
  *
  *     @example
  *     // A ButtonInputWidget rendered as an HTML button, the default.
@@ -8913,7 +8551,7 @@ OO.ui.HiddenInputWidget.static.tagName = 'input';
  *     } );
  *     $( 'body' ).append( button.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs#Button_inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs#Button_inputs
  *
  * @class
  * @extends OO.ui.InputWidget
@@ -9044,7 +8682,7 @@ OO.ui.ButtonInputWidget.prototype.getInputId = function () {
  * CheckboxInputWidgets, like HTML checkboxes, can be selected and/or configured with a value.
  * Note that these {@link OO.ui.InputWidget input widgets} are best laid out
  * in {@link OO.ui.FieldLayout field layouts} that use the {@link OO.ui.FieldLayout#align inline}
- * alignment. For more information, please see the [OOUI documentation on MediaWiki][1].
+ * alignment. For more information, please see the [OOjs UI documentation on MediaWiki][1].
  *
  * This widget can be used inside an HTML form, such as a OO.ui.FormLayout.
  *
@@ -9072,7 +8710,7 @@ OO.ui.ButtonInputWidget.prototype.getInputId = function () {
  *     ] );
  *     $( 'body' ).append( fieldset.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @class
  * @extends OO.ui.InputWidget
@@ -9088,17 +8726,11 @@ OO.ui.CheckboxInputWidget = function OoUiCheckboxInputWidget( config ) {
 	// Parent constructor
 	OO.ui.CheckboxInputWidget.parent.call( this, config );
 
-	// Properties
-	this.checkIcon = new OO.ui.IconWidget( {
-		icon: 'check',
-		classes: [ 'oo-ui-checkboxInputWidget-checkIcon' ]
-	} );
-
 	// Initialization
 	this.$element
 		.addClass( 'oo-ui-checkboxInputWidget' )
 		// Required for pretty styling in WikimediaUI theme
-		.append( this.checkIcon.$element );
+		.append( $( '<span>' ) );
 	this.setSelected( config.selected !== undefined ? config.selected : false );
 };
 
@@ -9161,13 +8793,6 @@ OO.ui.CheckboxInputWidget.prototype.setSelected = function ( state ) {
 		this.$input.prop( 'checked', this.selected );
 		this.emit( 'change', this.selected );
 	}
-	// The first time that the selection state is set (probably while constructing the widget),
-	// remember it in defaultSelected. This property can be later used to check whether
-	// the selection state of the input has been changed since it was created.
-	if ( this.defaultSelected === undefined ) {
-		this.defaultSelected = this.selected;
-		this.$input[ 0 ].defaultChecked = this.defaultSelected;
-	}
 	return this;
 };
 
@@ -9209,7 +8834,7 @@ OO.ui.CheckboxInputWidget.prototype.restorePreInfuseState = function ( state ) {
 /**
  * DropdownInputWidget is a {@link OO.ui.DropdownWidget DropdownWidget} intended to be used
  * within an HTML form, such as a OO.ui.FormLayout. The selected value is synchronized with the value
- * of a hidden HTML `input` tag. Please see the [OOUI documentation on MediaWiki][1] for
+ * of a hidden HTML `input` tag. Please see the [OOjs UI documentation on MediaWiki][1] for
  * more information about input widgets.
  *
  * A DropdownInputWidget always has a value (one of the options is always selected), unless there
@@ -9229,10 +8854,11 @@ OO.ui.CheckboxInputWidget.prototype.restorePreInfuseState = function ( state ) {
  *     } );
  *     $( 'body' ).append( dropdownInput.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @class
  * @extends OO.ui.InputWidget
+ * @mixins OO.ui.mixin.TitledElement
  *
  * @constructor
  * @param {Object} [config] Configuration options
@@ -9243,28 +8869,38 @@ OO.ui.DropdownInputWidget = function OoUiDropdownInputWidget( config ) {
 	// Configuration initialization
 	config = config || {};
 
+	// See InputWidget#reusePreInfuseDOM about config.$input
+	if ( config.$input ) {
+		config.$input.addClass( 'oo-ui-element-hidden' );
+	}
+
 	// Properties (must be done before parent constructor which calls #setDisabled)
 	this.dropdownWidget = new OO.ui.DropdownWidget( config.dropdown );
-	// Set up the options before parent constructor, which uses them to validate config.value.
-	// Use this instead of setOptions() because this.$input is not set up yet.
-	this.setOptionsData( config.options || [] );
 
 	// Parent constructor
 	OO.ui.DropdownInputWidget.parent.call( this, config );
+
+	// Mixin constructors
+	OO.ui.mixin.TitledElement.call( this, config );
 
 	// Events
 	this.dropdownWidget.getMenu().connect( this, { select: 'onMenuSelect' } );
 
 	// Initialization
+	this.setOptions( config.options || [] );
+	// Set the value again, after we did setOptions(). The call from parent doesn't work because the
+	// widget has no valid options when it happens.
+	this.setValue( config.value );
 	this.$element
 		.addClass( 'oo-ui-dropdownInputWidget' )
 		.append( this.dropdownWidget.$element );
-	this.setTabIndexedElement( this.dropdownWidget.$tabIndexed );
+	this.setTabIndexedElement( null );
 };
 
 /* Setup */
 
 OO.inheritClass( OO.ui.DropdownInputWidget, OO.ui.InputWidget );
+OO.mixinClass( OO.ui.DropdownInputWidget, OO.ui.mixin.TitledElement );
 
 /* Methods */
 
@@ -9273,7 +8909,7 @@ OO.inheritClass( OO.ui.DropdownInputWidget, OO.ui.InputWidget );
  * @protected
  */
 OO.ui.DropdownInputWidget.prototype.getInputElement = function () {
-	return $( '<select>' );
+	return $( '<input>' ).attr( 'type', 'hidden' );
 };
 
 /**
@@ -9293,16 +8929,11 @@ OO.ui.DropdownInputWidget.prototype.setValue = function ( value ) {
 	var selected;
 	value = this.cleanUpValue( value );
 	// Only allow setting values that are actually present in the dropdown
-	selected = this.dropdownWidget.getMenu().findItemFromData( value ) ||
-		this.dropdownWidget.getMenu().findFirstSelectableItem();
+	selected = this.dropdownWidget.getMenu().getItemFromData( value ) ||
+		this.dropdownWidget.getMenu().getFirstSelectableItem();
 	this.dropdownWidget.getMenu().selectItem( selected );
 	value = selected ? selected.getData() : '';
 	OO.ui.DropdownInputWidget.parent.prototype.setValue.call( this, value );
-	if ( this.optionsDirty ) {
-		// We reached this from the constructor or from #setOptions.
-		// We have to update the <select> element.
-		this.updateOptionsInterface();
-	}
 	return this;
 };
 
@@ -9322,116 +8953,40 @@ OO.ui.DropdownInputWidget.prototype.setDisabled = function ( state ) {
  * @chainable
  */
 OO.ui.DropdownInputWidget.prototype.setOptions = function ( options ) {
-	var value = this.getValue();
+	var
+		value = this.getValue(),
+		widget = this;
 
-	this.setOptionsData( options );
+	// Rebuild the dropdown menu
+	this.dropdownWidget.getMenu()
+		.clearItems()
+		.addItems( options.map( function ( opt ) {
+			var optValue = widget.cleanUpValue( opt.data );
 
-	// Re-set the value to update the visible interface (DropdownWidget and <select>).
-	// In case the previous value is no longer an available option, select the first valid one.
-	this.setValue( value );
+			if ( opt.optgroup === undefined ) {
+				return new OO.ui.MenuOptionWidget( {
+					data: optValue,
+					label: opt.label !== undefined ? opt.label : optValue
+				} );
+			} else {
+				return new OO.ui.MenuSectionOptionWidget( {
+					label: opt.optgroup
+				} );
+			}
+		} ) );
+
+	// Restore the previous value, or reset to something sensible
+	if ( this.dropdownWidget.getMenu().getItemFromData( value ) ) {
+		// Previous value is still available, ensure consistency with the dropdown
+		this.setValue( value );
+	} else {
+		// No longer valid, reset
+		if ( options.length ) {
+			this.setValue( options[ 0 ].data );
+		}
+	}
 
 	return this;
-};
-
-/**
- * Set the internal list of options, used e.g. by setValue() to see which options are allowed.
- *
- * This method may be called before the parent constructor, so various properties may not be
- * intialized yet.
- *
- * @param {Object[]} options Array of menu options in the format `{ data: …, label: … }`
- * @private
- */
-OO.ui.DropdownInputWidget.prototype.setOptionsData = function ( options ) {
-	var
-		optionWidgets,
-		widget = this;
-
-	this.optionsDirty = true;
-
-	optionWidgets = options.map( function ( opt ) {
-		var optValue;
-
-		if ( opt.optgroup !== undefined ) {
-			return widget.createMenuSectionOptionWidget( opt.optgroup );
-		}
-
-		optValue = widget.cleanUpValue( opt.data );
-		return widget.createMenuOptionWidget(
-			optValue,
-			opt.label !== undefined ? opt.label : optValue
-		);
-
-	} );
-
-	this.dropdownWidget.getMenu().clearItems().addItems( optionWidgets );
-};
-
-/**
- * Create a menu option widget.
- *
- * @protected
- * @param {string} data Item data
- * @param {string} label Item label
- * @return {OO.ui.MenuOptionWidget} Option widget
- */
-OO.ui.DropdownInputWidget.prototype.createMenuOptionWidget = function ( data, label ) {
-	return new OO.ui.MenuOptionWidget( {
-		data: data,
-		label: label
-	} );
-};
-
-/**
- * Create a menu section option widget.
- *
- * @protected
- * @param {string} label Section item label
- * @return {OO.ui.MenuSectionOptionWidget} Menu section option widget
- */
-OO.ui.DropdownInputWidget.prototype.createMenuSectionOptionWidget = function ( label ) {
-	return new OO.ui.MenuSectionOptionWidget( {
-		label: label
-	} );
-};
-
-/**
- * Update the user-visible interface to match the internal list of options and value.
- *
- * This method must only be called after the parent constructor.
- *
- * @private
- */
-OO.ui.DropdownInputWidget.prototype.updateOptionsInterface = function () {
-	var
-		$optionsContainer = this.$input,
-		defaultValue = this.defaultValue,
-		widget = this;
-
-	this.$input.empty();
-
-	this.dropdownWidget.getMenu().getItems().forEach( function ( optionWidget ) {
-		var $optionNode;
-
-		if ( !( optionWidget instanceof OO.ui.MenuSectionOptionWidget ) ) {
-			$optionNode = $( '<option>' )
-				.attr( 'value', optionWidget.getData() )
-				.text( optionWidget.getLabel() );
-
-			// Remember original selection state. This property can be later used to check whether
-			// the selection state of the input has been changed since it was created.
-			$optionNode[ 0 ].defaultSelected = ( optionWidget.getData() === defaultValue );
-
-			$optionsContainer.append( $optionNode );
-		} else {
-			$optionNode = $( '<optgroup>' )
-				.attr( 'label', optionWidget.getLabel() );
-			widget.$input.append( $optionNode );
-			$optionsContainer = $optionNode;
-		}
-	} );
-
-	this.optionsDirty = false;
 };
 
 /**
@@ -9454,7 +9009,7 @@ OO.ui.DropdownInputWidget.prototype.blur = function () {
  * RadioInputWidget creates a single radio button. Because radio buttons are usually used as a set,
  * in most cases you will want to use a {@link OO.ui.RadioSelectWidget radio select}
  * with {@link OO.ui.RadioOptionWidget radio options} instead of this class. For more information,
- * please see the [OOUI documentation on MediaWiki][1].
+ * please see the [OOjs UI documentation on MediaWiki][1].
  *
  * This widget can be used inside an HTML form, such as a OO.ui.FormLayout.
  *
@@ -9482,7 +9037,7 @@ OO.ui.DropdownInputWidget.prototype.blur = function () {
  *     ] );
  *     $( 'body' ).append( fieldset.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @class
  * @extends OO.ui.InputWidget
@@ -9555,13 +9110,6 @@ OO.ui.RadioInputWidget.prototype.onEdit = function () {
 OO.ui.RadioInputWidget.prototype.setSelected = function ( state ) {
 	// RadioInputWidget doesn't track its state.
 	this.$input.prop( 'checked', state );
-	// The first time that the selection state is set (probably while constructing the widget),
-	// remember it in defaultSelected. This property can be later used to check whether
-	// the selection state of the input has been changed since it was created.
-	if ( this.defaultSelected === undefined ) {
-		this.defaultSelected = state;
-		this.$input[ 0 ].defaultChecked = this.defaultSelected;
-	}
 	return this;
 };
 
@@ -9597,7 +9145,7 @@ OO.ui.RadioInputWidget.prototype.restorePreInfuseState = function ( state ) {
 /**
  * RadioSelectInputWidget is a {@link OO.ui.RadioSelectWidget RadioSelectWidget} intended to be used
  * within an HTML form, such as a OO.ui.FormLayout. The selected value is synchronized with the value
- * of a hidden HTML `input` tag. Please see the [OOUI documentation on MediaWiki][1] for
+ * of a hidden HTML `input` tag. Please see the [OOjs UI documentation on MediaWiki][1] for
  * more information about input widgets.
  *
  * This and OO.ui.DropdownInputWidget support the same configuration options.
@@ -9613,7 +9161,7 @@ OO.ui.RadioInputWidget.prototype.restorePreInfuseState = function ( state ) {
  *     } );
  *     $( 'body' ).append( radioSelectInput.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @class
  * @extends OO.ui.InputWidget
@@ -9628,9 +9176,6 @@ OO.ui.RadioSelectInputWidget = function OoUiRadioSelectInputWidget( config ) {
 
 	// Properties (must be done before parent constructor which calls #setDisabled)
 	this.radioSelectWidget = new OO.ui.RadioSelectWidget();
-	// Set up the options before parent constructor, which uses them to validate config.value.
-	// Use this instead of setOptions() because this.$input is not set up yet
-	this.setOptionsData( config.options || [] );
 
 	// Parent constructor
 	OO.ui.RadioSelectInputWidget.parent.call( this, config );
@@ -9639,10 +9184,11 @@ OO.ui.RadioSelectInputWidget = function OoUiRadioSelectInputWidget( config ) {
 	this.radioSelectWidget.connect( this, { select: 'onMenuSelect' } );
 
 	// Initialization
+	this.setOptions( config.options || [] );
 	this.$element
 		.addClass( 'oo-ui-radioSelectInputWidget' )
 		.append( this.radioSelectWidget.$element );
-	this.setTabIndexedElement( this.radioSelectWidget.$tabIndexed );
+	this.setTabIndexedElement( null );
 };
 
 /* Setup */
@@ -9677,9 +9223,7 @@ OO.ui.RadioSelectInputWidget.static.reusePreInfuseDOM = function ( node, config 
  * @protected
  */
 OO.ui.RadioSelectInputWidget.prototype.getInputElement = function () {
-	// Use this instead of <input type="hidden">, because hidden inputs do not have separate
-	// 'value' and 'defaultValue' properties, and InputWidget wants to handle 'defaultValue'.
-	return $( '<input>' ).addClass( 'oo-ui-element-hidden' );
+	return $( '<input>' ).attr( 'type', 'hidden' );
 };
 
 /**
@@ -9696,13 +9240,8 @@ OO.ui.RadioSelectInputWidget.prototype.onMenuSelect = function ( item ) {
  * @inheritdoc
  */
 OO.ui.RadioSelectInputWidget.prototype.setValue = function ( value ) {
-	var selected;
 	value = this.cleanUpValue( value );
-	// Only allow setting values that are actually present in the dropdown
-	selected = this.radioSelectWidget.findItemFromData( value ) ||
-		this.radioSelectWidget.findFirstSelectableItem();
-	this.radioSelectWidget.selectItem( selected );
-	value = selected ? selected.getData() : '';
+	this.radioSelectWidget.selectItemByData( value );
 	OO.ui.RadioSelectInputWidget.parent.prototype.setValue.call( this, value );
 	return this;
 };
@@ -9723,29 +9262,11 @@ OO.ui.RadioSelectInputWidget.prototype.setDisabled = function ( state ) {
  * @chainable
  */
 OO.ui.RadioSelectInputWidget.prototype.setOptions = function ( options ) {
-	var value = this.getValue();
+	var
+		value = this.getValue(),
+		widget = this;
 
-	this.setOptionsData( options );
-
-	// Re-set the value to update the visible interface (RadioSelectWidget).
-	// In case the previous value is no longer an available option, select the first valid one.
-	this.setValue( value );
-
-	return this;
-};
-
-/**
- * Set the internal list of options, used e.g. by setValue() to see which options are allowed.
- *
- * This method may be called before the parent constructor, so various properties may not be
- * intialized yet.
- *
- * @param {Object[]} options Array of menu options in the format `{ data: …, label: … }`
- * @private
- */
-OO.ui.RadioSelectInputWidget.prototype.setOptionsData = function ( options ) {
-	var widget = this;
-
+	// Rebuild the radioSelect menu
 	this.radioSelectWidget
 		.clearItems()
 		.addItems( options.map( function ( opt ) {
@@ -9755,6 +9276,19 @@ OO.ui.RadioSelectInputWidget.prototype.setOptionsData = function ( options ) {
 				label: opt.label !== undefined ? opt.label : optValue
 			} );
 		} ) );
+
+	// Restore the previous value, or reset to something sensible
+	if ( this.radioSelectWidget.getItemFromData( value ) ) {
+		// Previous value is still available, ensure consistency with the radioSelect
+		this.setValue( value );
+	} else {
+		// No longer valid, reset
+		if ( options.length ) {
+			this.setValue( options[ 0 ].data );
+		}
+	}
+
+	return this;
 };
 
 /**
@@ -9777,7 +9311,7 @@ OO.ui.RadioSelectInputWidget.prototype.blur = function () {
  * CheckboxMultiselectInputWidget is a
  * {@link OO.ui.CheckboxMultiselectWidget CheckboxMultiselectWidget} intended to be used within a
  * HTML form, such as a OO.ui.FormLayout. The selected values are synchronized with the value of
- * HTML `<input type=checkbox>` tags. Please see the [OOUI documentation on MediaWiki][1] for
+ * HTML `<input type=checkbox>` tags. Please see the [OOjs UI documentation on MediaWiki][1] for
  * more information about input widgets.
  *
  *     @example
@@ -9791,7 +9325,7 @@ OO.ui.RadioSelectInputWidget.prototype.blur = function () {
  *     } );
  *     $( 'body' ).append( multiselectInput.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @class
  * @extends OO.ui.InputWidget
@@ -9806,17 +9340,12 @@ OO.ui.CheckboxMultiselectInputWidget = function OoUiCheckboxMultiselectInputWidg
 
 	// Properties (must be done before parent constructor which calls #setDisabled)
 	this.checkboxMultiselectWidget = new OO.ui.CheckboxMultiselectWidget();
-	// Must be set before the #setOptionsData call below
-	this.inputName = config.name;
-	// Set up the options before parent constructor, which uses them to validate config.value.
-	// Use this instead of setOptions() because this.$input is not set up yet
-	this.setOptionsData( config.options || [] );
 
 	// Parent constructor
 	OO.ui.CheckboxMultiselectInputWidget.parent.call( this, config );
 
-	// Events
-	this.checkboxMultiselectWidget.connect( this, { select: 'onCheckboxesSelect' } );
+	// Properties
+	this.inputName = config.name;
 
 	// Initialization
 	this.$element
@@ -9824,6 +9353,14 @@ OO.ui.CheckboxMultiselectInputWidget = function OoUiCheckboxMultiselectInputWidg
 		.append( this.checkboxMultiselectWidget.$element );
 	// We don't use this.$input, but rather the CheckboxInputWidgets inside each option
 	this.$input.detach();
+	this.setOptions( config.options || [] );
+	// Have to repeat this from parent, as we need options to be set up for this to make sense
+	this.setValue( config.value );
+
+	// setValue when checkboxMultiselectWidget changes
+	this.checkboxMultiselectWidget.on( 'change', function () {
+		this.setValue( this.checkboxMultiselectWidget.getSelectedItemsData() );
+	}.bind( this ) );
 };
 
 /* Setup */
@@ -9864,15 +9401,6 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.getInputElement = function () {
 };
 
 /**
- * Handles CheckboxMultiselectWidget select events.
- *
- * @private
- */
-OO.ui.CheckboxMultiselectInputWidget.prototype.onCheckboxesSelect = function () {
-	this.setValue( this.checkboxMultiselectWidget.findSelectedItemsData() );
-};
-
-/**
  * @inheritdoc
  */
 OO.ui.CheckboxMultiselectInputWidget.prototype.getValue = function () {
@@ -9891,11 +9419,6 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.setValue = function ( value ) {
 	value = this.cleanUpValue( value );
 	this.checkboxMultiselectWidget.selectItemsByData( value );
 	OO.ui.CheckboxMultiselectInputWidget.parent.prototype.setValue.call( this, value );
-	if ( this.optionsDirty ) {
-		// We reached this from the constructor or from #setOptions.
-		// We have to update the <select> element.
-		this.updateOptionsInterface();
-	}
 	return this;
 };
 
@@ -9915,7 +9438,7 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.cleanUpValue = function ( value )
 		singleValue =
 			OO.ui.CheckboxMultiselectInputWidget.parent.prototype.cleanUpValue.call( this, value[ i ] );
 		// Remove options that we don't have here
-		if ( !this.checkboxMultiselectWidget.findItemFromData( singleValue ) ) {
+		if ( !this.checkboxMultiselectWidget.getItemFromData( singleValue ) ) {
 			continue;
 		}
 		cleanValue.push( singleValue );
@@ -9939,31 +9462,9 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.setDisabled = function ( state ) 
  * @chainable
  */
 OO.ui.CheckboxMultiselectInputWidget.prototype.setOptions = function ( options ) {
-	var value = this.getValue();
-
-	this.setOptionsData( options );
-
-	// Re-set the value to update the visible interface (CheckboxMultiselectWidget).
-	// This will also get rid of any stale options that we just removed.
-	this.setValue( value );
-
-	return this;
-};
-
-/**
- * Set the internal list of options, used e.g. by setValue() to see which options are allowed.
- *
- * This method may be called before the parent constructor, so various properties may not be
- * intialized yet.
- *
- * @param {Object[]} options Array of menu options in the format `{ data: …, label: … }`
- * @private
- */
-OO.ui.CheckboxMultiselectInputWidget.prototype.setOptionsData = function ( options ) {
 	var widget = this;
 
-	this.optionsDirty = true;
-
+	// Rebuild the checkboxMultiselectWidget menu
 	this.checkboxMultiselectWidget
 		.clearItems()
 		.addItems( options.map( function ( opt ) {
@@ -9981,27 +9482,12 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.setOptionsData = function ( optio
 			item.checkbox.setValue( optValue );
 			return item;
 		} ) );
-};
 
-/**
- * Update the user-visible interface to match the internal list of options and value.
- *
- * This method must only be called after the parent constructor.
- *
- * @private
- */
-OO.ui.CheckboxMultiselectInputWidget.prototype.updateOptionsInterface = function () {
-	var defaultValue = this.defaultValue;
+	// Re-set the value, checking the checkboxes as needed.
+	// This will also get rid of any stale options that we just removed.
+	this.setValue( this.getValue() );
 
-	this.checkboxMultiselectWidget.getItems().forEach( function ( item ) {
-		// Remember original selection state. This property can be later used to check whether
-		// the selection state of the input has been changed since it was created.
-		var isDefault = defaultValue.indexOf( item.getData() ) !== -1;
-		item.checkbox.defaultSelected = isDefault;
-		item.checkbox.$input[ 0 ].defaultChecked = isDefault;
-	} );
-
-	this.optionsDirty = false;
+	return this;
 };
 
 /**
@@ -10018,7 +9504,7 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.focus = function () {
  * with {@link OO.ui.mixin.IconElement icons}, {@link OO.ui.mixin.IndicatorElement indicators}, an optional
  * validation-pattern (used to determine if an input value is valid or not) and an input filter,
  * which modifies incoming values rather than validating them.
- * Please see the [OOUI documentation on MediaWiki] [1] for more information and examples.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for more information and examples.
  *
  * This widget can be used inside an HTML form, such as a OO.ui.FormLayout.
  *
@@ -10029,7 +9515,7 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.focus = function () {
  *     } )
  *     $( 'body' ).append( textInput.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  * @class
  * @extends OO.ui.InputWidget
@@ -10047,17 +9533,10 @@ OO.ui.CheckboxMultiselectInputWidget.prototype.focus = function () {
  *  instruct the browser to focus this widget.
  * @cfg {boolean} [readOnly=false] Prevent changes to the value of the text input.
  * @cfg {number} [maxLength] Maximum number of characters allowed in the input.
- *
- *  For unfortunate historical reasons, this counts the number of UTF-16 code units rather than
- *  Unicode codepoints, which means that codepoints outside the Basic Multilingual Plane (e.g.
- *  many emojis) count as 2 characters each.
  * @cfg {string} [labelPosition='after'] The position of the inline label relative to that of
  *  the value or placeholder text: `'before'` or `'after'`
- * @cfg {boolean} [required=false] Mark the field as required with `true`. Implies `indicator: 'required'`.
- *  Note that `false` & setting `indicator: 'required' will result in no indicator shown.
+ * @cfg {boolean} [required=false] Mark the field as required. Implies `indicator: 'required'`.
  * @cfg {boolean} [autocomplete=true] Should the browser support autocomplete for this field
- * @cfg {boolean} [spellcheck] Should the browser support spellcheck for this field (`undefined` means
- *  leaving it up to the browser).
  * @cfg {RegExp|Function|string} [validate] Validation pattern: when string, a symbolic name of a
  *  pattern defined by the class: 'non-empty' (the value cannot be an empty string) or 'integer'
  *  (the value must contain only numbers); when RegExp, a regular expression that must match the
@@ -10137,9 +9616,6 @@ OO.ui.TextInputWidget = function OoUiTextInputWidget( config ) {
 			}.bind( this )
 		} );
 	}
-	if ( config.spellcheck !== undefined ) {
-		this.$input.attr( 'spellcheck', config.spellcheck ? 'true' : 'false' );
-	}
 	if ( this.label ) {
 		this.isWaitingToBeAttached = true;
 		this.installParentChangeDetector();
@@ -10159,6 +9635,16 @@ OO.mixinClass( OO.ui.TextInputWidget, OO.ui.mixin.LabelElement );
 OO.ui.TextInputWidget.static.validationPatterns = {
 	'non-empty': /.+/,
 	integer: /^\d+$/
+};
+
+/* Static Methods */
+
+/**
+ * @inheritdoc
+ */
+OO.ui.TextInputWidget.static.gatherPreInfuseState = function ( node, config ) {
+	var state = OO.ui.TextInputWidget.parent.static.gatherPreInfuseState( node, config );
+	return state;
 };
 
 /* Events */
@@ -10402,7 +9888,7 @@ OO.ui.TextInputWidget.prototype.getInputElement = function ( config ) {
  *
  * @param {Object} config Configuration options
  * @return {string|null}
- * @protected
+ * @private
  */
 OO.ui.TextInputWidget.prototype.getSaneType = function ( config ) {
 	var allowedTypes = [
@@ -10709,6 +10195,16 @@ OO.ui.TextInputWidget.prototype.positionLabel = function () {
 };
 
 /**
+ * @inheritdoc
+ */
+OO.ui.TextInputWidget.prototype.restorePreInfuseState = function ( state ) {
+	OO.ui.TextInputWidget.parent.prototype.restorePreInfuseState.call( this, state );
+	if ( state.scrollTop !== undefined ) {
+		this.$input.scrollTop( state.scrollTop );
+	}
+};
+
+/**
  * @class
  * @extends OO.ui.TextInputWidget
  *
@@ -10720,6 +10216,10 @@ OO.ui.SearchInputWidget = function OoUiSearchInputWidget( config ) {
 		icon: 'search'
 	}, config );
 
+	// Set type to text so that TextInputWidget doesn't
+	// get stuck in an infinite loop.
+	config.type = 'text';
+
 	// Parent constructor
 	OO.ui.SearchInputWidget.parent.call( this, config );
 
@@ -10729,6 +10229,7 @@ OO.ui.SearchInputWidget = function OoUiSearchInputWidget( config ) {
 	} );
 
 	// Initialization
+	this.$element.addClass( 'oo-ui-textInputWidget-type-search' );
 	this.updateSearchIndicator();
 	this.connect( this, {
 		disable: 'onDisable'
@@ -10745,8 +10246,8 @@ OO.inheritClass( OO.ui.SearchInputWidget, OO.ui.TextInputWidget );
  * @inheritdoc
  * @protected
  */
-OO.ui.SearchInputWidget.prototype.getSaneType = function () {
-	return 'search';
+OO.ui.SearchInputWidget.prototype.getInputElement = function () {
+	return $( '<input>' ).attr( 'type', 'search' );
 };
 
 /**
@@ -10810,9 +10311,10 @@ OO.ui.SearchInputWidget.prototype.setReadOnly = function ( state ) {
  * @param {Object} [config] Configuration options
  * @cfg {number} [rows] Number of visible lines in textarea. If used with `autosize`,
  *  specifies minimum number of rows to display.
+ * @cfg {string} [labelPosition='after'] The position of the inline label relative to that of
  * @cfg {boolean} [autosize=false] Automatically resize the text input to fit its content.
  *  Use the #maxRows config to specify a maximum number of displayed rows.
- * @cfg {number} [maxRows] Maximum number of rows to display when #autosize is set to true.
+ * @cfg {boolean} [maxRows] Maximum number of rows to display when #autosize is set to true.
  *  Defaults to the maximum of `10` and `2 * rows`, or `10` if `rows` isn't provided.
  */
 OO.ui.MultilineTextInputWidget = function OoUiMultilineTextInputWidget( config ) {
@@ -10848,7 +10350,6 @@ OO.ui.MultilineTextInputWidget = function OoUiMultilineTextInputWidget( config )
 		this.$input.attr( 'rows', config.rows );
 	}
 	if ( this.autosize ) {
-		this.$input.addClass( 'oo-ui-textInputWidget-autosized' );
 		this.isWaitingToBeAttached = true;
 		this.installParentChangeDetector();
 	}
@@ -10897,18 +10398,13 @@ OO.ui.MultilineTextInputWidget.prototype.updatePosition = function () {
 };
 
 /**
- * @inheritdoc
+ * Override TextInputWidget so it doesn't emit the 'enter' event.
  *
- * Modify to emit 'enter' on Ctrl/Meta+Enter, instead of plain Enter
+ * @private
+ * @param {jQuery.Event} e Key press event
  */
-OO.ui.MultilineTextInputWidget.prototype.onKeyPress = function ( e ) {
-	if (
-		( e.which === OO.ui.Keys.ENTER && ( e.ctrlKey || e.metaKey ) ) ||
-		// Some platforms emit keycode 10 for ctrl+enter in a textarea
-		e.which === 10
-	) {
-		this.emit( 'enter', e );
-	}
+OO.ui.MultilineTextInputWidget.prototype.onKeyPress = function () {
+	return;
 };
 
 /**
@@ -11013,16 +10509,6 @@ OO.ui.MultilineTextInputWidget.prototype.isAutosizing = function () {
 };
 
 /**
- * @inheritdoc
- */
-OO.ui.MultilineTextInputWidget.prototype.restorePreInfuseState = function ( state ) {
-	OO.ui.MultilineTextInputWidget.parent.prototype.restorePreInfuseState.call( this, state );
-	if ( state.scrollTop !== undefined ) {
-		this.$input.scrollTop( state.scrollTop );
-	}
-};
-
-/**
  * ComboBoxInputWidgets combine a {@link OO.ui.TextInputWidget text input} (where a value
  * can be entered manually) and a {@link OO.ui.MenuSelectWidget menu of options} (from which
  * a value can be chosen instead). Users can choose options from the combo box in one of two ways:
@@ -11038,7 +10524,7 @@ OO.ui.MultilineTextInputWidget.prototype.restorePreInfuseState = function ( stat
  *
  * This widget can be used inside an HTML form, such as a OO.ui.FormLayout.
  *
- * For more information about menus and options, please see the [OOUI documentation on MediaWiki][1].
+ * For more information about menus and options, please see the [OOjs UI documentation on MediaWiki][1].
  *
  *     @example
  *     // Example: A ComboBoxInputWidget.
@@ -11073,7 +10559,7 @@ OO.ui.MultilineTextInputWidget.prototype.restorePreInfuseState = function ( stat
  *     } );
  *     $( 'body' ).append( comboBox.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Widgets/Selects_and_Options#Menu_selects_and_options
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Selects_and_Options#Menu_selects_and_options
  *
  * @class
  * @extends OO.ui.TextInputWidget
@@ -11085,7 +10571,7 @@ OO.ui.MultilineTextInputWidget.prototype.restorePreInfuseState = function ( stat
  * @cfg {jQuery} [$overlay] Render the menu into a separate layer. This configuration is useful in cases where
  *  the expanded menu is larger than its containing `<div>`. The specified overlay layer is usually on top of the
  *  containing `<div>` and has a larger area. By default, the menu uses relative positioning.
- *  See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
+ *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  */
 OO.ui.ComboBoxInputWidget = function OoUiComboBoxInputWidget( config ) {
 	// Configuration initialization
@@ -11105,7 +10591,7 @@ OO.ui.ComboBoxInputWidget = function OoUiComboBoxInputWidget( config ) {
 	OO.ui.ComboBoxInputWidget.parent.call( this, config );
 
 	// Properties
-	this.$overlay = ( config.$overlay === true ? OO.ui.getDefaultOverlay() : config.$overlay ) || this.$element;
+	this.$overlay = config.$overlay || this.$element;
 	this.dropdownButton = new OO.ui.ButtonWidget( {
 		classes: [ 'oo-ui-comboBoxInputWidget-dropdownButton' ],
 		indicator: 'down',
@@ -11132,8 +10618,7 @@ OO.ui.ComboBoxInputWidget = function OoUiComboBoxInputWidget( config ) {
 	this.menu.connect( this, {
 		choose: 'onMenuChoose',
 		add: 'onMenuItemsChange',
-		remove: 'onMenuItemsChange',
-		toggle: 'onMenuToggle'
+		remove: 'onMenuItemsChange'
 	} );
 
 	// Initialization
@@ -11187,10 +10672,10 @@ OO.ui.ComboBoxInputWidget.prototype.getInput = function () {
  * @param {string} value New value
  */
 OO.ui.ComboBoxInputWidget.prototype.onInputChange = function ( value ) {
-	var match = this.menu.findItemFromData( value );
+	var match = this.menu.getItemFromData( value );
 
 	this.menu.selectItem( match );
-	if ( this.menu.findHighlightedItem() ) {
+	if ( this.menu.getHighlightedItem() ) {
 		this.menu.highlightItem( match );
 	}
 
@@ -11236,22 +10721,12 @@ OO.ui.ComboBoxInputWidget.prototype.onMenuChoose = function ( item ) {
  * @private
  */
 OO.ui.ComboBoxInputWidget.prototype.onMenuItemsChange = function () {
-	var match = this.menu.findItemFromData( this.getValue() );
+	var match = this.menu.getItemFromData( this.getValue() );
 	this.menu.selectItem( match );
-	if ( this.menu.findHighlightedItem() ) {
+	if ( this.menu.getHighlightedItem() ) {
 		this.menu.highlightItem( match );
 	}
 	this.$element.toggleClass( 'oo-ui-comboBoxInputWidget-empty', this.menu.isEmpty() );
-};
-
-/**
- * Handle menu toggle events.
- *
- * @private
- * @param {boolean} isVisible Open state of the menu
- */
-OO.ui.ComboBoxInputWidget.prototype.onMenuToggle = function ( isVisible ) {
-	this.$element.toggleClass( 'oo-ui-comboBoxInputWidget-open', isVisible );
 };
 
 /**
@@ -11307,9 +10782,9 @@ OO.ui.ComboBoxInputWidget.prototype.setOptions = function ( options ) {
  *   An inline-alignment is best used with checkboxes or radio buttons.
  *
  * Help text is accessed via a help icon that appears in the upper right corner of the rendered field layout.
- * Please see the [OOUI documentation on MediaWiki] [1] for examples and more information.
+ * Please see the [OOjs UI documentation on MediaWiki] [1] for examples and more information.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Layouts/Fields_and_Fieldsets
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Layouts/Fields_and_Fieldsets
  *
  * @class
  * @extends OO.ui.Layout
@@ -11328,7 +10803,7 @@ OO.ui.ComboBoxInputWidget.prototype.setOptions = function ( options ) {
  *  in the upper-right corner of the rendered field; clicking it will display the text in a popup.
  *  For important messages, you are advised to use `notices`, as they are always shown.
  * @cfg {jQuery} [$overlay] Passed to OO.ui.PopupButtonWidget for help popup, if `help` is given.
- *  See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
+ *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  *
  * @throws {Error} An error is thrown if no widget is specified
  */
@@ -11406,6 +10881,7 @@ OO.ui.FieldLayout = function OoUiFieldLayout( fieldWidget, config ) {
 	} else {
 		this.$label.on( 'click', function () {
 			this.fieldWidget.simulateLabelClick();
+			return false;
 		}.bind( this ) );
 	}
 	this.$element
@@ -11477,7 +10953,7 @@ OO.ui.FieldLayout.prototype.makeMessage = function ( kind, text ) {
 		$icon = new OO.ui.IconWidget( { icon: 'alert', flags: [ 'warning' ] } ).$element;
 		$listItem.attr( 'role', 'alert' );
 	} else if ( kind === 'notice' ) {
-		$icon = new OO.ui.IconWidget( { icon: 'notice' } ).$element;
+		$icon = new OO.ui.IconWidget( { icon: 'info' } ).$element;
 	} else {
 		$icon = '';
 	}
@@ -11507,10 +10983,10 @@ OO.ui.FieldLayout.prototype.setAlignment = function ( value ) {
 		}
 		// Reorder elements
 		if ( value === 'top' ) {
-			this.$header.append( this.$help, this.$label );
+			this.$header.append( this.$label, this.$help );
 			this.$body.append( this.$header, this.$field );
 		} else if ( value === 'inline' ) {
-			this.$header.append( this.$help, this.$label );
+			this.$header.append( this.$label, this.$help );
 			this.$body.append( this.$field, this.$header );
 		} else {
 			this.$header.append( this.$label );
@@ -11679,7 +11155,7 @@ OO.inheritClass( OO.ui.ActionFieldLayout, OO.ui.FieldLayout );
  * FieldsetLayouts are composed of one or more {@link OO.ui.FieldLayout FieldLayouts},
  * which each contain an individual widget and, optionally, a label. Each Fieldset can be
  * configured with a label as well. For more information and examples,
- * please see the [OOUI documentation on MediaWiki][1].
+ * please see the [OOjs UI documentation on MediaWiki][1].
  *
  *     @example
  *     // Example of a fieldset layout
@@ -11705,7 +11181,7 @@ OO.inheritClass( OO.ui.ActionFieldLayout, OO.ui.FieldLayout );
  *     ] );
  *     $( 'body' ).append( fieldset.$element );
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Layouts/Fields_and_Fieldsets
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Layouts/Fields_and_Fieldsets
  *
  * @class
  * @extends OO.ui.Layout
@@ -11720,7 +11196,7 @@ OO.inheritClass( OO.ui.ActionFieldLayout, OO.ui.FieldLayout );
  *  in the upper-right corner of the rendered field; clicking it will display the text in a popup.
  *  For important messages, you are advised to use `notices`, as they are always shown.
  * @cfg {jQuery} [$overlay] Passed to OO.ui.PopupButtonWidget for help popup, if `help` is given.
- *  See <https://www.mediawiki.org/wiki/OOUI/Concepts#Overlays>.
+ *  See <https://www.mediawiki.org/wiki/OOjs_UI/Concepts#Overlays>.
  */
 OO.ui.FieldsetLayout = function OoUiFieldsetLayout( config ) {
 	// Configuration initialization
@@ -11788,7 +11264,7 @@ OO.ui.FieldsetLayout.static.tagName = 'fieldset';
  * FormLayouts are used to wrap {@link OO.ui.FieldsetLayout FieldsetLayouts} when you intend to use browser-based
  * form submission for the fields instead of handling them in JavaScript. Form layouts can be configured with an
  * HTML form action, an encoding type, and a method using the #action, #enctype, and #method configs, respectively.
- * See the [OOUI documentation on MediaWiki] [1] for more information and examples.
+ * See the [OOjs UI documentation on MediaWiki] [1] for more information and examples.
  *
  * Only widgets from the {@link OO.ui.InputWidget InputWidget} family support form submission. It
  * includes standard form elements like {@link OO.ui.CheckboxInputWidget checkboxes}, {@link
@@ -11796,10 +11272,10 @@ OO.ui.FieldsetLayout.static.tagName = 'fieldset';
  * some fancier controls. Some controls have both regular and InputWidget variants, for example
  * OO.ui.DropdownWidget and OO.ui.DropdownInputWidget – only the latter support form submission and
  * often have simplified APIs to match the capabilities of HTML forms.
- * See the [OOUI documentation on MediaWiki] [2] for more information about InputWidgets.
+ * See the [OOjs UI Inputs documentation on MediaWiki] [2] for more information about InputWidgets.
  *
- * [1]: https://www.mediawiki.org/wiki/OOUI/Layouts/Forms
- * [2]: https://www.mediawiki.org/wiki/OOUI/Widgets/Inputs
+ * [1]: https://www.mediawiki.org/wiki/OOjs_UI/Layouts/Forms
+ * [2]: https://www.mediawiki.org/wiki/OOjs_UI/Widgets/Inputs
  *
  *     @example
  *     // Example of a form layout that wraps a fieldset layout

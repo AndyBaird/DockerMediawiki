@@ -1,8 +1,6 @@
 <?php
 
-class JavaScriptMinifierTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class JavaScriptMinifierTest extends PHPUnit_Framework_TestCase {
 
 	public static function provideCases() {
 		return [
@@ -61,38 +59,12 @@ class JavaScriptMinifierTest extends PHPUnit\Framework\TestCase {
 			[ "0xFF.\nx;", "0xFF.x;" ],
 			[ "5.3.\nx;", "5.3.x;" ],
 
-			// Cover failure case for incomplete hex literal
-			[ "0x;", false, false ],
-
-			// Cover failure case for number with no digits after E
-			[ "1.4E", false, false ],
-
-			// Cover failure case for number with several E
-			[ "1.4EE2", false, false ],
-			[ "1.4EE", false, false ],
-
-			// Cover failure case for number with several E (nonconsecutive)
-			// FIXME: This is invalid, but currently tolerated
-			[ "1.4E2E3", "1.4E2 E3", false ],
-
 			// Semicolon insertion between an expression having an inline
 			// comment after it, and a statement on the next line (T29046).
 			[
 				"var a = this //foo bar \n for ( b = 0; c < d; b++ ) {}",
 				"var a=this\nfor(b=0;c<d;b++){}"
 			],
-
-			// Cover failure case of incomplete regexp at end of file (T75556)
-			// FIXME: This is invalid, but currently tolerated
-			[ "*/", "*/", false ],
-
-			// Cover failure case of incomplete char class in regexp (T75556)
-			// FIXME: This is invalid, but currently tolerated
-			[ "/a[b/.test", "/a[b/.test", false ],
-
-			// Cover failure case of incomplete string at end of file (T75556)
-			// FIXME: This is invalid, but currently tolerated
-			[ "'a", "'a", false ],
 
 			// Token separation
 			[ "x  in  y", "x in y" ],
@@ -166,7 +138,6 @@ class JavaScriptMinifierTest extends PHPUnit\Framework\TestCase {
 			[ "var a = 5.;", "var a=5.;" ],
 			[ "5.0.toString();", "5.0.toString();" ],
 			[ "5..toString();", "5..toString();" ],
-			// Cover failure case for too many decimal points
 			[ "5...toString();", false ],
 			[ "5.\n.toString();", '5..toString();' ],
 
@@ -182,17 +153,16 @@ class JavaScriptMinifierTest extends PHPUnit\Framework\TestCase {
 	/**
 	 * @dataProvider provideCases
 	 * @covers JavaScriptMinifier::minify
-	 * @covers JavaScriptMinifier::parseError
 	 */
-	public function testMinifyOutput( $code, $expectedOutput, $expectedValid = true ) {
+	public function testJavaScriptMinifierOutput( $code, $expectedOutput, $expectedValid = true ) {
 		$minified = JavaScriptMinifier::minify( $code );
 
 		// JSMin+'s parser will throw an exception if output is not valid JS.
 		// suppression of warnings needed for stupid crap
 		if ( $expectedValid ) {
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			$parser = new JSParser();
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 			$parser->parse( $minified, 'minify-test.js', 1 );
 		}
 

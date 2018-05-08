@@ -16,14 +16,6 @@
 		width: 100%;
 		table-layout: fixed;
 
-		tr {
-			background-color: #fff;
-
-			&:nth-child( even ) {
-				background-color: #f9f9f9;
-			}
-		}
-
 		td,
 		th {
 			padding: 4px 10px;
@@ -38,7 +30,15 @@
 			}
 
 			span.stats {
-				color: #727272;
+				color: #808080;
+			}
+		}
+
+		tr {
+			background-color: #fff;
+
+			&:nth-child( even ) {
+				background-color: #f9f9f9;
 			}
 		}
 	}
@@ -92,7 +92,7 @@ a.mw-debug-panelabel:visited {
 	height: 300px;
 	overflow: scroll;
 	display: none;
-	font-family: monospace, monospace;
+	font-family: monospace;
 	font-size: 11px;
 	background-color: #e1eff2;
 	box-sizing: border-box;

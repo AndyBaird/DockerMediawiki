@@ -23,7 +23,7 @@
  * @ingroup SpecialPage
  */
 
-use MediaWiki\MediaWikiServices;
+use Mediawiki\MediaWikiServices;
 
 /**
  * A special page that allows users to export pages in a XML file
@@ -238,7 +238,7 @@ class SpecialExport extends SpecialPage {
 
 		$formDescriptor += [
 			'textarea' => [
-				'class' => HTMLTextAreaField::class,
+				'class' => 'HTMLTextAreaField',
 				'name' => 'pages',
 				'label-message' => 'export-manual',
 				'nodata' => true,
@@ -380,9 +380,9 @@ class SpecialExport extends SpecialPage {
 			$buffer = WikiExporter::STREAM;
 
 			// This might take a while... :D
-			Wikimedia\suppressWarnings();
+			MediaWiki\suppressWarnings();
 			set_time_limit( 0 );
-			Wikimedia\restoreWarnings();
+			MediaWiki\restoreWarnings();
 		}
 
 		$exporter = new WikiExporter( $db, $history, $buffer );
@@ -533,7 +533,9 @@ class SpecialExport extends SpecialPage {
 	 * @return array
 	 */
 	private function getPageLinks( $inputPages, $pageSet, $depth ) {
+		// @codingStandardsIgnoreStart Squiz.WhiteSpace.SemicolonSpacing.Incorrect
 		for ( ; $depth > 0; --$depth ) {
+			// @codingStandardsIgnoreEnd
 			$pageSet = $this->getLinks(
 				$inputPages, $pageSet, 'pagelinks',
 				[ 'namespace' => 'pl_namespace', 'title' => 'pl_title' ],

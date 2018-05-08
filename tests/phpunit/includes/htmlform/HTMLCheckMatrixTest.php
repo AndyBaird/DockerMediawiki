@@ -4,7 +4,7 @@
  * Unit tests for the HTMLCheckMatrix
  * @covers HTMLCheckMatrix
  */
-class HTMLCheckMatrixTest extends MediaWikiTestCase {
+class HtmlCheckMatrixTest extends MediaWikiTestCase {
 	static private $defaultOptions = [
 		'rows' => [ 'r1', 'r2' ],
 		'columns' => [ 'c1', 'c2' ],
@@ -15,7 +15,7 @@ class HTMLCheckMatrixTest extends MediaWikiTestCase {
 		try {
 			new HTMLCheckMatrix( [] );
 		} catch ( MWException $e ) {
-			$this->assertInstanceOf( HTMLFormFieldRequiredOptionsException::class, $e );
+			$this->assertInstanceOf( 'HTMLFormFieldRequiredOptionsException', $e );
 			return;
 		}
 

@@ -9,9 +9,6 @@ abstract class PoolCounterAbstractMock extends PoolCounter {
 	}
 }
 
-/**
- * @covers PoolCounter
- */
 class PoolCounterTest extends MediaWikiTestCase {
 	public function testConstruct() {
 		$poolCounterConfig = [
@@ -21,13 +18,13 @@ class PoolCounterTest extends MediaWikiTestCase {
 			'maxqueue' => 100,
 		];
 
-		$poolCounter = $this->getMockBuilder( PoolCounterAbstractMock::class )
+		$poolCounter = $this->getMockBuilder( 'PoolCounterAbstractMock' )
 			->setConstructorArgs( [ $poolCounterConfig, 'testCounter', 'someKey' ] )
 			// don't mock anything - the proper syntax would be setMethods(null), but due
 			// to a PHPUnit bug that does not work with getMockForAbstractClass()
 			->setMethods( [ 'idontexist' ] )
 			->getMockForAbstractClass();
-		$this->assertInstanceOf( PoolCounter::class, $poolCounter );
+		$this->assertInstanceOf( 'PoolCounter', $poolCounter );
 	}
 
 	public function testConstructWithSlots() {
@@ -39,15 +36,15 @@ class PoolCounterTest extends MediaWikiTestCase {
 			'maxqueue' => 100,
 		];
 
-		$poolCounter = $this->getMockBuilder( PoolCounterAbstractMock::class )
+		$poolCounter = $this->getMockBuilder( 'PoolCounterAbstractMock' )
 			->setConstructorArgs( [ $poolCounterConfig, 'testCounter', 'key' ] )
 			->setMethods( [ 'idontexist' ] ) // don't mock anything
 			->getMockForAbstractClass();
-		$this->assertInstanceOf( PoolCounter::class, $poolCounter );
+		$this->assertInstanceOf( 'PoolCounter', $poolCounter );
 	}
 
 	public function testHashKeyIntoSlots() {
-		$poolCounter = $this->getMockBuilder( PoolCounterAbstractMock::class )
+		$poolCounter = $this->getMockBuilder( 'PoolCounterAbstractMock' )
 			// don't mock anything - the proper syntax would be setMethods(null), but due
 			// to a PHPUnit bug that does not work with getMockForAbstractClass()
 			->setMethods( [ 'idontexist' ] )

@@ -17,9 +17,9 @@ class AuthenticationRequestTest extends \MediaWikiTestCase {
 		$ret = $mock->describeCredentials();
 		$this->assertInternalType( 'array', $ret );
 		$this->assertArrayHasKey( 'provider', $ret );
-		$this->assertInstanceOf( \Message::class, $ret['provider'] );
+		$this->assertInstanceOf( 'Message', $ret['provider'] );
 		$this->assertArrayHasKey( 'account', $ret );
-		$this->assertInstanceOf( \Message::class, $ret['account'] );
+		$this->assertInstanceOf( 'Message', $ret['account'] );
 	}
 
 	public function testLoadRequestsFromSubmission() {

@@ -113,7 +113,7 @@ class StreamFile {
 			return 'unknown/unknown';
 		}
 
-		$magic = MediaWiki\MediaWikiServices::getInstance()->getMimeAnalyzer();
+		$magic = MimeMagic::singleton();
 		// Use the extension only, rather than magic numbers, to avoid opening
 		// up vulnerabilities due to uploads of files with allowed extensions
 		// but disallowed types.

@@ -85,17 +85,15 @@ class FileDuplicateSearchPage extends QueryPage {
 	}
 
 	public function getQueryInfo() {
-		$imgQuery = LocalFile::getQueryInfo();
 		return [
-			'tables' => $imgQuery['tables'],
+			'tables' => [ 'image' ],
 			'fields' => [
 				'title' => 'img_name',
 				'value' => 'img_sha1',
-				'img_user_text' => $imgQuery['fields']['img_user_text'],
+				'img_user_text',
 				'img_timestamp'
 			],
-			'conds' => [ 'img_sha1' => $this->hash ],
-			'join_conds' => $imgQuery['joins'],
+			'conds' => [ 'img_sha1' => $this->hash ]
 		];
 	}
 
@@ -131,6 +129,7 @@ class FileDuplicateSearchPage extends QueryPage {
 		$htmlForm->addHiddenFields( $hiddenFields );
 		$htmlForm->setAction( wfScript() );
 		$htmlForm->setMethod( 'get' );
+		$htmlForm->setSubmitProgressive();
 		$htmlForm->setSubmitTextMsg( $this->msg( 'fileduplicatesearch-submit' ) );
 
 		// The form should be visible always, even if it was submitted (e.g. to perform another action).

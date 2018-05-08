@@ -62,7 +62,7 @@
 			}
 
 			parser = $.tablesorter.getParser( parserId );
-			data.forEach( function ( testcase ) {
+			$.each( data, function ( index, testcase ) {
 				extractedR = parser.is( testcase[ 0 ] );
 				extractedF = parser.format( testcase[ 0 ] );
 

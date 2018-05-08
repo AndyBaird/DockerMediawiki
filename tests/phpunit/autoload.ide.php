@@ -37,8 +37,17 @@ $maintenance->setup();
 // We used to call this variable $self, but it was moved
 // to $maintenance->mSelf. Keep that here for b/c
 $self = $maintenance->getName();
+global $IP;
 # Start the autoloader, so that extensions can derive classes from core files
 require_once "$IP/includes/AutoLoader.php";
+# Grab profiling functions
+require_once "$IP/includes/profiler/ProfilerFunctions.php";
+
+# Start the profiler
+$wgProfiler = [];
+if ( file_exists( "$IP/StartProfiler.php" ) ) {
+	require "$IP/StartProfiler.php";
+}
 
 $requireOnceGlobalsScope = function ( $file ) use ( $self ) {
 	foreach ( array_keys( $GLOBALS ) as $varName ) {
@@ -84,7 +93,7 @@ if ( $maintenance->getDbType() === Maintenance::DB_NONE ) {
 			|| ( $wgLocalisationCacheConf['store'] == 'detect' && !$wgCacheDirectory )
 		)
 	) {
-		$wgLocalisationCacheConf['storeClass'] = LCStoreNull::class;
+		$wgLocalisationCacheConf['storeClass'] = 'LCStoreNull';
 	}
 }
 

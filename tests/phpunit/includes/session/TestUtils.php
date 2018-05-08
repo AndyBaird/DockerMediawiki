@@ -79,7 +79,7 @@ class TestUtils {
 	 * If you need a Session for testing but don't want to create a backend to
 	 * construct one, use this.
 	 * @param object $backend Object to serve as the SessionBackend
-	 * @param int $index
+	 * @param int $index Index
 	 * @param LoggerInterface $logger
 	 * @return Session
 	 */

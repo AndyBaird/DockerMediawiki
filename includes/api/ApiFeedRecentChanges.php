@@ -169,6 +169,16 @@ class ApiFeedRecentChanges extends ApiBase {
 			'showlinkedto' => false,
 		];
 
+		if ( $config->get( 'AllowCategorizedRecentChanges' ) ) {
+			$ret += [
+				'categories' => [
+					ApiBase::PARAM_TYPE => 'string',
+					ApiBase::PARAM_ISMULTI => true,
+				],
+				'categories_any' => false,
+			];
+		}
+
 		return $ret;
 	}
 

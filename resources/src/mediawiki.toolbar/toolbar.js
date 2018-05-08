@@ -84,7 +84,7 @@
 	/**
 	 * @private
 	 * @property {Array}
-	 * Contains button objects (and for backwards compatibility, it can
+	 * Contains button objects (and for backwards compatibilty, it can
 	 * also contains an arguments array for insertButton).
 	 */
 	queue = [];
@@ -128,8 +128,8 @@
 				buttons = slice.call( arguments );
 			}
 			if ( isReady ) {
-				buttons.forEach( function ( button ) {
-					insertButton( button );
+				$.each( buttons, function () {
+					insertButton( this );
 				} );
 			} else {
 				// Push each button into the queue

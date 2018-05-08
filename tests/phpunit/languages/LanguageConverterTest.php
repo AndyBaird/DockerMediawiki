@@ -160,8 +160,6 @@ class LanguageConverterTest extends MediaWikiLangTestCase {
 
 	/**
 	 * Test exhausting pcre.backtrack_limit
-	 *
-	 * @covers LanguageConverter::autoConvert
 	 */
 	public function testAutoConvertT124404() {
 		$testString = '';

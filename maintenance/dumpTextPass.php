@@ -25,10 +25,8 @@
  */
 
 require_once __DIR__ . '/backup.inc';
-require_once __DIR__ . '/7zip.inc';
 require_once __DIR__ . '/../includes/export/WikiExporter.php';
 
-use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\IMaintainableDatabase;
 
 /**
@@ -144,6 +142,8 @@ TEXT
 	}
 
 	function processOptions() {
+		global $IP;
+
 		parent::processOptions();
 
 		if ( $this->hasOption( 'buffersize' ) ) {
@@ -151,6 +151,7 @@ TEXT
 		}
 
 		if ( $this->hasOption( 'prefetch' ) ) {
+			require_once "$IP/maintenance/backupPrefetch.inc";
 			$url = $this->processFileOpt( $this->getOption( 'prefetch' ) );
 			$this->prefetch = new BaseDump( $url );
 		}
@@ -219,8 +220,7 @@ TEXT
 		// individually retrying at different layers of code.
 
 		try {
-			$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-			$this->lb = $lbFactory->newMainLB();
+			$this->lb = wfGetLBFactory()->newMainLB();
 		} catch ( Exception $e ) {
 			throw new MWException( __METHOD__
 				. " rotating DB failed to obtain new load balancer (" . $e->getMessage() . ")" );
@@ -724,13 +724,13 @@ TEXT
 	}
 
 	private function getTextSpawned( $id ) {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		if ( !$this->spawnProc ) {
 			// First time?
 			$this->openSpawn();
 		}
 		$text = $this->getTextSpawnedOnce( $id );
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 
 		return $text;
 	}
@@ -776,7 +776,7 @@ TEXT
 	}
 
 	private function closeSpawn() {
-		Wikimedia\suppressWarnings();
+		MediaWiki\suppressWarnings();
 		if ( $this->spawnRead ) {
 			fclose( $this->spawnRead );
 		}
@@ -793,7 +793,7 @@ TEXT
 			pclose( $this->spawnProc );
 		}
 		$this->spawnProc = false;
-		Wikimedia\restoreWarnings();
+		MediaWiki\restoreWarnings();
 	}
 
 	private function getTextSpawnedOnce( $id ) {
@@ -988,5 +988,5 @@ TEXT
 	}
 }
 
-$maintClass = TextPassDumper::class;
+$maintClass = 'TextPassDumper';
 require_once RUN_MAINTENANCE_IF_MAIN;

@@ -24,7 +24,7 @@
 		this.controller = controller;
 		this.model = model;
 
-		this.currentSelection = 'none';
+		this.currentSelection = '';
 		this.buttonSelect = new OO.ui.ButtonSelectWidget( {
 			items: colors.map( function ( color ) {
 				return new OO.ui.ButtonOptionWidget( {
@@ -39,12 +39,11 @@
 			} ),
 			classes: 'mw-rcfilters-ui-highlightColorPickerWidget-buttonSelect'
 		} );
+		this.selectColor( 'none' );
 
 		// Event
-		this.model.connect( this, { update: 'updateUiBasedOnModel' } );
+		this.model.connect( this, { update: 'onModelUpdate' } );
 		this.buttonSelect.connect( this, { choose: 'onChooseColor' } );
-
-		this.updateUiBasedOnModel();
 
 		this.$element
 			.addClass( 'mw-rcfilters-ui-highlightColorPickerWidget' )
@@ -74,7 +73,7 @@
 	/**
 	 * Respond to item model update event
 	 */
-	mw.rcfilters.ui.HighlightColorPickerWidget.prototype.updateUiBasedOnModel = function () {
+	mw.rcfilters.ui.HighlightColorPickerWidget.prototype.onModelUpdate = function () {
 		this.selectColor( this.model.getHighlightColor() || 'none' );
 	};
 
@@ -84,8 +83,8 @@
 	 * @param {string} color Selected color
 	 */
 	mw.rcfilters.ui.HighlightColorPickerWidget.prototype.selectColor = function ( color ) {
-		var previousItem = this.buttonSelect.findItemFromData( this.currentSelection ),
-			selectedItem = this.buttonSelect.findItemFromData( color );
+		var previousItem = this.buttonSelect.getItemFromData( this.currentSelection ),
+			selectedItem = this.buttonSelect.getItemFromData( color );
 
 		if ( this.currentSelection !== color ) {
 			this.currentSelection = color;

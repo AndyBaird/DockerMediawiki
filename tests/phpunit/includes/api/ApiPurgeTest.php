@@ -9,6 +9,11 @@
  */
 class ApiPurgeTest extends ApiTestCase {
 
+	protected function setUp() {
+		parent::setUp();
+		$this->doLogin();
+	}
+
 	/**
 	 * @group Broken
 	 */

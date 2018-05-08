@@ -1,5 +1,7 @@
 <?php
 /**
+ * Created on Jan 1, 2013
+ *
  * Copyright © 2013 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -157,7 +159,7 @@ abstract class ApiQueryContinueTestBase extends ApiQueryTestBase {
 
 	/**
 	 * Recursively merge the new result returned from the query to the previous results.
-	 * @param mixed &$results
+	 * @param mixed $results
 	 * @param mixed $newResult
 	 * @param bool $numericIds If true, treat keys as ids to be merged instead of appending
 	 */

@@ -26,9 +26,13 @@
  */
 class ResourceLoaderUserTokensModule extends ResourceLoaderModule {
 
+	/* Protected Members */
+
 	protected $origin = self::ORIGIN_CORE_INDIVIDUAL;
 
 	protected $targets = [ 'desktop', 'mobile' ];
+
+	/* Methods */
 
 	/**
 	 * Fetch the tokens for the current user.
@@ -48,16 +52,19 @@ class ResourceLoaderUserTokensModule extends ResourceLoaderModule {
 	}
 
 	/**
+	 * Generate the JavaScript content of this module.
+	 *
+	 * Add FILTER_NOMIN annotation to prevent needless minification and caching (T84960).
+	 *
 	 * @param ResourceLoaderContext $context
 	 * @return string JavaScript code
 	 */
 	public function getScript( ResourceLoaderContext $context ) {
-		// Use FILTER_NOMIN annotation to prevent needless minification and caching (T84960).
-		return ResourceLoader::FILTER_NOMIN . Xml::encodeJsCall(
+		return Xml::encodeJsCall(
 			'mw.user.tokens.set',
 			[ $this->contextUserTokens( $context ) ],
 			ResourceLoader::inDebugMode()
-		);
+		) . ResourceLoader::FILTER_NOMIN;
 	}
 
 	/**

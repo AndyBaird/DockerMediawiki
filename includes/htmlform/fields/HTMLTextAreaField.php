@@ -5,26 +5,20 @@ class HTMLTextAreaField extends HTMLFormField {
 	const DEFAULT_ROWS = 25;
 
 	protected $mPlaceholder = '';
-	protected $mUseEditFont = false;
 
 	/**
 	 * @param array $params
 	 *   - cols, rows: textarea size
 	 *   - placeholder/placeholder-message: set HTML placeholder attribute
 	 *   - spellcheck: set HTML spellcheck attribute
-	 *   - useeditfont: add CSS classes to use the same font as the wikitext editor
 	 */
 	public function __construct( $params ) {
 		parent::__construct( $params );
 
 		if ( isset( $params['placeholder-message'] ) ) {
-			$this->mPlaceholder = $this->getMessage( $params['placeholder-message'] )->text();
+			$this->mPlaceholder = $this->getMessage( $params['placeholder-message'] )->parse();
 		} elseif ( isset( $params['placeholder'] ) ) {
 			$this->mPlaceholder = $params['placeholder'];
-		}
-
-		if ( isset( $params['useeditfont'] ) ) {
-			$this->mUseEditFont = $params['useeditfont'];
 		}
 	}
 
@@ -46,8 +40,6 @@ class HTMLTextAreaField extends HTMLFormField {
 	}
 
 	public function getInputHTML( $value ) {
-		$classes = [];
-
 		$attribs = [
 				'id' => $this->mID,
 				'cols' => $this->getCols(),
@@ -56,24 +48,10 @@ class HTMLTextAreaField extends HTMLFormField {
 			] + $this->getTooltipAndAccessKey();
 
 		if ( $this->mClass !== '' ) {
-			array_push( $classes, $this->mClass );
-		}
-		if ( $this->mUseEditFont ) {
-			// The following classes can be used here:
-			// * mw-editfont-monospace
-			// * mw-editfont-sans-serif
-			// * mw-editfont-serif
-			array_push(
-				$classes,
-				'mw-editfont-' . $this->mParent->getUser()->getOption( 'editfont' )
-			);
-			$this->mParent->getOutput()->addModuleStyles( 'mediawiki.editfont.styles' );
+			$attribs['class'] = $this->mClass;
 		}
 		if ( $this->mPlaceholder !== '' ) {
 			$attribs['placeholder'] = $this->mPlaceholder;
-		}
-		if ( count( $classes ) ) {
-			$attribs['class'] = implode( ' ', $classes );
 		}
 
 		$allowedParams = [
@@ -89,8 +67,6 @@ class HTMLTextAreaField extends HTMLFormField {
 	}
 
 	function getInputOOUI( $value ) {
-		$classes = [];
-
 		if ( isset( $this->mParams['cols'] ) ) {
 			throw new Exception( "OOUIHTMLForm does not support the 'cols' parameter for textareas" );
 		}
@@ -98,24 +74,10 @@ class HTMLTextAreaField extends HTMLFormField {
 		$attribs = $this->getTooltipAndAccessKeyOOUI();
 
 		if ( $this->mClass !== '' ) {
-			array_push( $classes, $this->mClass );
-		}
-		if ( $this->mUseEditFont ) {
-			// The following classes can be used here:
-			// * mw-editfont-monospace
-			// * mw-editfont-sans-serif
-			// * mw-editfont-serif
-			array_push(
-				$classes,
-				'mw-editfont-' . $this->mParent->getUser()->getOption( 'editfont' )
-			);
-			$this->mParent->getOutput()->addModuleStyles( 'mediawiki.editfont.styles' );
+			$attribs['classes'] = [ $this->mClass ];
 		}
 		if ( $this->mPlaceholder !== '' ) {
 			$attribs['placeholder'] = $this->mPlaceholder;
-		}
-		if ( count( $classes ) ) {
-			$attribs['classes'] = $classes;
 		}
 
 		$allowedParams = [
@@ -130,9 +92,10 @@ class HTMLTextAreaField extends HTMLFormField {
 			$this->getAttributes( $allowedParams )
 		);
 
-		return new OOUI\MultilineTextInputWidget( [
+		return new OOUI\TextInputWidget( [
 			'id' => $this->mID,
 			'name' => $this->mName,
+			'multiline' => true,
 			'value' => $value,
 			'rows' => $this->getRows(),
 		] + $attribs );

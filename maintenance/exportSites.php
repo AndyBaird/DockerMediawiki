@@ -9,7 +9,7 @@ require_once $basePath . '/maintenance/Maintenance.php';
  *
  * @since 1.25
  *
- * @license GNU GPL v2+
+ * @licence GNU GPL v2+
  * @author Daniel Kinzler
  */
 class ExportSites extends Maintenance {
@@ -37,7 +37,7 @@ class ExportSites extends Maintenance {
 		$handle = fopen( $file, 'w' );
 
 		if ( !$handle ) {
-			$this->fatalError( "Failed to open $file for writing.\n" );
+			$this->error( "Failed to open $file for writing.\n", 1 );
 		}
 
 		$exporter = new SiteExporter( $handle );
@@ -52,5 +52,5 @@ class ExportSites extends Maintenance {
 
 }
 
-$maintClass = ExportSites::class;
+$maintClass = 'ExportSites';
 require_once RUN_MAINTENANCE_IF_MAIN;

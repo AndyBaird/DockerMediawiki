@@ -12,11 +12,11 @@ class MssqlBlob extends Blob {
 		if ( $data instanceof MssqlBlob ) {
 			return $data;
 		} elseif ( $data instanceof Blob ) {
-			$this->data = $data->fetch();
+			$this->mData = $data->fetch();
 		} elseif ( is_array( $data ) && is_object( $data ) ) {
-			$this->data = serialize( $data );
+			$this->mData = serialize( $data );
 		} else {
-			$this->data = $data;
+			$this->mData = $data;
 		}
 	}
 
@@ -26,14 +26,14 @@ class MssqlBlob extends Blob {
 	 * @return string
 	 */
 	public function fetch() {
-		if ( $this->data === null ) {
+		if ( $this->mData === null ) {
 			return 'null';
 		}
 
 		$ret = '0x';
-		$dataLength = strlen( $this->data );
+		$dataLength = strlen( $this->mData );
 		for ( $i = 0; $i < $dataLength; $i++ ) {
-			$ret .= bin2hex( pack( 'C', ord( $this->data[$i] ) ) );
+			$ret .= bin2hex( pack( 'C', ord( $this->mData[$i] ) ) );
 		}
 
 		return $ret;

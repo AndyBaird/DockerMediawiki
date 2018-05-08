@@ -106,9 +106,8 @@ class RefreshImageMetadata extends Maintenance {
 		$error = 0;
 
 		$dbw = $this->getDB( DB_MASTER );
-		$batchSize = $this->getBatchSize();
-		if ( $batchSize <= 0 ) {
-			$this->fatalError( "Batch size is too low...", 12 );
+		if ( $this->mBatchSize <= 0 ) {
+			$this->error( "Batch size is too low...", 12 );
 		}
 
 		$repo = RepoGroup::singleton()->getLocalRepo();
@@ -121,20 +120,17 @@ class RefreshImageMetadata extends Maintenance {
 		}
 
 		$options = [
-			'LIMIT' => $batchSize,
+			'LIMIT' => $this->mBatchSize,
 			'ORDER BY' => 'img_name ASC',
 		];
 
-		$fileQuery = LocalFile::getQueryInfo();
-
 		do {
 			$res = $dbw->select(
-				$fileQuery['tables'],
-				$fileQuery['fields'],
+				'image',
+				'*',
 				array_merge( $conds, $conds2 ),
 				__METHOD__,
-				$options,
-				$fileQuery['joins']
+				$options
 			);
 
 			if ( $res->numRows() > 0 ) {
@@ -195,7 +191,7 @@ class RefreshImageMetadata extends Maintenance {
 			}
 			$conds2 = [ 'img_name > ' . $dbw->addQuotes( $row->img_name ) ];
 			wfWaitForSlaves();
-		} while ( $res->numRows() === $batchSize );
+		} while ( $res->numRows() === $this->mBatchSize );
 
 		$total = $upgraded + $leftAlone;
 		if ( $force ) {
@@ -255,10 +251,10 @@ class RefreshImageMetadata extends Maintenance {
 		}
 
 		if ( $brokenOnly && $force ) {
-			$this->fatalError( 'Cannot use --broken-only and --force together. ', 2 );
+			$this->error( 'Cannot use --broken-only and --force together. ', 2 );
 		}
 	}
 }
 
-$maintClass = RefreshImageMetadata::class;
+$maintClass = 'RefreshImageMetadata';
 require_once RUN_MAINTENANCE_IF_MAIN;

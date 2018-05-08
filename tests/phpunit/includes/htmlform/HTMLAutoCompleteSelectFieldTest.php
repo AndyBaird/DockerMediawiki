@@ -4,7 +4,7 @@
  *
  * @covers HTMLAutoCompleteSelectField
  */
-class HTMLAutoCompleteSelectFieldTest extends MediaWikiTestCase {
+class HtmlAutoCompleteSelectFieldTest extends MediaWikiTestCase {
 
 	public $options = [
 		'Bulgaria'     => 'BGR',

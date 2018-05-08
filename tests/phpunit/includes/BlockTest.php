@@ -6,63 +6,69 @@
  */
 class BlockTest extends MediaWikiLangTestCase {
 
-	/**
-	 * @return User
-	 */
-	private function getUserForBlocking() {
-		$testUser = $this->getMutableTestUser();
-		$user = $testUser->getUser();
-		$user->addToDatabase();
-		TestUser::setPasswordForUser( $user, 'UTBlockeePassword' );
-		$user->saveSettings();
-		return $user;
-	}
+	/** @var Block */
+	private $block;
+	private $madeAt;
 
-	/**
-	 * @param User $user
-	 *
-	 * @return Block
-	 * @throws MWException
-	 */
-	private function addBlockForUser( User $user ) {
+	/* variable used to save up the blockID we insert in this test suite */
+	private $blockId;
+
+	function addDBData() {
+		$user = User::newFromName( 'UTBlockee' );
+		if ( $user->getId() == 0 ) {
+			$user->addToDatabase();
+			TestUser::setPasswordForUser( $user, 'UTBlockeePassword' );
+
+			$user->saveSettings();
+		}
+
 		// Delete the last round's block if it's still there
-		$oldBlock = Block::newFromTarget( $user->getName() );
+		$oldBlock = Block::newFromTarget( 'UTBlockee' );
 		if ( $oldBlock ) {
 			// An old block will prevent our new one from saving.
 			$oldBlock->delete();
 		}
 
 		$blockOptions = [
-			'address' => $user->getName(),
+			'address' => 'UTBlockee',
 			'user' => $user->getId(),
-			'by' => $this->getTestSysop()->getUser()->getId(),
 			'reason' => 'Parce que',
 			'expiry' => time() + 100500,
 		];
-		$block = new Block( $blockOptions );
+		$this->block = new Block( $blockOptions );
+		$this->madeAt = wfTimestamp( TS_MW );
 
-		$block->insert();
+		$this->block->insert();
 		// save up ID for use in assertion. Since ID is an autoincrement,
 		// its value might change depending on the order the tests are run.
 		// ApiBlockTest insert its own blocks!
-		if ( !$block->getId() ) {
+		$newBlockId = $this->block->getId();
+		if ( $newBlockId ) {
+			$this->blockId = $newBlockId;
+		} else {
 			throw new MWException( "Failed to insert block for BlockTest; old leftover block remaining?" );
 		}
 
 		$this->addXffBlocks();
+	}
 
-		return $block;
+	/**
+	 * debug function : dump the ipblocks table
+	 */
+	function dumpBlocks() {
+		$v = $this->db->select( 'ipblocks', '*' );
+		print "Got " . $v->numRows() . " rows. Full dump follow:\n";
+		foreach ( $v as $row ) {
+			print_r( $row );
+		}
 	}
 
 	/**
 	 * @covers Block::newFromTarget
 	 */
 	public function testINewFromTargetReturnsCorrectBlock() {
-		$user = $this->getUserForBlocking();
-		$block = $this->addBlockForUser( $user );
-
 		$this->assertTrue(
-			$block->equals( Block::newFromTarget( $user->getName() ) ),
+			$this->block->equals( Block::newFromTarget( 'UTBlockee' ) ),
 			"newFromTarget() returns the same block as the one that was made"
 		);
 	}
@@ -71,26 +77,18 @@ class BlockTest extends MediaWikiLangTestCase {
 	 * @covers Block::newFromID
 	 */
 	public function testINewFromIDReturnsCorrectBlock() {
-		$user = $this->getUserForBlocking();
-		$block = $this->addBlockForUser( $user );
-
 		$this->assertTrue(
-			$block->equals( Block::newFromID( $block->getId() ) ),
+			$this->block->equals( Block::newFromID( $this->blockId ) ),
 			"newFromID() returns the same block as the one that was made"
 		);
 	}
 
 	/**
 	 * per T28425
-	 * @covers Block::__construct
 	 */
 	public function testBug26425BlockTimestampDefaultsToTime() {
-		$user = $this->getUserForBlocking();
-		$block = $this->addBlockForUser( $user );
-		$madeAt = wfTimestamp( TS_MW );
-
 		// delta to stop one-off errors when things happen to go over a second mark.
-		$delta = abs( $madeAt - $block->mTimestamp );
+		$delta = abs( $this->madeAt - $this->block->mTimestamp );
 		$this->assertLessThan(
 			2,
 			$delta,
@@ -107,12 +105,9 @@ class BlockTest extends MediaWikiLangTestCase {
 	 * @covers Block::newFromTarget
 	 */
 	public function testBug29116NewFromTargetWithEmptyIp( $vagueTarget ) {
-		$user = $this->getUserForBlocking();
-		$initialBlock = $this->addBlockForUser( $user );
-		$block = Block::newFromTarget( $user->getName(), $vagueTarget );
-
+		$block = Block::newFromTarget( 'UTBlockee', $vagueTarget );
 		$this->assertTrue(
-			$initialBlock->equals( $block ),
+			$this->block->equals( $block ),
 			"newFromTarget() returns the same block as the one that was made when "
 				. "given empty vagueTarget param " . var_export( $vagueTarget, true )
 		);
@@ -162,7 +157,7 @@ class BlockTest extends MediaWikiLangTestCase {
 			'enableAutoblock' => true,
 			'hideName' => true,
 			'blockEmail' => true,
-			'byText' => 'm>MetaWikiUser',
+			'byText' => 'MetaWikiUser',
 		];
 		$block = new Block( $blockOptions );
 		$block->insert();
@@ -175,7 +170,7 @@ class BlockTest extends MediaWikiLangTestCase {
 		);
 
 		$this->assertInstanceOf(
-			Block::class,
+			'Block',
 			$userBlock,
 			"'$username' block block object should be existent"
 		);
@@ -216,7 +211,7 @@ class BlockTest extends MediaWikiLangTestCase {
 			'enableAutoblock' => true,
 			'hideName' => true,
 			'blockEmail' => true,
-			'byText' => 'Meta>MetaWikiUser',
+			'byText' => 'MetaWikiUser',
 		];
 		$block = new Block( $blockOptions );
 
@@ -232,9 +227,8 @@ class BlockTest extends MediaWikiLangTestCase {
 			'Correct blockee name'
 		);
 		$this->assertEquals( $userId, $block->getTarget()->getId(), 'Correct blockee id' );
-		$this->assertEquals( 'Meta>MetaWikiUser', $block->getBlocker()->getName(),
-			'Correct blocker name' );
-		$this->assertEquals( 'Meta>MetaWikiUser', $block->getByName(), 'Correct blocker name' );
+		$this->assertEquals( 'MetaWikiUser', $block->getBlocker(), 'Correct blocker name' );
+		$this->assertEquals( 'MetaWikiUser', $block->getByName(), 'Correct blocker name' );
 		$this->assertEquals( 0, $block->getBy(), 'Correct blocker id' );
 	}
 
@@ -285,7 +279,6 @@ class BlockTest extends MediaWikiLangTestCase {
 			],
 		];
 
-		$blocker = $this->getTestUser()->getUser();
 		foreach ( $blockList as $insBlock ) {
 			$target = $insBlock['target'];
 
@@ -297,7 +290,7 @@ class BlockTest extends MediaWikiLangTestCase {
 
 			$block = new Block();
 			$block->setTarget( $target );
-			$block->setBlocker( $blocker );
+			$block->setBlocker( 'testblocker@global' );
 			$block->mReason = $insBlock['desc'];
 			$block->mExpiry = 'infinity';
 			$block->prevents( 'createaccount', $insBlock['ACDisable'] );
@@ -358,9 +351,6 @@ class BlockTest extends MediaWikiLangTestCase {
 	 * @covers Block::chooseBlock
 	 */
 	public function testBlocksOnXff( $xff, $exCount, $exResult ) {
-		$user = $this->getUserForBlocking();
-		$this->addBlockForUser( $user );
-
 		$list = array_map( 'trim', explode( ',', $xff ) );
 		$xffblocks = Block::getBlocksForIPList( $list, true );
 		$this->assertEquals( $exCount, count( $xffblocks ), 'Number of blocks for ' . $xff );
@@ -368,9 +358,6 @@ class BlockTest extends MediaWikiLangTestCase {
 		$this->assertEquals( $exResult, $block->mReason, 'Correct block type for XFF header ' . $xff );
 	}
 
-	/**
-	 * @covers Block::__construct
-	 */
 	public function testDeprecatedConstructor() {
 		$this->hideDeprecated( 'Block::__construct with multiple arguments' );
 		$username = 'UnthinkablySecretRandomUsername';
@@ -394,7 +381,7 @@ class BlockTest extends MediaWikiLangTestCase {
 		$block = new Block(
 			/* address */ $username,
 			/* user */ 0,
-			/* by */ $this->getTestSysop()->getUser()->getId(),
+			/* by */ 0,
 			/* reason */ $reason,
 			/* timestamp */ 0,
 			/* auto */ false,
@@ -423,21 +410,13 @@ class BlockTest extends MediaWikiLangTestCase {
 		);
 	}
 
-	/**
-	 * @covers Block::getSystemBlockType
-	 * @covers Block::insert
-	 * @covers Block::doAutoblock
-	 */
 	public function testSystemBlocks() {
-		$user = $this->getUserForBlocking();
-		$this->addBlockForUser( $user );
-
 		$blockOptions = [
-			'address' => $user->getName(),
+			'address' => 'UTBlockee',
 			'reason' => 'test system block',
 			'timestamp' => wfTimestampNow(),
 			'expiry' => $this->db->getInfinity(),
-			'byText' => 'MediaWiki default',
+			'byText' => 'MetaWikiUser',
 			'systemBlock' => 'test',
 			'enableAutoblock' => true,
 		];
@@ -459,5 +438,4 @@ class BlockTest extends MediaWikiLangTestCase {
 			$this->assertSame( 'Cannot autoblock from a system block', $ex->getMessage() );
 		}
 	}
-
 }

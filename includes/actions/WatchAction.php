@@ -80,6 +80,8 @@ class WatchAction extends FormAction {
 		$this->getOutput()->addWikiMsg( $msgKey, $this->getTitle()->getPrefixedText() );
 	}
 
+	/* Static utility methods */
+
 	/**
 	 * Watch or unwatch a page
 	 * @since 1.22

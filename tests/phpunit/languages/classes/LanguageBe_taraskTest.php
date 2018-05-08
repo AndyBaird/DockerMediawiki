@@ -1,11 +1,8 @@
 <?php
 
-// phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
-/**
- * @covers LanguageBe_tarask
- */
+// @codingStandardsIgnoreStart Ignore Squiz.Classes.ValidClassName.NotCamelCaps
 class LanguageBe_taraskTest extends LanguageClassesTestCase {
-	// phpcs:enable
+	// @codingStandardsIgnoreEnd
 	/**
 	 * Make sure the language code we are given is indeed
 	 * be-tarask. This is to ensure LanguageClassesTestCase

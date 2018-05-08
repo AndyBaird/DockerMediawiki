@@ -65,12 +65,8 @@ abstract class Collation {
 				return new CollationEt;
 			case 'xx-uca-fa':
 				return new CollationFa;
-			case 'uppercase-ab':
-				return new AbkhazUppercaseCollation;
 			case 'uppercase-ba':
 				return new BashkirUppercaseCollation;
-			case 'uppercase-se':
-				return new NorthernSamiUppercaseCollation;
 			default:
 				$match = [];
 				if ( preg_match( '/^uca-([A-Za-z@=-]+)$/', $collationName, $match ) ) {

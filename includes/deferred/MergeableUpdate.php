@@ -6,7 +6,7 @@
  *
  * @since 1.27
  */
-interface MergeableUpdate extends DeferrableUpdate {
+interface MergeableUpdate {
 	/**
 	 * Merge this update with $update
 	 *

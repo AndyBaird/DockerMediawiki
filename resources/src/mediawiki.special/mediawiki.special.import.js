@@ -11,7 +11,7 @@
 			option, options;
 
 		if ( $selected.attr( 'data-subprojects' ) ) {
-			options = $selected.attr( 'data-subprojects' ).split( ' ' ).map( function ( el ) {
+			options = $.map( $selected.attr( 'data-subprojects' ).split( ' ' ), function ( el ) {
 				option = document.createElement( 'option' );
 				option.appendChild( document.createTextNode( el ) );
 				option.setAttribute( 'value', el );

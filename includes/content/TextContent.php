@@ -35,11 +35,6 @@
 class TextContent extends AbstractContent {
 
 	/**
-	 * @var string
-	 */
-	protected $mText;
-
-	/**
 	 * @param string $text
 	 * @param string $model_id
 	 * @throws MWException
@@ -236,7 +231,7 @@ class TextContent extends AbstractContent {
 	 *
 	 * @param Title $title Context title for parsing
 	 * @param int $revId Revision ID (for {{REVISIONID}})
-	 * @param ParserOptions $options
+	 * @param ParserOptions $options Parser options
 	 * @param bool $generateHtml Whether or not to generate HTML
 	 * @param ParserOutput &$output The output object to fill (reference).
 	 */

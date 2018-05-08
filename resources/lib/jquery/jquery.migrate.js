@@ -1,11 +1,12 @@
 /*!
- * jQuery Migrate - v3.0.1 - 2017-09-26
+ * jQuery Migrate - v3.0.1-pre - 2017-08-17
  * Copyright jQuery Foundation and other contributors
  *
  * Patched for MediaWiki:
+ * - Preserve handler of uncaught exceptions in promise chains
+ *   https://gerrit.wikimedia.org/r/#/c/360999/
+ *   https://github.com/jquery/jquery-migrate/pull/262
  * - Add mw.track instrumentation for statistics.
- * - Disable jQuery.migrateTrace by default. They are slow and
- *   redundant given console.warn() already provides a trace.
  */
 ;( function( factory ) {
 	if ( typeof define === "function" && define.amd ) {
@@ -26,31 +27,35 @@
 "use strict";
 
 
-jQuery.migrateVersion = "3.0.1";
+jQuery.migrateVersion = "3.0.1-pre";
 
 /* exported migrateWarn, migrateWarnFunc, migrateWarnProp */
 
 ( function() {
 
-	var rbadVersions = /^[12]\./;
-
 	// Support: IE9 only
 	// IE9 only creates console object when dev tools are first opened
-	// IE9 console is a host object, callable but doesn't have .apply()
-	if ( !window.console || !window.console.log ) {
+	// Also, avoid Function#bind here to simplify PhantomJS usage
+	var log = window.console && window.console.log &&
+		function() {
+			window.console.log.apply( window.console, arguments );
+		},
+		rbadVersions = /^[12]\./;
+
+	if ( !log ) {
 		return;
 	}
 
 	// Need jQuery 3.0.0+ and no older Migrate loaded
 	if ( !jQuery || rbadVersions.test( jQuery.fn.jquery ) ) {
-		window.console.log( "JQMIGRATE: jQuery 3.0.0+ REQUIRED" );
+		log( "JQMIGRATE: jQuery 3.0.0+ REQUIRED" );
 	}
 	if ( jQuery.migrateWarnings ) {
-		window.console.log( "JQMIGRATE: Migrate plugin loaded multiple times" );
+		log( "JQMIGRATE: Migrate plugin loaded multiple times" );
 	}
 
 	// Show a message on the console so devs know we're active
-	window.console.log( "JQMIGRATE: Migrate is installed" +
+	log( "JQMIGRATE: Migrate is installed" +
 		( jQuery.migrateMute ? "" : " with logging active" ) +
 		", version " + jQuery.migrateVersion );
 
@@ -63,8 +68,7 @@ jQuery.migrateWarnings = [];
 
 // Set to false to disable traces that appear with warnings
 if ( jQuery.migrateTrace === undefined ) {
-	// PATCH: Disable extra console.trace() call --Krinkle
-	jQuery.migrateTrace = false;
+	jQuery.migrateTrace = true;
 }
 
 // Forget any warnings we've already given; public
@@ -209,9 +213,6 @@ jQuery.isNumeric = function( val ) {
 
 	return oldValue;
 };
-
-migrateWarnFunc( jQuery, "holdReady", jQuery.holdReady,
-	"jQuery.holdReady is deprecated" );
 
 migrateWarnFunc( jQuery, "unique", jQuery.uniqueSort,
 	"jQuery.unique is deprecated; use jQuery.uniqueSort" );
@@ -374,17 +375,19 @@ jQuery.data = function( elem, name, value ) {
 };
 
 var oldTweenRun = jQuery.Tween.prototype.run;
-var linearEasing = function( pct ) {
-		return pct;
-	};
 
 jQuery.Tween.prototype.run = function( ) {
 	if ( jQuery.easing[ this.easing ].length > 1 ) {
 		migrateWarn(
-			"'jQuery.easing." + this.easing.toString() + "' should use only one argument"
+			"easing function " +
+			"\"jQuery.easing." + this.easing.toString() +
+			"\" should use only first argument"
 		);
 
-		jQuery.easing[ this.easing ] = linearEasing;
+		var oldEasing = jQuery.easing[ this.easing ];
+		jQuery.easing[ this.easing ] = function( percent ) {
+			return oldEasing.call( jQuery.easing, percent, percent, 0, 1, 1 );
+		}.bind( this );
 	}
 
 	oldTweenRun.apply( this, arguments );
@@ -508,10 +511,6 @@ jQuery.fn.extend( {
 		return arguments.length === 1 ?
 			this.off( selector, "**" ) :
 			this.off( types, selector || "**", fn );
-	},
-	hover: function( fnOver, fnOut ) {
-		migrateWarn( "jQuery.fn.hover() is deprecated" );
-		return this.on( "mouseenter", fnOver ).on( "mouseleave", fnOut || fnOver );
 	}
 } );
 

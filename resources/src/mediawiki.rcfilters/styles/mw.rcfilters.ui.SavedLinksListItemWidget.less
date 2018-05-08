@@ -1,13 +1,11 @@
-@import 'mediawiki.ui/variables';
-
 .mw-rcfilters-ui-savedLinksListItemWidget {
 	padding: 0 0.5em;
 	line-height: normal;
 
 	&:hover {
 		// Mimicking optionWidget styles
-		background-color: @colorGray14;
-		color: @colorGray1;
+		background-color: #eaecf0;
+		color: #000;
 	}
 
 	.mw-rcfilters-ui-cell {
@@ -24,7 +22,6 @@
 		min-width: 16px;
 		min-height: 16px;
 		opacity: 0.5;
-		position: relative;
 	}
 
 	&-icon span {
@@ -42,11 +39,10 @@
 		display: inline-block;
 		vertical-align: middle;
 		text-overflow: ellipsis;
-		white-space: nowrap;
 		overflow: hidden;
 		cursor: pointer;
 		margin-left: 0.5px;
-		color: @colorProgressive;
+		color: #36c; // Accent50;
 	}
 
 	&-icon,

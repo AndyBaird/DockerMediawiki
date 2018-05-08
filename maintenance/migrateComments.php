@@ -162,7 +162,7 @@ class MigrateComments extends LoggedUpdateMaintenance {
 				__METHOD__,
 				[
 					'ORDER BY' => $primaryKey,
-					'LIMIT' => $this->getBatchSize(),
+					'LIMIT' => $this->mBatchSize,
 				]
 			);
 			if ( !$res->numRows() ) {
@@ -205,7 +205,7 @@ class MigrateComments extends LoggedUpdateMaintenance {
 					$next = "$field > $value OR $field = $value AND ($next)";
 				}
 			}
-			$prompt = implode( ' ', array_reverse( $prompt ) );
+			$prompt = join( ' ', array_reverse( $prompt ) );
 			$this->output( "... $prompt\n" );
 			wfWaitForSlaves();
 		}
@@ -248,7 +248,7 @@ class MigrateComments extends LoggedUpdateMaintenance {
 				__METHOD__,
 				[
 					'ORDER BY' => $primaryKey,
-					'LIMIT' => $this->getBatchSize(),
+					'LIMIT' => $this->mBatchSize,
 				],
 				[ $newTable => [ 'LEFT JOIN', "{$primaryKey}={$newPrimaryKey}" ] ]
 			);
@@ -282,6 +282,7 @@ class MigrateComments extends LoggedUpdateMaintenance {
 			// Calculate the "next" condition
 			$next = [ $primaryKey . ' > ' . $dbw->addQuotes( $row->$primaryKey ) ];
 			$this->output( "... {$row->$primaryKey}\n" );
+			wfWaitForSlaves();
 		}
 
 		$this->output(
@@ -290,5 +291,5 @@ class MigrateComments extends LoggedUpdateMaintenance {
 	}
 }
 
-$maintClass = MigrateComments::class;
+$maintClass = "MigrateComments";
 require_once RUN_MAINTENANCE_IF_MAIN;

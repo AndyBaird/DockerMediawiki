@@ -6,22 +6,17 @@
 	 *
 	 * @constructor
 	 * @param {mw.rcfilters.Controller} controller RCFilters controller
-	 * @param {mw.rcfilters.dm.FiltersViewModel} filtersViewModel
-	 * @param {mw.rcfilters.dm.FilterItem} invertModel
-	 * @param {mw.rcfilters.dm.FilterItem} itemModel Filter item model
+	 * @param {mw.rcfilters.dm.FilterItem} model Filter item model
 	 * @param {Object} config Configuration object
 	 */
-	mw.rcfilters.ui.FilterMenuOptionWidget = function MwRcfiltersUiFilterMenuOptionWidget(
-		controller, filtersViewModel, invertModel, itemModel, config
-	) {
+	mw.rcfilters.ui.FilterMenuOptionWidget = function MwRcfiltersUiFilterMenuOptionWidget( controller, model, config ) {
 		config = config || {};
 
 		this.controller = controller;
-		this.invertModel = invertModel;
-		this.model = itemModel;
+		this.model = model;
 
 		// Parent
-		mw.rcfilters.ui.FilterMenuOptionWidget.parent.call( this, controller, filtersViewModel, this.invertModel, itemModel, config );
+		mw.rcfilters.ui.FilterMenuOptionWidget.parent.call( this, controller, model, config );
 
 		// Event
 		this.model.getGroupModel().connect( this, { update: 'onGroupModelUpdate' } );
@@ -43,9 +38,9 @@
 	/**
 	 * @inheritdoc
 	 */
-	mw.rcfilters.ui.FilterMenuOptionWidget.prototype.updateUiBasedOnState = function () {
+	mw.rcfilters.ui.FilterMenuOptionWidget.prototype.onModelUpdate = function () {
 		// Parent
-		mw.rcfilters.ui.FilterMenuOptionWidget.parent.prototype.updateUiBasedOnState.call( this );
+		mw.rcfilters.ui.FilterMenuOptionWidget.parent.prototype.onModelUpdate.call( this );
 
 		this.setCurrentMuteState();
 	};
@@ -63,7 +58,7 @@
 	mw.rcfilters.ui.FilterMenuOptionWidget.prototype.setCurrentMuteState = function () {
 		if (
 			this.model.getGroupModel().getView() === 'namespaces' &&
-			this.invertModel.isSelected()
+			this.model.isInverted()
 		) {
 			// This is an inverted behavior than the other rules, specifically
 			// for inverted namespaces

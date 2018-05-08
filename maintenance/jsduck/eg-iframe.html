@@ -35,7 +35,8 @@
 	</script>
 	<script>
 		// Mock startup.js
-		var mwNow = Date.now;
+		var mwPerformance = { mark: function () {} },
+			mwNow = Date.now;
 
 		function startUp() {
 			mw.config = new mw.Map();

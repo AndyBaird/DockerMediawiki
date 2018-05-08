@@ -612,28 +612,24 @@ class SpecialUpload extends SpecialPage {
 			}
 		}
 
-		$licenseText = '';
-		if ( $license !== '' ) {
-			$licenseText = '== ' . $msg['license-header'] . " ==\n{{" . $license . "}}\n";
-		}
-
-		$pageText = $comment . "\n";
-		$headerText = '== ' . $msg['filedesc'] . ' ==';
-		if ( $comment !== '' && strpos( $comment, $headerText ) === false ) {
-			// prepend header to page text unless it's already there (or there is no content)
-			$pageText = $headerText . "\n" . $pageText;
-		}
-
 		if ( $config->get( 'UseCopyrightUpload' ) ) {
-			$pageText .= '== ' . $msg['filestatus'] . " ==\n" . $copyStatus . "\n";
-			$pageText .= $licenseText;
-			$pageText .= '== ' . $msg['filesource'] . " ==\n" . $source;
+			$licensetxt = '';
+			if ( $license != '' ) {
+				$licensetxt = '== ' . $msg['license-header'] . " ==\n" . '{{' . $license . '}}' . "\n";
+			}
+			$pageText = '== ' . $msg['filedesc'] . " ==\n" . $comment . "\n" .
+				'== ' . $msg['filestatus'] . " ==\n" . $copyStatus . "\n" .
+				"$licensetxt" .
+				'== ' . $msg['filesource'] . " ==\n" . $source;
 		} else {
-			$pageText .= $licenseText;
+			if ( $license != '' ) {
+				$filedesc = $comment == '' ? '' : '== ' . $msg['filedesc'] . " ==\n" . $comment . "\n";
+					$pageText = $filedesc .
+					'== ' . $msg['license-header'] . " ==\n" . '{{' . $license . '}}' . "\n";
+			} else {
+				$pageText = $comment;
+			}
 		}
-
-		// allow extensions to modify the content
-		Hooks::run( 'UploadForm:getInitialPageText', [ &$pageText, $msg, $config ] );
 
 		return $pageText;
 	}

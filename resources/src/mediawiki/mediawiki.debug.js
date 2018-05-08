@@ -4,15 +4,6 @@
 	var debug,
 		hovzer = $.getFootHovzer();
 
-	OO.ui.getViewportSpacing = function () {
-		return {
-			top: 0,
-			right: 0,
-			bottom: hovzer.$.outerHeight(),
-			left: 0
-		};
-	};
-
 	/**
 	 * Debug toolbar.
 	 *

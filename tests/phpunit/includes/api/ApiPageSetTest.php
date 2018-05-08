@@ -4,7 +4,6 @@
  * @group API
  * @group medium
  * @group Database
- * @covers ApiPageSet
  */
 class ApiPageSetTest extends ApiTestCase {
 	public static function provideRedirectMergePolicy() {
@@ -108,7 +107,7 @@ class ApiPageSetTest extends ApiTestCase {
 		$userName = $user->getName();
 		$userDbkey = str_replace( ' ', '_', $userName );
 		$request = new FauxRequest( [
-			'titles' => implode( '|', [
+			'titles' => join( '|', [
 				'Special:MyContributions',
 				'Special:MyPage',
 				'Special:MyTalk/subpage',

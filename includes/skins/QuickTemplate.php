@@ -31,6 +31,11 @@ abstract class QuickTemplate {
 	 */
 	public $data;
 
+	/**
+	 * @var MediaWikiI18N
+	 */
+	public $translator;
+
 	/** @var Config $config */
 	protected $config;
 
@@ -39,6 +44,7 @@ abstract class QuickTemplate {
 	 */
 	function __construct( Config $config = null ) {
 		$this->data = [];
+		$this->translator = new MediaWikiI18N();
 		if ( $config === null ) {
 			wfDebug( __METHOD__ . ' was called with no Config instance passed to it' );
 			$config = MediaWikiServices::getInstance()->getMainConfig();
@@ -85,15 +91,18 @@ abstract class QuickTemplate {
 	}
 
 	/**
-	 * @deprecated since 1.31 This function is a now-redundant optimisation intended
-	 *  for very old versions of PHP. The use of references here makes the code
-	 *  more fragile and is incompatible with plans like T140664. Use set() instead.
 	 * @param string $name
 	 * @param mixed &$value
 	 */
 	public function setRef( $name, &$value ) {
-		wfDeprecated( __METHOD__, '1.31' );
 		$this->data[$name] =& $value;
+	}
+
+	/**
+	 * @param MediaWikiI18N &$t
+	 */
+	public function setTranslator( &$t ) {
+		$this->translator = &$t;
 	}
 
 	/**
@@ -120,29 +129,29 @@ abstract class QuickTemplate {
 
 	/**
 	 * @private
-	 * @param string $msgKey
+	 * @param string $str
 	 */
-	function msg( $msgKey ) {
-		echo htmlspecialchars( wfMessage( $msgKey )->text() );
+	function msg( $str ) {
+		echo htmlspecialchars( $this->translator->translate( $str ) );
 	}
 
 	/**
 	 * @private
-	 * @param string $msgKey
+	 * @param string $str
 	 */
-	function msgHtml( $msgKey ) {
-		echo wfMessage( $msgKey )->text();
+	function msgHtml( $str ) {
+		echo $this->translator->translate( $str );
 	}
 
 	/**
 	 * An ugly, ugly hack.
 	 * @private
-	 * @param string $msgKey
+	 * @param string $str
 	 */
-	function msgWiki( $msgKey ) {
+	function msgWiki( $str ) {
 		global $wgOut;
 
-		$text = wfMessage( $msgKey )->text();
+		$text = $this->translator->translate( $str );
 		echo $wgOut->parse( $text );
 	}
 
@@ -158,12 +167,12 @@ abstract class QuickTemplate {
 	/**
 	 * @private
 	 *
-	 * @param string $msgKey
+	 * @param string $str
 	 * @return bool
 	 */
-	function haveMsg( $msgKey ) {
-		$msg = wfMessage( $msgKey );
-		return $msg->exists() && !$msg->isDisabled();
+	function haveMsg( $str ) {
+		$msg = $this->translator->translate( $str );
+		return ( $msg != '-' ) && ( $msg != '' ); # ????
 	}
 
 	/**

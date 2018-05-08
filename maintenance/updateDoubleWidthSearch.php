@@ -53,7 +53,7 @@ class UpdateDoubleWidthSearch extends Maintenance {
 
 		$dbw = $this->getDB( DB_MASTER );
 		if ( $dbw->getType() !== 'mysql' ) {
-			$this->fatalError( "This change is only needed on MySQL, quitting.\n" );
+			$this->error( "This change is only needed on MySQL, quitting.\n", true );
 		}
 
 		$res = $this->findRows( $dbw );
@@ -77,5 +77,5 @@ class UpdateDoubleWidthSearch extends Maintenance {
 	}
 }
 
-$maintClass = UpdateDoubleWidthSearch::class;
+$maintClass = "UpdateDoubleWidthSearch";
 require_once RUN_MAINTENANCE_IF_MAIN;

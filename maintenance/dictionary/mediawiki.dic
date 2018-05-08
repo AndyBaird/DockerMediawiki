@@ -2027,6 +2027,7 @@ isminor
 ismodsince
 ismulti
 isnew
+ispermalink
 isroot
 isself
 isset
@@ -4584,6 +4585,7 @@ wrongpassword
 x
 xanalytics
 xbitmap
+xcache
 xcancel
 xdebug
 xdiff

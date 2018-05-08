@@ -20,7 +20,6 @@
 
 namespace MediaWiki\Auth;
 
-use Psr\Log\LoggerInterface;
 use User;
 
 /**
@@ -32,7 +31,7 @@ class AuthManagerAuthPlugin extends \AuthPlugin {
 	/** @var string|null */
 	protected $domain = null;
 
-	/** @var LoggerInterface */
+	/** @var \\Psr\\Log\\LoggerInterface */
 	protected $logger = null;
 
 	public function __construct() {
@@ -153,9 +152,8 @@ class AuthManagerAuthPlugin extends \AuthPlugin {
 	}
 
 	public function updateExternalDBGroups( $user, $addgroups, $delgroups = [] ) {
-		throw new \BadMethodCallException(
-			'Update of user groups via AuthPlugin is not supported with AuthManager.'
-		);
+		\Hooks::run( 'UserGroupsChanged', [ $user, $addgroups, $delgroups ] );
+		return true;
 	}
 
 	public function canCreateAccounts() {

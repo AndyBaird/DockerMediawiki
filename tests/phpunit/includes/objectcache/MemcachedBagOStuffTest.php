@@ -42,7 +42,7 @@ class MemcachedBagOStuffTest extends MediaWikiTestCase {
 		);
 
 		$this->assertEquals(
-			'test:BagOStuff-long-key:##dc89dcb43b28614da27660240af478b5',
+			'test:##dc89dcb43b28614da27660240af478b5',
 			$this->cache->makeKey( '𝕖𝕧𝕖𝕟', '𝕚𝕗', '𝕨𝕖', '𝕄𝔻𝟝', '𝕖𝕒𝕔𝕙',
 				'𝕒𝕣𝕘𝕦𝕞𝕖𝕟𝕥', '𝕥𝕙𝕚𝕤', '𝕜𝕖𝕪', '𝕨𝕠𝕦𝕝𝕕', '𝕤𝕥𝕚𝕝𝕝', '𝕓𝕖', '𝕥𝕠𝕠', '𝕝𝕠𝕟𝕘' )
 		);
@@ -70,7 +70,6 @@ class MemcachedBagOStuffTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider validKeyProvider
-	 * @covers MemcachedBagOStuff::validateKeyEncoding
 	 */
 	public function testValidateKeyEncoding( $key ) {
 		$this->assertSame( $key, $this->cache->validateKeyEncoding( $key ) );
@@ -87,10 +86,9 @@ class MemcachedBagOStuffTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider invalidKeyProvider
-	 * @covers MemcachedBagOStuff::validateKeyEncoding
 	 */
 	public function testValidateKeyEncodingThrowsException( $key ) {
-		$this->setExpectedException( Exception::class );
+		$this->setExpectedException( 'Exception' );
 		$this->cache->validateKeyEncoding( $key );
 	}
 

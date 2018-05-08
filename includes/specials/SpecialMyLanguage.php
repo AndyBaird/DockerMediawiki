@@ -81,7 +81,6 @@ class SpecialMyLanguage extends RedirectSpecialArticle {
 		}
 
 		if ( !$base ) {
-			// No subpage provided or base page does not exist
 			return null;
 		}
 
@@ -91,38 +90,14 @@ class SpecialMyLanguage extends RedirectSpecialArticle {
 		}
 
 		$uiCode = $this->getLanguage()->getCode();
-		$wikiLangCode = $this->getConfig()->get( 'LanguageCode' );
-
-		if ( $uiCode === $wikiLangCode ) {
-			// Short circuit when the current UI language is the
-			// wiki's default language to avoid unnecessary page lookups.
+		$proposed = $base->getSubpage( $uiCode );
+		if ( $proposed && $proposed->exists() && $uiCode !== $base->getPageLanguage()->getCode() ) {
+			return $proposed;
+		} elseif ( $provided && $provided->exists() ) {
+			return $provided;
+		} else {
 			return $base;
 		}
-
-		// Check for a subpage in current UI language
-		$proposed = $base->getSubpage( $uiCode );
-		if ( $proposed && $proposed->exists() ) {
-			return $proposed;
-		}
-
-		if ( $provided !== $base && $provided->exists() ) {
-			// Explicit language code given and the page exists
-			return $provided;
-		}
-
-		// Check for fallback languages specified by the UI language
-		$possibilities = Language::getFallbacksFor( $uiCode );
-		foreach ( $possibilities as $lang ) {
-			if ( $lang !== $wikiLangCode ) {
-				$proposed = $base->getSubpage( $lang );
-				if ( $proposed && $proposed->exists() ) {
-					return $proposed;
-				}
-			}
-		}
-
-		// When all else has failed, return the base page
-		return $base;
 	}
 
 	/**

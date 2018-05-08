@@ -43,5 +43,5 @@ class AllTrans extends Maintenance {
 	}
 }
 
-$maintClass = AllTrans::class;
+$maintClass = "AllTrans";
 require_once RUN_MAINTENANCE_IF_MAIN;

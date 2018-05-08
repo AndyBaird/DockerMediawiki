@@ -329,10 +329,7 @@ $digitTransformTable = [
 	'8' => '۸', # &#x06f8;
 	'9' => '۹', # &#x06f9;
 	'%' => '٪', # &#x066a;
-];
-
-$separatorTransformTable = [
-	'.' => '٫', # &#x066b;
+	'.' => '٫', # &#x066b; wrong table?
 	',' => '٬', # &#x066c;
 ];
 

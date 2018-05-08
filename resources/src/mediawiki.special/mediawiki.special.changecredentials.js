@@ -17,7 +17,7 @@
 					currentApiPromise = undefined;
 				}
 
-				password = password.trim();
+				password = $.trim( password );
 
 				if ( password === '' ) {
 					self.setErrors( [] );

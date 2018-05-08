@@ -8,6 +8,7 @@
  *
  * @group Database
  */
+
 class ImageListPagerTest extends MediaWikiTestCase {
 	/**
 	 * @expectedException MWException

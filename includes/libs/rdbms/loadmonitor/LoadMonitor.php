@@ -45,22 +45,9 @@ class LoadMonitor implements ILoadMonitor {
 
 	/** @var float Moving average ratio (e.g. 0.1 for 10% weight to new weight) */
 	private $movingAveRatio;
-	/** @var int Amount of replication lag in seconds before warnings are logged */
-	private $lagWarnThreshold;
 
-	/** @var int cache key version */
-	const VERSION = 1;
-	/** @var int Default 'max lag' in seconds when unspecified */
-	const LAG_WARN_THRESHOLD = 10;
+	const VERSION = 1; // cache key version
 
-	/**
-	 * @param ILoadBalancer $lb
-	 * @param BagOStuff $srvCache
-	 * @param WANObjectCache $wCache
-	 * @param array $options
-	 *   - movingAveRatio: moving average constant for server weight updates based on lag
-	 *   - lagWarnThreshold: how many seconds of lag trigger warnings
-	 */
 	public function __construct(
 		ILoadBalancer $lb, BagOStuff $srvCache, WANObjectCache $wCache, array $options = []
 	) {
@@ -72,22 +59,19 @@ class LoadMonitor implements ILoadMonitor {
 		$this->movingAveRatio = isset( $options['movingAveRatio'] )
 			? $options['movingAveRatio']
 			: 0.1;
-		$this->lagWarnThreshold = isset( $options['lagWarnThreshold'] )
-			? $options['lagWarnThreshold']
-			: self::LAG_WARN_THRESHOLD;
 	}
 
 	public function setLogger( LoggerInterface $logger ) {
 		$this->replLogger = $logger;
 	}
 
-	final public function scaleLoads( array &$weightByServer, $domain ) {
+	public function scaleLoads( array &$weightByServer, $domain ) {
 		$serverIndexes = array_keys( $weightByServer );
 		$states = $this->getServerStates( $serverIndexes, $domain );
-		$newScalesByServer = $states['weightScales'];
+		$coefficientsByServer = $states['weightScales'];
 		foreach ( $weightByServer as $i => $weight ) {
-			if ( isset( $newScalesByServer[$i] ) ) {
-				$weightByServer[$i] = $weight * $newScalesByServer[$i];
+			if ( isset( $coefficientsByServer[$i] ) ) {
+				$weightByServer[$i] = $weight * $coefficientsByServer[$i];
 			} else { // server recently added to config?
 				$host = $this->parent->getServerName( $i );
 				$this->replLogger->error( __METHOD__ . ": host $host not in cache" );
@@ -95,8 +79,10 @@ class LoadMonitor implements ILoadMonitor {
 		}
 	}
 
-	final public function getLagTimes( array $serverIndexes, $domain ) {
-		return $this->getServerStates( $serverIndexes, $domain )['lagTimes'];
+	public function getLagTimes( array $serverIndexes, $domain ) {
+		$states = $this->getServerStates( $serverIndexes, $domain );
+
+		return $states['lagTimes'];
 	}
 
 	protected function getServerStates( array $serverIndexes, $domain ) {
@@ -156,14 +142,11 @@ class LoadMonitor implements ILoadMonitor {
 				continue;
 			}
 
-			# Handles with open transactions are avoided since they might be subject
-			# to REPEATABLE-READ snapshots, which could affect the lag estimate query.
-			$flags = ILoadBalancer::CONN_TRX_AUTOCOMMIT;
-			$conn = $this->parent->getAnyOpenConnection( $i, $flags );
+			$conn = $this->parent->getAnyOpenConnection( $i );
 			if ( $conn ) {
 				$close = false; // already open
 			} else {
-				$conn = $this->parent->openConnection( $i, ILoadBalancer::DOMAIN_ANY, $flags );
+				$conn = $this->parent->openConnection( $i, '' );
 				$close = true; // new connection
 			}
 
@@ -176,10 +159,9 @@ class LoadMonitor implements ILoadMonitor {
 			// Scale from 10% to 100% of nominal weight
 			$weightScales[$i] = max( $newWeight, 0.10 );
 
-			$host = $this->parent->getServerName( $i );
-
 			if ( !$conn ) {
 				$lagTimes[$i] = false;
+				$host = $this->parent->getServerName( $i );
 				$this->replLogger->error(
 					__METHOD__ . ": host {db_server} is unreachable",
 					[ 'db_server' => $host ]
@@ -192,18 +174,10 @@ class LoadMonitor implements ILoadMonitor {
 			} else {
 				$lagTimes[$i] = $conn->getLag();
 				if ( $lagTimes[$i] === false ) {
+					$host = $this->parent->getServerName( $i );
 					$this->replLogger->error(
 						__METHOD__ . ": host {db_server} is not replicating?",
 						[ 'db_server' => $host ]
-					);
-				} elseif ( $lagTimes[$i] > $this->lagWarnThreshold ) {
-					$this->replLogger->error(
-						"Server {host} has {lag} seconds of lag (>= {maxlag})",
-						[
-							'host' => $host,
-							'lag' => $lagTimes[$i],
-							'maxlag' => $this->lagWarnThreshold
-						]
 					);
 				}
 			}

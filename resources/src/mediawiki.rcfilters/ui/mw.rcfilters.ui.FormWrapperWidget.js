@@ -95,10 +95,9 @@
 	 *
 	 * @param {jQuery|string} $changesList Updated changes list
 	 * @param {jQuery} $fieldset Updated fieldset
-	 * @param {string} noResultsDetails Type of no result error
 	 * @param {boolean} isInitialDOM Whether $changesListContent is the existing (already attached) DOM
 	 */
-	mw.rcfilters.ui.FormWrapperWidget.prototype.onChangesModelUpdate = function ( $changesList, $fieldset, noResultsDetails, isInitialDOM ) {
+	mw.rcfilters.ui.FormWrapperWidget.prototype.onChangesModelUpdate = function ( $changesList, $fieldset, isInitialDOM ) {
 		this.$submitButton.prop( 'disabled', false );
 
 		// Replace the entire fieldset
@@ -132,9 +131,6 @@
 		// Hide namespaces and tags
 		this.$element.find( '.namespaceForm' ).detach();
 		this.$element.find( '.mw-tagfilter-label' ).closest( 'tr' ).detach();
-
-		// Hide Related Changes page name form
-		this.$element.find( '.targetForm' ).detach();
 
 		// misc: limit, days, watchlist info msg
 		this.$element.find( '.rclinks, .cldays, .wlinfo' ).detach();

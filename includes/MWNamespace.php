@@ -38,15 +38,6 @@ class MWNamespace {
 	 */
 	private static $alwaysCapitalizedNamespaces = [ NS_SPECIAL, NS_USER, NS_MEDIAWIKI ];
 
-	/** @var string[]|null Canonical namespaces cache */
-	private static $canonicalNamespaces = null;
-
-	/** @var array|false Canonical namespaces index cache */
-	private static $namespaceIndexes = false;
-
-	/** @var int[]|null Valid namespaces cache */
-	private static $validNamespaces = null;
-
 	/**
 	 * Throw an exception when trying to get the subject or talk page
 	 * for a given namespace where it does not make sense.
@@ -64,19 +55,6 @@ class MWNamespace {
 			throw new MWException( "$method does not make any sense for given namespace $index" );
 		}
 		return true;
-	}
-
-	/**
-	 * Clear internal caches
-	 *
-	 * For use in unit testing when namespace configuration is changed.
-	 *
-	 * @since 1.31
-	 */
-	public static function clearCaches() {
-		self::$canonicalNamespaces = null;
-		self::$namespaceIndexes = false;
-		self::$validNamespaces = null;
 	}
 
 	/**
@@ -222,28 +200,23 @@ class MWNamespace {
 	 * (English) names.
 	 *
 	 * @param bool $rebuild Rebuild namespace list (default = false). Used for testing.
-	 *  Deprecated since 1.31, use self::clearCaches() instead.
 	 *
 	 * @return array
 	 * @since 1.17
 	 */
 	public static function getCanonicalNamespaces( $rebuild = false ) {
-		if ( $rebuild ) {
-			self::clearCaches();
-		}
-
-		if ( self::$canonicalNamespaces === null ) {
+		static $namespaces = null;
+		if ( $namespaces === null || $rebuild ) {
 			global $wgExtraNamespaces, $wgCanonicalNamespaceNames;
-			self::$canonicalNamespaces = [ NS_MAIN => '' ] + $wgCanonicalNamespaceNames;
+			$namespaces = [ NS_MAIN => '' ] + $wgCanonicalNamespaceNames;
 			// Add extension namespaces
-			self::$canonicalNamespaces +=
-				ExtensionRegistry::getInstance()->getAttribute( 'ExtensionNamespaces' );
+			$namespaces += ExtensionRegistry::getInstance()->getAttribute( 'ExtensionNamespaces' );
 			if ( is_array( $wgExtraNamespaces ) ) {
-				self::$canonicalNamespaces += $wgExtraNamespaces;
+				$namespaces += $wgExtraNamespaces;
 			}
-			Hooks::run( 'CanonicalNamespaces', [ &self::$canonicalNamespaces ] );
+			Hooks::run( 'CanonicalNamespaces', [ &$namespaces ] );
 		}
-		return self::$canonicalNamespaces;
+		return $namespaces;
 	}
 
 	/**
@@ -269,14 +242,15 @@ class MWNamespace {
 	 * @return int
 	 */
 	public static function getCanonicalIndex( $name ) {
-		if ( self::$namespaceIndexes === false ) {
-			self::$namespaceIndexes = [];
+		static $xNamespaces = false;
+		if ( $xNamespaces === false ) {
+			$xNamespaces = [];
 			foreach ( self::getCanonicalNamespaces() as $i => $text ) {
-				self::$namespaceIndexes[strtolower( $text )] = $i;
+				$xNamespaces[strtolower( $text )] = $i;
 			}
 		}
-		if ( array_key_exists( $name, self::$namespaceIndexes ) ) {
-			return self::$namespaceIndexes[$name];
+		if ( array_key_exists( $name, $xNamespaces ) ) {
+			return $xNamespaces[$name];
 		} else {
 			return null;
 		}
@@ -288,17 +262,19 @@ class MWNamespace {
 	 * @return array
 	 */
 	public static function getValidNamespaces() {
-		if ( is_null( self::$validNamespaces ) ) {
+		static $mValidNamespaces = null;
+
+		if ( is_null( $mValidNamespaces ) ) {
 			foreach ( array_keys( self::getCanonicalNamespaces() ) as $ns ) {
 				if ( $ns >= 0 ) {
-					self::$validNamespaces[] = $ns;
+					$mValidNamespaces[] = $ns;
 				}
 			}
 			// T109137: sort numerically
-			sort( self::$validNamespaces, SORT_NUMERIC );
+			sort( $mValidNamespaces, SORT_NUMERIC );
 		}
 
-		return self::$validNamespaces;
+		return $mValidNamespaces;
 	}
 
 	/**

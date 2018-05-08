@@ -160,9 +160,9 @@ class SqliteInstaller extends DatabaseInstaller {
 			# Called early on in the installer, later we just want to sanity check
 			# if it's still writable
 			if ( $create ) {
-				Wikimedia\suppressWarnings();
+				MediaWiki\suppressWarnings();
 				$ok = wfMkdirParents( $dir, 0700, __METHOD__ );
-				Wikimedia\restoreWarnings();
+				MediaWiki\restoreWarnings();
 				if ( !$ok ) {
 					return Status::newFatal( 'config-sqlite-mkdir-error', $dir );
 				}
@@ -321,7 +321,7 @@ EOT;
 		return "# SQLite-specific settings
 \$wgSQLiteDataDir = \"{$dir}\";
 \$wgObjectCaches[CACHE_DB] = [
-	'class' => SqlBagOStuff::class,
+	'class' => 'SqlBagOStuff',
 	'loggroup' => 'SQLBagOStuff',
 	'server' => [
 		'type' => 'sqlite',

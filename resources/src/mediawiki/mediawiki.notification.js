@@ -80,7 +80,6 @@
 		//          to stop replacement of a tagged notification with another notification using the same message.
 		// options: The options passed to the notification with a little sanitization. Used by various methods.
 		// $notification: jQuery object containing the notification DOM node.
-		// timeout: Holds appropriate methods to set/clear timeouts
 		this.autoHideSeconds = options.autoHideSeconds &&
 			notification.autoHideSeconds[ options.autoHideSeconds ] ||
 			notification.autoHideSeconds.short;
@@ -89,14 +88,6 @@
 		this.message = message;
 		this.options = options;
 		this.$notification = $notification;
-		if ( options.visibleTimeout ) {
-			this.timeout = require( 'mediawiki.visibleTimeout' );
-		} else {
-			this.timeout = {
-				set: setTimeout,
-				clear: clearTimeout
-			};
-		}
 	}
 
 	/**
@@ -111,7 +102,7 @@
 	Notification.prototype.start = function () {
 		var options, $notification, $tagMatches, autohideCount;
 
-		$area.css( 'display', '' );
+		$area.show();
 
 		if ( this.isOpen ) {
 			return;
@@ -180,9 +171,9 @@
 		}
 		this.isPaused = true;
 
-		if ( this.timeoutId ) {
-			this.timeout.clear( this.timeoutId );
-			delete this.timeoutId;
+		if ( this.timeout ) {
+			clearTimeout( this.timeout );
+			delete this.timeout;
 		}
 	};
 
@@ -193,16 +184,15 @@
 	 */
 	Notification.prototype.resume = function () {
 		var notif = this;
-
 		if ( !notif.isPaused ) {
 			return;
 		}
 		// Start any autoHide timeouts
 		if ( notif.options.autoHide ) {
 			notif.isPaused = false;
-			notif.timeoutId = notif.timeout.set( function () {
+			notif.timeout = setTimeout( function () {
 				// Already finished, so don't try to re-clear it
-				delete notif.timeoutId;
+				delete notif.timeout;
 				notif.close();
 			}, this.autoHideSeconds * 1000 );
 		}
@@ -240,7 +230,7 @@
 				if ( openNotificationCount === 0 ) {
 					// Hide the area after the last notification closes. Otherwise, the padding on
 					// the area can be obscure content, despite the area being empty/invisible (T54659). // FIXME
-					$area.css( 'display', 'none' );
+					$area.hide();
 					notif.$notification.remove();
 				} else {
 					notif.$notification.slideUp( 'fast', function () {
@@ -276,22 +266,9 @@
 	 * @ignore
 	 */
 	function init() {
-		var offset, notif,
+		var offset,
 			isFloating = false;
 
-		function updateAreaMode() {
-			var shouldFloat = window.pageYOffset > offset.top;
-			if ( isFloating === shouldFloat ) {
-				return;
-			}
-			isFloating = shouldFloat;
-			$area
-				.toggleClass( 'mw-notification-area-floating', isFloating )
-				.toggleClass( 'mw-notification-area-layout', !isFloating );
-		}
-
-		// Write to the DOM:
-		// Prepend the notification area to the content area and save its object.
 		$area = $( '<div id="mw-notification-area" class="mw-notification-area mw-notification-area-layout"></div>' )
 			// Pause auto-hide timers when the mouse is in the notification area.
 			.on( {
@@ -311,30 +288,26 @@
 				e.stopPropagation();
 			} );
 
+		// Prepend the notification area to the content area and save it's object.
 		mw.util.$content.prepend( $area );
+		offset = $area.offset();
+		$area.hide();
 
-		// Read from the DOM:
-		// Must be in the next frame to avoid synchronous layout
-		// computation from offset()/getBoundingClientRect().
-		rAF( function () {
-			offset = $area.offset();
-
-			// Initial mode (reads, and then maybe writes)
-			updateAreaMode();
-
-			// Once we have the offset for where it would normally render, set the
-			// initial state of the (currently empty) notification area to be hidden.
-			$area.css( 'display', 'none' );
-
-			$( window ).on( 'scroll', updateAreaMode );
-
-			// Handle pre-ready queue.
-			isPageReady = true;
-			while ( preReadyNotifQueue.length ) {
-				notif = preReadyNotifQueue.shift();
-				notif.start();
+		function updateAreaMode() {
+			var shouldFloat = window.pageYOffset > offset.top;
+			if ( isFloating === shouldFloat ) {
+				return;
 			}
-		} );
+			isFloating = shouldFloat;
+			$area
+				.toggleClass( 'mw-notification-area-floating', isFloating )
+				.toggleClass( 'mw-notification-area-layout', !isFloating );
+		}
+
+		$( window ).on( 'scroll', updateAreaMode );
+
+		// Initial mode
+		updateAreaMode();
 	}
 
 	/**
@@ -419,18 +392,13 @@
 		 * - type:
 		 *   An optional string for the type of the message used for styling:
 		 *   Examples: 'info', 'warn', 'error'.
-		 *
-		 * - visibleTimeout:
-		 *   A boolean indicating if the autoHide timeout should be based on
-		 *   time the page was visible to user. Or if it should use wall clock time.
 		 */
 		defaults: {
 			autoHide: true,
 			autoHideSeconds: 'short',
 			tag: null,
 			title: null,
-			type: null,
-			visibleTimeout: true
+			type: null
 		},
 
 		/**
@@ -455,7 +423,18 @@
 		autoHideLimit: 3
 	};
 
-	$( init );
+	$( function () {
+		var notif;
+
+		init();
+
+		// Handle pre-ready queue.
+		isPageReady = true;
+		while ( preReadyNotifQueue.length ) {
+			notif = preReadyNotifQueue.shift();
+			notif.start();
+		}
+	} );
 
 	mw.notification = notification;
 

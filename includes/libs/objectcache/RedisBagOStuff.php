@@ -23,10 +23,7 @@
 /**
  * Redis-based caching module for redis server >= 2.6.12
  *
- * @note Avoid use of Redis::MULTI transactions for twemproxy support
- *
- * @ingroup Cache
- * @ingroup Redis
+ * @note: avoid use of Redis::MULTI transactions for twemproxy support
  */
 class RedisBagOStuff extends BagOStuff {
 	/** @var RedisConnectionPool */

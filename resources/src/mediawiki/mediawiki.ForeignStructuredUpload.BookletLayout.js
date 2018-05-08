@@ -113,7 +113,8 @@
 					} )
 				);
 			}
-		).catch(
+		).then(
+			null,
 			// Always resolve, never reject
 			function () { return $.Deferred().resolve(); }
 		);
@@ -392,8 +393,7 @@
 		if ( file && file.type === 'image/jpeg' ) {
 			fileReader = new FileReader();
 			fileReader.onload = function () {
-				var fileStr, arr, i, metadata,
-					jpegmeta = mw.loader.require( 'mediawiki.libs.jpegmeta' );
+				var fileStr, arr, i, metadata;
 
 				if ( typeof fileReader.result === 'string' ) {
 					fileStr = fileReader.result;
@@ -407,7 +407,7 @@
 				}
 
 				try {
-					metadata = jpegmeta( fileStr, file.name );
+					metadata = mw.libs.jpegmeta( fileStr, file.name );
 				} catch ( e ) {
 					metadata = null;
 				}

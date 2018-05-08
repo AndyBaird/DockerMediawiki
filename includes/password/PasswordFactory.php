@@ -41,7 +41,7 @@ final class PasswordFactory {
 	 * @see Setup.php
 	 */
 	private $types = [
-		'' => [ 'type' => '', 'class' => InvalidPassword::class ],
+		'' => [ 'type' => '', 'class' => 'InvalidPassword' ],
 	];
 
 	/**

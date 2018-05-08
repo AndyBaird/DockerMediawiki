@@ -1,17 +1,13 @@
 <?php
 
-/**
- * @covers DeferredStringifier
- */
-class DeferredStringifierTest extends PHPUnit\Framework\TestCase {
-
-	use MediaWikiCoversValidator;
+class DeferredStringifierTest extends PHPUnit_Framework_TestCase {
 
 	/**
+	 * @covers DeferredStringifier
 	 * @dataProvider provideToString
 	 */
 	public function testToString( $params, $expected ) {
-		$class = new ReflectionClass( DeferredStringifier::class );
+		$class = new ReflectionClass( 'DeferredStringifier' );
 		$ds = $class->newInstanceArgs( $params );
 		$this->assertEquals( $expected, (string)$ds );
 	}

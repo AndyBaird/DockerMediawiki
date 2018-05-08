@@ -106,10 +106,10 @@ class DeferredUpdates {
 	 *
 	 * @param callable $callable
 	 * @param int $stage DeferredUpdates constant (PRESEND or POSTSEND) (since 1.27)
-	 * @param IDatabase|IDatabase[]|null $dbw Abort if this DB is rolled back [optional] (since 1.28)
+	 * @param IDatabase|null $dbw Abort if this DB is rolled back [optional] (since 1.28)
 	 */
 	public static function addCallableUpdate(
-		$callable, $stage = self::POSTSEND, $dbw = null
+		$callable, $stage = self::POSTSEND, IDatabase $dbw = null
 	) {
 		self::addUpdate( new MWCallableUpdate( $callable, wfGetCaller(), $dbw ), $stage );
 	}
@@ -206,29 +206,23 @@ class DeferredUpdates {
 			foreach ( $updatesByType as $updatesForType ) {
 				foreach ( $updatesForType as $update ) {
 					self::$executeContext = [ 'stage' => $stage, 'subqueue' => [] ];
-					try {
-						/** @var DeferrableUpdate $update */
-						$guiError = self::runUpdate( $update, $lbFactory, $mode, $stage );
-						$reportableError = $reportableError ?: $guiError;
-						// Do the subqueue updates for $update until there are none
-						while ( self::$executeContext['subqueue'] ) {
-							$subUpdate = reset( self::$executeContext['subqueue'] );
-							$firstKey = key( self::$executeContext['subqueue'] );
-							unset( self::$executeContext['subqueue'][$firstKey] );
+					/** @var DeferrableUpdate $update */
+					$guiError = self::runUpdate( $update, $lbFactory, $mode, $stage );
+					$reportableError = $reportableError ?: $guiError;
+					// Do the subqueue updates for $update until there are none
+					while ( self::$executeContext['subqueue'] ) {
+						$subUpdate = reset( self::$executeContext['subqueue'] );
+						$firstKey = key( self::$executeContext['subqueue'] );
+						unset( self::$executeContext['subqueue'][$firstKey] );
 
-							if ( $subUpdate instanceof DataUpdate ) {
-								$subUpdate->setTransactionTicket( $ticket );
-							}
-
-							$guiError = self::runUpdate( $subUpdate, $lbFactory, $mode, $stage );
-							$reportableError = $reportableError ?: $guiError;
+						if ( $subUpdate instanceof DataUpdate ) {
+							$subUpdate->setTransactionTicket( $ticket );
 						}
-					} finally {
-						// Make sure we always clean up the context.
-						// Losing updates while rewinding the stack is acceptable,
-						// losing updates that are added later is not.
-						self::$executeContext = null;
+
+						$guiError = self::runUpdate( $subUpdate, $lbFactory, $mode, $stage );
+						$reportableError = $reportableError ?: $guiError;
 					}
+					self::$executeContext = null;
 				}
 			}
 
@@ -256,8 +250,6 @@ class DeferredUpdates {
 				// Run only the job enqueue logic to complete the update later
 				$spec = $update->getAsJobSpecification();
 				JobQueueGroup::singleton( $spec['wiki'] )->push( $spec['job'] );
-			} elseif ( $update instanceof TransactionRoundDefiningUpdate ) {
-				$update->doUpdate();
 			} else {
 				// Run the bulk of the update now
 				$fnameTrxOwner = get_class( $update ) . '::doUpdate';
@@ -271,12 +263,6 @@ class DeferredUpdates {
 				$guiError = $e;
 			}
 			MWExceptionHandler::rollbackMasterChangesAndLog( $e );
-
-			// VW-style hack to work around T190178, so we can make sure
-			// PageMetaDataUpdater doesn't throw exceptions.
-			if ( defined( 'MW_PHPUNIT_TEST' ) ) {
-				throw $e;
-			}
 		}
 
 		return $guiError;

@@ -1,5 +1,9 @@
 <?php
 /**
+ *
+ *
+ * Created on Sep 25, 2006
+ *
  * Copyright © 2006 Yuri Astrakhan "<Firstname><Lastname>@gmail.com"
  *
  * This program is free software; you can redistribute it and/or modify
@@ -49,7 +53,7 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 		$fld_flags = false, $fld_timestamp = false, $fld_user = false,
 		$fld_comment = false, $fld_parsedcomment = false, $fld_sizes = false,
 		$fld_notificationtimestamp = false, $fld_userid = false,
-		$fld_loginfo = false, $fld_tags;
+		$fld_loginfo = false;
 
 	/**
 	 * @param ApiPageSet $resultPageSet
@@ -78,7 +82,6 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 			$this->fld_patrol = isset( $prop['patrol'] );
 			$this->fld_notificationtimestamp = isset( $prop['notificationtimestamp'] );
 			$this->fld_loginfo = isset( $prop['loginfo'] );
-			$this->fld_tags = isset( $prop['tags'] );
 
 			if ( $this->fld_patrol ) {
 				if ( !$user->useRCPatrol() && !$user->useNPPatrol() ) {
@@ -87,7 +90,7 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 			}
 
 			if ( $this->fld_comment || $this->fld_parsedcomment ) {
-				$this->commentStore = CommentStore::getStore();
+				$this->commentStore = new CommentStore( 'rc_comment' );
 			}
 		}
 
@@ -233,16 +236,12 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 		}
 		if ( $this->fld_patrol ) {
 			$includeFields[] = WatchedItemQueryService::INCLUDE_PATROL_INFO;
-			$includeFields[] = WatchedItemQueryService::INCLUDE_AUTOPATROL_INFO;
 		}
 		if ( $this->fld_sizes ) {
 			$includeFields[] = WatchedItemQueryService::INCLUDE_SIZES;
 		}
 		if ( $this->fld_loginfo ) {
 			$includeFields[] = WatchedItemQueryService::INCLUDE_LOG_INFO;
-		}
-		if ( $this->fld_tags ) {
-			$includeFields[] = WatchedItemQueryService::INCLUDE_TAGS;
 		}
 		return $includeFields;
 	}
@@ -255,10 +254,6 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 		|| ( isset( $show[WatchedItemQueryService::FILTER_ANON] )
 			&& isset( $show[WatchedItemQueryService::FILTER_NOT_ANON] ) )
 		|| ( isset( $show[WatchedItemQueryService::FILTER_PATROLLED] )
-			&& isset( $show[WatchedItemQueryService::FILTER_NOT_PATROLLED] ) )
-		|| ( isset( $show[WatchedItemQueryService::FILTER_AUTOPATROLLED] )
-			&& isset( $show[WatchedItemQueryService::FILTER_NOT_AUTOPATROLLED] ) )
-		|| ( isset( $show[WatchedItemQueryService::FILTER_AUTOPATROLLED] )
 			&& isset( $show[WatchedItemQueryService::FILTER_NOT_PATROLLED] ) )
 		|| ( isset( $show[WatchedItemQueryService::FILTER_UNREAD] )
 			&& isset( $show[WatchedItemQueryService::FILTER_NOT_UNREAD] ) );
@@ -362,7 +357,7 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 				Revision::DELETED_COMMENT,
 				$user
 			) ) {
-				$comment = $this->commentStore->getComment( 'rc_comment', $recentChangeInfo )->text;
+				$comment = $this->commentStore->getComment( $recentChangeInfo )->text;
 				if ( $this->fld_comment ) {
 					$vals['comment'] = $comment;
 				}
@@ -375,9 +370,8 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 
 		/* Add the patrolled flag */
 		if ( $this->fld_patrol ) {
-			$vals['patrolled'] = $recentChangeInfo['rc_patrolled'] != RecentChange::PRC_UNPATROLLED;
+			$vals['patrolled'] = $recentChangeInfo['rc_patrolled'] == 1;
 			$vals['unpatrolled'] = ChangesList::isUnpatrolled( (object)$recentChangeInfo, $user );
-			$vals['autopatrolled'] = $recentChangeInfo['rc_patrolled'] == RecentChange::PRC_AUTOPATROLLED;
 		}
 
 		if ( $this->fld_loginfo && $recentChangeInfo['rc_type'] == RC_LOG ) {
@@ -394,16 +388,6 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 				$vals['logtype'] = $recentChangeInfo['rc_log_type'];
 				$vals['logaction'] = $recentChangeInfo['rc_log_action'];
 				$vals['logparams'] = LogFormatter::newFromRow( $recentChangeInfo )->formatParametersForApi();
-			}
-		}
-
-		if ( $this->fld_tags ) {
-			if ( $recentChangeInfo['rc_tags'] ) {
-				$tags = explode( ',', $recentChangeInfo['rc_tags'] );
-				ApiResult::setIndexedTagName( $tags, 'tag' );
-				$vals['tags'] = $tags;
-			} else {
-				$vals['tags'] = [];
 			}
 		}
 
@@ -469,7 +453,6 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 					'sizes',
 					'notificationtimestamp',
 					'loginfo',
-					'tags',
 				]
 			],
 			'show' => [
@@ -483,8 +466,6 @@ class ApiQueryWatchlist extends ApiQueryGeneratorBase {
 					WatchedItemQueryService::FILTER_NOT_ANON,
 					WatchedItemQueryService::FILTER_PATROLLED,
 					WatchedItemQueryService::FILTER_NOT_PATROLLED,
-					WatchedItemQueryService::FILTER_AUTOPATROLLED,
-					WatchedItemQueryService::FILTER_NOT_AUTOPATROLLED,
 					WatchedItemQueryService::FILTER_UNREAD,
 					WatchedItemQueryService::FILTER_NOT_UNREAD,
 				]

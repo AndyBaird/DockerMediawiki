@@ -121,5 +121,5 @@ class UpdateSearchIndex extends Maintenance {
 	}
 }
 
-$maintClass = UpdateSearchIndex::class;
+$maintClass = "UpdateSearchIndex";
 require_once RUN_MAINTENANCE_IF_MAIN;

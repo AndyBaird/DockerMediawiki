@@ -8,15 +8,13 @@
  * @todo Test methods in this call should be split into a method and a
  * dataprovider.
  */
-class IPTest extends PHPUnit\Framework\TestCase {
 
-	use MediaWikiCoversValidator;
-
+class IPTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * @covers IP::isIPAddress
 	 * @dataProvider provideInvalidIPs
 	 */
-	public function testIsNotIPAddress( $val, $desc ) {
+	public function isNotIPAddress( $val, $desc ) {
 		$this->assertFalse( IP::isIPAddress( $val ), $desc );
 	}
 
@@ -563,7 +561,7 @@ class IPTest extends PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @covers IP::splitHostAndPort()
+	 * Test for IP::splitHostAndPort().
 	 * @dataProvider provideSplitHostAndPort
 	 */
 	public function testSplitHostAndPort( $expected, $input, $description ) {
@@ -590,7 +588,7 @@ class IPTest extends PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @covers IP::combineHostAndPort()
+	 * Test for IP::combineHostAndPort()
 	 * @dataProvider provideCombineHostAndPort
 	 */
 	public function testCombineHostAndPort( $expected, $input, $description ) {
@@ -614,7 +612,7 @@ class IPTest extends PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @covers IP::sanitizeRange()
+	 * Test for IP::sanitizeRange()
 	 * @dataProvider provideIPCIDRs
 	 */
 	public function testSanitizeRange( $input, $expected, $description ) {
@@ -638,7 +636,7 @@ class IPTest extends PHPUnit\Framework\TestCase {
 	}
 
 	/**
-	 * @covers IP::prettifyIP()
+	 * Test for IP::prettifyIP()
 	 * @dataProvider provideIPsToPrettify
 	 */
 	public function testPrettifyIP( $ip, $prettified ) {

@@ -146,7 +146,7 @@ class SpecialBotPasswords extends FormSpecialPage {
 			];
 
 			$fields['restrictions'] = [
-				'class' => HTMLRestrictionsField::class,
+				'class' => 'HTMLRestrictionsField',
 				'required' => true,
 				'default' => $this->botPassword->getRestrictions(),
 			];

@@ -51,7 +51,7 @@ class PopulateContentModel extends Maintenance {
 
 		$ns = $this->getOption( 'ns' );
 		if ( !ctype_digit( $ns ) && $ns !== 'all' ) {
-			$this->fatalError( 'Invalid namespace' );
+			$this->error( 'Invalid namespace', 1 );
 		}
 		$ns = $ns === 'all' ? 'all' : (int)$ns;
 		$table = $this->getOption( 'table' );
@@ -64,12 +64,12 @@ class PopulateContentModel extends Maintenance {
 				$this->populatePage( $dbw, $ns );
 				break;
 			default:
-				$this->fatalError( "Invalid table name: $table" );
+				$this->error( "Invalid table name: $table", 1 );
 		}
 	}
 
 	protected function clearCache( $page_id, $rev_id ) {
-		$contentModelKey = $this->wanCache->makeKey( 'page-content-model', $rev_id );
+		$contentModelKey = $this->wanCache->makeKey( 'page', 'content-model', $rev_id );
 		$revisionKey =
 			$this->wanCache->makeGlobalKey( 'revision', $this->wikiId, $page_id, $rev_id );
 
@@ -97,7 +97,6 @@ class PopulateContentModel extends Maintenance {
 		$toSave = [];
 		$lastId = 0;
 		$nsCondition = $ns === 'all' ? [] : [ 'page_namespace' => $ns ];
-		$batchSize = $this->getBatchSize();
 		do {
 			$rows = $dbw->select(
 				'page',
@@ -107,20 +106,20 @@ class PopulateContentModel extends Maintenance {
 					'page_id > ' . $dbw->addQuotes( $lastId ),
 				] + $nsCondition,
 				__METHOD__,
-				[ 'LIMIT' => $batchSize, 'ORDER BY' => 'page_id ASC' ]
+				[ 'LIMIT' => $this->mBatchSize, 'ORDER BY' => 'page_id ASC' ]
 			);
 			$this->output( "Fetched {$rows->numRows()} rows.\n" );
 			foreach ( $rows as $row ) {
 				$title = Title::newFromRow( $row );
 				$model = ContentHandler::getDefaultModelFor( $title );
 				$toSave[$model][] = $row->page_id;
-				if ( count( $toSave[$model] ) >= $batchSize ) {
+				if ( count( $toSave[$model] ) >= $this->mBatchSize ) {
 					$this->updatePageRows( $dbw, $toSave[$model], $model );
 					unset( $toSave[$model] );
 				}
 				$lastId = $row->page_id;
 			}
-		} while ( $rows->numRows() >= $batchSize );
+		} while ( $rows->numRows() >= $this->mBatchSize );
 		foreach ( $toSave as $model => $pages ) {
 			$this->updatePageRows( $dbw, $pages, $model );
 		}
@@ -169,7 +168,6 @@ class PopulateContentModel extends Maintenance {
 		$toSave = [];
 		$idsToClear = [];
 		$lastId = 0;
-		$batchSize = $this->getBatchSize();
 		do {
 			$rows = $dbw->select(
 				$selectTables,
@@ -183,7 +181,7 @@ class PopulateContentModel extends Maintenance {
 					"$key > " . $dbw->addQuotes( $lastId ),
 				] + $where,
 				__METHOD__,
-				[ 'LIMIT' => $batchSize, 'ORDER BY' => "$key ASC" ],
+				[ 'LIMIT' => $this->mBatchSize, 'ORDER BY' => "$key ASC" ],
 				$join_conds
 			);
 			$this->output( "Fetched {$rows->numRows()} rows.\n" );
@@ -234,12 +232,12 @@ class PopulateContentModel extends Maintenance {
 					}
 				}
 
-				if ( count( $toSave[$defaultModel] ) >= $batchSize ) {
+				if ( count( $toSave[$defaultModel] ) >= $this->mBatchSize ) {
 					$this->updateRevisionOrArchiveRows( $dbw, $toSave[$defaultModel], $defaultModel, $table );
 					unset( $toSave[$defaultModel] );
 				}
 			}
-		} while ( $rows->numRows() >= $batchSize );
+		} while ( $rows->numRows() >= $this->mBatchSize );
 		foreach ( $toSave as $model => $ids ) {
 			$this->updateRevisionOrArchiveRows( $dbw, $ids, $model, $table );
 		}
@@ -250,5 +248,5 @@ class PopulateContentModel extends Maintenance {
 	}
 }
 
-$maintClass = PopulateContentModel::class;
+$maintClass = 'PopulateContentModel';
 require_once RUN_MAINTENANCE_IF_MAIN;

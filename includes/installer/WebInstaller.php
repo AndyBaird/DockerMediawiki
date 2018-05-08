@@ -155,10 +155,6 @@ class WebInstaller extends Installer {
 
 		if ( isset( $session['settings'] ) ) {
 			$this->settings = $session['settings'] + $this->settings;
-			// T187586 MediaWikiServices works with globals
-			foreach ( $this->settings as $key => $val ) {
-				$GLOBALS[$key] = $val;
-			}
 		}
 
 		$this->setupLanguage();
@@ -915,7 +911,6 @@ class WebInstaller extends Installer {
 	 *    Parameters are:
 	 *      var:         The variable to be configured (required)
 	 *      label:       The message name for the label (required)
-	 *      labelAttribs:Additional attributes for the label element (optional)
 	 *      attribs:     Additional attributes for the input element (optional)
 	 *      controlName: The name for the input element (optional)
 	 *      value:       The current value of the variable (optional)
@@ -938,9 +933,6 @@ class WebInstaller extends Installer {
 		if ( !isset( $params['help'] ) ) {
 			$params['help'] = "";
 		}
-		if ( !isset( $params['labelAttribs'] ) ) {
-			$params['labelAttribs'] = [];
-		}
 		if ( isset( $params['rawtext'] ) ) {
 			$labelText = $params['rawtext'];
 		} else {
@@ -949,19 +941,17 @@ class WebInstaller extends Installer {
 
 		return "<div class=\"config-input-check\">\n" .
 			$params['help'] .
-			Html::rawElement(
-				'label',
-				$params['labelAttribs'],
-				Xml::check(
-					$params['controlName'],
-					$params['value'],
-					$params['attribs'] + [
-						'id' => $params['controlName'],
-						'tabindex' => $this->nextTabIndex(),
-					]
-				) .
-				$labelText . "\n"
-				) .
+			"<label>\n" .
+			Xml::check(
+				$params['controlName'],
+				$params['value'],
+				$params['attribs'] + [
+					'id' => $params['controlName'],
+					'tabindex' => $this->nextTabIndex(),
+				]
+			) .
+			$labelText . "\n" .
+			"</label>\n" .
 			"</div>\n";
 	}
 

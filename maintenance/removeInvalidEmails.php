@@ -36,7 +36,7 @@ class RemoveInvalidEmails extends Maintenance {
 					'user_email_authenticated IS NULL'
 				],
 				__METHOD__,
-				[ 'LIMIT' => $this->getBatchSize() ]
+				[ 'LIMIT' => $this->mBatchSize ]
 			);
 			$count = $rows->numRows();
 			$badIds = [];
@@ -74,5 +74,5 @@ class RemoveInvalidEmails extends Maintenance {
 	}
 }
 
-$maintClass = RemoveInvalidEmails::class;
+$maintClass = 'RemoveInvalidEmails';
 require_once RUN_MAINTENANCE_IF_MAIN;
