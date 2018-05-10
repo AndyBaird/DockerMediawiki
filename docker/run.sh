@@ -1,4 +1,5 @@
 #!/bin/bash
+    # -v ${PWD}/../LocalSettings.php:/var/www/html/LocalSettings.php \
 
 # source config vars
 . ./config.sh
@@ -11,6 +12,6 @@ docker run --name="$service" \
     -c 5120 \
     -m 2g \
 	-v ${PWD}/../:/var/www/html \
-    -v ${PWD}/../LocalSettings.php:/var/www/html/LocalSettings.php \
+    --network wikinetwork \
     -p 8080:80 \
 	-d $service
